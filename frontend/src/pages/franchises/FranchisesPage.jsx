@@ -1,0 +1,264 @@
+import { useState, useEffect, useCallback } from 'react';
+import { useAuthStore } from '../../store/authStore';
+import { franchisesApi } from '../../api/franchises';
+import FranchiseFormModal from './FranchiseFormModal';
+
+// ─── Empty state ──────────────────────────────────────────────────────────────
+
+function EmptyState({ onAdd, isSuperadmin }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 text-center">
+      <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+        <svg className="w-7 h-7 text-slate-400" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
+        </svg>
+      </div>
+      <p className="text-sm font-semibold text-slate-700">No franchises yet</p>
+      <p className="mt-1 text-sm text-slate-400">
+        {isSuperadmin ? 'Get started by creating the first franchise.' : 'No franchises have been assigned to you.'}
+      </p>
+      {isSuperadmin && (
+        <button
+          onClick={onAdd}
+          className="mt-5 inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          New Franchise
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+export default function FranchisesPage() {
+  const role = useAuthStore((s) => s.role);
+  const isSuperadmin = role === 'superadmin';
+
+  const [franchises, setFranchises] = useState([]);
+  const [franchisesTotal, setFranchisesTotal] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState('');
+
+  // Modal state: null = closed, false = create mode, object = edit mode
+  const [modalFranchise, setModalFranchise] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // ── Fetch ──────────────────────────────────────────────────────────────────
+
+  const loadFranchises = useCallback(async () => {
+    setIsLoading(true);
+    setFetchError('');
+    try {
+      const { data, meta } = await franchisesApi.getFranchises();
+      setFranchises(Array.isArray(data) ? data : []);
+      setFranchisesTotal(meta?.total ?? null);
+    } catch (error) {
+      setFetchError(
+        error?.response?.data?.message ?? 'Failed to load franchises. Please try again.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadFranchises();
+  }, [loadFranchises]);
+
+  // ── Modal helpers ──────────────────────────────────────────────────────────
+
+  function openCreateModal() {
+    setModalFranchise(null);
+    setIsModalOpen(true);
+  }
+
+  function openEditModal(franchise) {
+    setModalFranchise(franchise);
+    setIsModalOpen(true);
+  }
+
+  function closeModal() {
+    setIsModalOpen(false);
+    setModalFranchise(null);
+  }
+
+  async function handleSave(payload, id) {
+    if (id !== undefined) {
+      await franchisesApi.updateFranchise(id, payload);
+    } else {
+      await franchisesApi.createFranchise(payload);
+    }
+    closeModal();
+    await loadFranchises();
+  }
+
+  // ── Delete ─────────────────────────────────────────────────────────────────
+
+  async function handleDelete(franchise) {
+    const confirmed = window.confirm(
+      `Delete "${franchise.name}"? This action cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    try {
+      await franchisesApi.deleteFranchise(franchise.id);
+      await loadFranchises();
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ?? 'Failed to delete the franchise. Please try again.';
+      window.alert(message);
+    }
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+
+  return (
+    <>
+      <div className="space-y-5">
+        {/* Page header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-slate-800">Franchises</h1>
+            <p className="mt-0.5 text-sm text-slate-500">
+              Manage SM regional franchises.
+            </p>
+          </div>
+          {isSuperadmin && (
+            <button
+              onClick={openCreateModal}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              New Franchise
+            </button>
+          )}
+        </div>
+
+        {/* Loading */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-20 gap-3">
+            <svg className="w-6 h-6 text-blue-500 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            <p className="text-sm text-slate-500">Loading franchises…</p>
+          </div>
+        )}
+
+        {/* Fetch error */}
+        {!isLoading && fetchError && (
+          <div className="rounded-xl bg-red-50 border border-red-200 px-5 py-4 flex items-start gap-3">
+            <svg className="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+            <div>
+              <p className="text-sm font-medium text-red-700">{fetchError}</p>
+              <button
+                onClick={loadFranchises}
+                className="mt-1 text-xs text-red-600 underline hover:text-red-800"
+              >
+                Try again
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!isLoading && !fetchError && franchises.length === 0 && (
+          <EmptyState onAdd={openCreateModal} isSuperadmin={isSuperadmin} />
+        )}
+
+        {/* Table */}
+        {!isLoading && !fetchError && franchises.length > 0 && (
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <table className="min-w-full divide-y divide-slate-200">
+              <thead>
+                <tr className="bg-slate-50">
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    Region
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    Phone
+                  </th>
+                  {isSuperadmin && (
+                    <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  )}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {franchises.map((franchise) => (
+                  <tr
+                    key={franchise.id}
+                    className="hover:bg-slate-50 transition-colors"
+                  >
+                    <td className="px-5 py-3.5 text-sm font-medium text-slate-800">
+                      {franchise.name}
+                    </td>
+                    <td className="px-5 py-3.5 text-sm text-slate-600">
+                      {franchise.region ?? <span className="text-slate-400">—</span>}
+                    </td>
+                    <td className="px-5 py-3.5 text-sm text-slate-600">
+                      {franchise.phone ?? <span className="text-slate-400">—</span>}
+                    </td>
+                    {isSuperadmin && (
+                      <td className="px-5 py-3.5 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => openEditModal(franchise)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+                            </svg>
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(franchise)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                            </svg>
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Row count footer */}
+            <div className="px-5 py-3 border-t border-slate-100 bg-slate-50">
+              <p className="text-xs text-slate-400">
+                {(franchisesTotal ?? franchises.length)}{' '}
+                {(franchisesTotal ?? franchises.length) === 1 ? 'franchise' : 'franchises'} total
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Modal */}
+      {isModalOpen && (
+        <FranchiseFormModal
+          franchise={modalFranchise}
+          onClose={closeModal}
+          onSave={handleSave}
+        />
+      )}
+    </>
+  );
+}

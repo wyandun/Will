@@ -1,0 +1,233 @@
+# SM Portal — Docker Compose
+# Manages all services for local development and production-equivalent environments.
+# Usage:
+#   Production-like:  docker compose up -d
+#   With Vite dev:    docker compose --profile dev up -d
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL 16
+  # Single instance with TWO databases:
+  #   sm_portal   → Laravel (main app)
+  #   sm_docuseal → DocuSeal (kept separate to avoid table name conflicts)
+  # Both DBs are created automatically via POSTGRES_MULTIPLE_DATABASES.
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: sm_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_MULTIPLE_DATABASES: ${DB_DATABASE},${DOCUSEAL_DB_DATABASE:-sm_docuseal}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init-multiple-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-dbs.sh:ro
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_DATABASE}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # Redis 7
+  # Used for Laravel cache, session, and queue driver.
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: sm_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # Backend — Laravel 12 / PHP 8.4-FPM
+  # Exposes port 9000 internally; Nginx proxies to it.
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: sm_backend
+    restart: unless-stopped
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      APP_KEY: ${APP_KEY}
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      QUEUE_CONNECTION: redis
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      DOCUSEAL_URL: ${DOCUSEAL_URL:-http://docuseal:3000}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    volumes:
+      # Persist uploaded files and generated PDFs between restarts
+      - ./backend/storage:/var/www/html/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # ---------------------------------------------------------------------------
+  # Nginx
+  # - Proxies /api/* and /sanctum/* to backend PHP-FPM on port 9000
+  # - Serves the React build from /var/www/frontend/dist for all other routes
+  # - Exposes port 80 (add 443 with a real certificate for production)
+  # ---------------------------------------------------------------------------
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: sm_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      # Laravel public directory (contains index.php + storage link)
+      - ./backend/public:/var/www/html/public:ro
+      # React production build output
+      - ./frontend/dist:/var/www/frontend/dist:ro
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  # ---------------------------------------------------------------------------
+  # Queue Worker
+  # Runs Laravel queue:work using the same image as the backend.
+  # Supervisor is NOT used here — Docker restart policy handles crashes.
+  # ---------------------------------------------------------------------------
+  queue:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: sm_queue
+    restart: unless-stopped
+    command: ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--max-time=3600"]
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      APP_KEY: ${APP_KEY}
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      QUEUE_CONNECTION: redis
+      CACHE_STORE: redis
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    volumes:
+      - ./backend/storage:/var/www/html/storage
+    depends_on:
+      - backend
+      - redis
+    networks:
+      - app-network
+
+  # ---------------------------------------------------------------------------
+  # DocuSeal — self-hosted e-signing
+  # Shares the same PostgreSQL instance as Laravel.
+  # DocuSeal creates its own tables under the public schema (or 'docuseal'
+  # if DATABASE_URL includes ?schema=docuseal — adjust as needed).
+  # ---------------------------------------------------------------------------
+  docuseal:
+    image: docuseal/docuseal:latest
+    container_name: sm_docuseal
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      SECRET_KEY_BASE: ${DOCUSEAL_SECRET_KEY_BASE}
+      DATABASE_URL: postgresql://${DB_USERNAME}:${DB_PASSWORD}@postgres:5432/${DOCUSEAL_DB_DATABASE:-sm_docuseal}
+    volumes:
+      - docuseal_data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # ---------------------------------------------------------------------------
+  # Adminer — lightweight DB web UI (development only)
+  # Access at http://localhost:8080
+  # System: PostgreSQL, Server: postgres, User/Pass/DB from .env
+  # ---------------------------------------------------------------------------
+  adminer:
+    image: adminer:latest
+    container_name: sm_adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+
+  # ---------------------------------------------------------------------------
+  # Frontend — Vite Dev Server (development only)
+  # Only starts when --profile dev is passed.
+  # Hot-reload is available at http://localhost:5173
+  # ---------------------------------------------------------------------------
+  frontend:
+    image: node:22-alpine
+    container_name: sm_frontend_dev
+    restart: unless-stopped
+    profiles:
+      - dev
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host"
+    environment:
+      # Point the frontend dev proxy to the backend via Nginx
+      VITE_API_URL: ${VITE_API_URL:-http://localhost/api}
+    volumes:
+      - ./frontend:/app
+      # Exclude host node_modules — container manages its own
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    networks:
+      - app-network
+
+# ---------------------------------------------------------------------------
+# Named Volumes
+# ---------------------------------------------------------------------------
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  docuseal_data:
+    driver: local
+
+# ---------------------------------------------------------------------------
+# Networks
+# ---------------------------------------------------------------------------
+networks:
+  app-network:
+    driver: bridge

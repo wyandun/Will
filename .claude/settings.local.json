@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(composer --version)",
+      "Bash(composer create-project:*)",
+      "Bash(composer require:*)",
+      "Bash(php artisan:*)",
+      "Bash(python project_charter_generator.py)",
+      "Bash(pip install:*)",
+      "Bash(python -m pip install python-docx)",
+      "Bash(\"C:\\\\Users\\\\cazad\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python311\\\\python.exe\" project_charter_generator.py)",
+      "Bash(python -c ':*)"
+    ]
+  }
+}

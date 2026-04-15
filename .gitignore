@@ -1,0 +1,39 @@
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Dependencies
+backend/vendor/
+frontend/node_modules/
+
+# Build output
+frontend/dist/
+
+# Laravel cache & logs
+backend/storage/logs/*.log
+backend/storage/framework/cache/
+backend/storage/framework/sessions/
+backend/storage/framework/views/
+backend/bootstrap/cache/*.php
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.suo
+*.user
+
+# Scripts and internal docs (not part of the project)
+linear_import.py
+project_charter_generator.py
+PROJECT_CHARTER_ACTUALIZADO.md
+PLAN_ARQUITECTURA.md
+DOCUMENTO_TECNICO.md
+Project_Charter_SM_Portal_v3.docx
+CLAUDE.md
+database/
+agentes/
