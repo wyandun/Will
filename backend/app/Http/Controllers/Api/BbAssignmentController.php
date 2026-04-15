@@ -20,15 +20,9 @@ class BbAssignmentController extends Controller
      */
     public function store(StoreBbAssignmentRequest $request): JsonResponse
     {
-        $user = $request->user();
+        $this->authorize('create', BbAssignment::class);
 
-        if (! $user->hasRole('superadmin') && ! $user->hasRole('admin_sm')) {
-            return response()->json([
-                'success' => false,
-                'data'    => null,
-                'message' => 'No tienes permiso para realizar esta acción.',
-            ], 403);
-        }
+        $user = $request->user();
 
         $assignment = $this->bbAssignmentService->assign($request->validated(), $user);
 
@@ -47,15 +41,7 @@ class BbAssignmentController extends Controller
      */
     public function destroy(BbAssignment $bbAssignment): JsonResponse
     {
-        $user = request()->user();
-
-        if (! $user->hasRole('superadmin') && ! $user->hasRole('admin_sm')) {
-            return response()->json([
-                'success' => false,
-                'data'    => null,
-                'message' => 'No tienes permiso para realizar esta acción.',
-            ], 403);
-        }
+        $this->authorize('delete', $bbAssignment);
 
         $this->bbAssignmentService->unassign($bbAssignment);
 

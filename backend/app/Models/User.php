@@ -47,6 +47,9 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password'          => 'hashed',
+            'sm_franchise_id'   => 'integer',
+            'company_id'        => 'integer',
+            'sub_franchise_id'  => 'integer',
         ];
     }
 

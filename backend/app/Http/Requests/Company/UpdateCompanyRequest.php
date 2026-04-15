@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Company;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class UpdateCompanyRequest extends FormRequest
 {
@@ -30,6 +31,27 @@ class UpdateCompanyRequest extends FormRequest
             'logo_path'       => ['sometimes', 'nullable', 'string', 'max:255'],
             'notes'           => ['sometimes', 'nullable', 'string'],
         ];
+    }
+
+    /**
+     * Enforce franchise scope: admin_sm cannot move a company to a different franchise.
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $user = $this->user();
+
+            if (
+                $user->hasRole('admin_sm')
+                && $this->has('sm_franchise_id')
+                && (int) $this->input('sm_franchise_id') !== (int) $user->sm_franchise_id
+            ) {
+                $validator->errors()->add(
+                    'sm_franchise_id',
+                    'Solo puedes asignar empresas dentro de tu franquicia.'
+                );
+            }
+        });
     }
 
     public function messages(): array

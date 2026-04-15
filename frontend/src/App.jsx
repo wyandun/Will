@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AuthenticatedLayout from './components/AuthenticatedLayout';
 import FranchisesPage from './pages/franchises/FranchisesPage';
 import CompaniesPage from './pages/companies/CompaniesPage';
+import { useAuthStore } from './store/authStore';
 
 // ─── Pages ───────────────────────────────────────────────────────────────────
 
@@ -34,6 +35,23 @@ function StubPage({ title }) {
   );
 }
 
+// ─── Role guard ───────────────────────────────────────────────────────────────
+
+const ADMIN_ROLES = ['superadmin', 'admin_sm'];
+
+/**
+ * Renders children only when the current user holds one of the allowed roles.
+ * Redirects to "/" otherwise, so unauthenticated direct URL access is blocked
+ * even if the sidebar hides the link.
+ */
+function RoleRoute({ roles, children }) {
+  const role = useAuthStore((s) => s.role);
+  if (!roles.includes(role)) {
+    return <Navigate to="/" replace />;
+  }
+  return children;
+}
+
 // ─── App ─────────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -52,9 +70,30 @@ export default function App() {
           }
         >
           <Route index element={<DashboardPage />} />
-          <Route path="/franchises"  element={<FranchisesPage />} />
-          <Route path="/companies"   element={<CompaniesPage />} />
-          <Route path="/users"       element={<StubPage title="Users & Permissions" />} />
+          <Route
+            path="/franchises"
+            element={
+              <RoleRoute roles={ADMIN_ROLES}>
+                <FranchisesPage />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/companies"
+            element={
+              <RoleRoute roles={ADMIN_ROLES}>
+                <CompaniesPage />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/users"
+            element={
+              <RoleRoute roles={ADMIN_ROLES}>
+                <StubPage title="Users & Permissions" />
+              </RoleRoute>
+            }
+          />
           <Route path="/feed"        element={<StubPage title="Feed" />} />
           <Route path="/contracts"   element={<StubPage title="Contracts" />} />
           <Route path="/repository"  element={<StubPage title="Document Repository" />} />

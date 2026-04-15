@@ -25,7 +25,8 @@ const EMPTY_FORM = {
  */
 export default function CompanyFormModal({ company, onClose, onSave }) {
   const isEditing = company !== null;
-  const { role, user } = useAuthStore();
+  const role = useAuthStore((s) => s.role);
+  const user = useAuthStore((s) => s.user);
   const isAdminSm = role === 'admin_sm';
 
   const [form, setForm] = useState(EMPTY_FORM);
@@ -41,7 +42,7 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
     setFranchisesLoading(true);
     franchisesApi
       .getFranchises()
-      .then((data) => setFranchises(Array.isArray(data) ? data : []))
+      .then(({ data }) => setFranchises(Array.isArray(data) ? data : []))
       .catch(() => setFranchises([]))
       .finally(() => setFranchisesLoading(false));
   }, []);

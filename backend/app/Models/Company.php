@@ -62,6 +62,24 @@ class Company extends Model
     }
 
     /**
+     * The franquiciadora process map (SM franchise operations view).
+     * Created automatically on Close Deal alongside the franquiciada map.
+     */
+    public function franquiciadoraMap(): HasOne
+    {
+        return $this->hasOne(ProcessMap::class)->where('type', 'franquiciadora');
+    }
+
+    /**
+     * The franquiciada process map (SB / sub-franchise operations view).
+     * Sub-franchise owners access their parent company through this map.
+     */
+    public function franquiciadaMap(): HasOne
+    {
+        return $this->hasOne(ProcessMap::class)->where('type', 'franquiciada');
+    }
+
+    /**
      * The Business Bishop assignment for this company (at most one).
      * A company can only have one active BB sponsor.
      */

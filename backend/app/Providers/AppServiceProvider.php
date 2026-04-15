@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\BbAssignment;
 use App\Models\Company;
 use App\Models\Franchise;
+use App\Policies\BbAssignmentPolicy;
 use App\Policies\CompanyPolicy;
 use App\Policies\FranchisePolicy;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -27,6 +29,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::policy(BbAssignment::class, BbAssignmentPolicy::class);
         Gate::policy(Franchise::class, FranchisePolicy::class);
         Gate::policy(Company::class, CompanyPolicy::class);
 
