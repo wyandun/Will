@@ -8,6 +8,7 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class DatabaseSeeder extends Seeder
 {
@@ -35,12 +36,22 @@ class DatabaseSeeder extends Seeder
 
     /**
      * Create the default superadmin account used for initial access.
-     * Credentials are read from .env (SUPERADMIN_EMAIL / SUPERADMIN_PASSWORD)
-     * or fall back to safe defaults suitable only for local dev.
+     * Credentials are read from environment variables (SUPERADMIN_EMAIL /
+     * SUPERADMIN_PASSWORD) with safe local-dev fallbacks.
+     *
+     * This method is fully idempotent — safe to run on every deploy.
+     * If the superadmin already exists it is updated, not duplicated.
+     * A stale Spatie permission cache is flushed before any role operation
+     * to prevent RoleDoesNotExist exceptions on re-deploys.
      */
     private function createSuperAdmin(): void
     {
-        // Ensure the Spatie role exists before assigning it.
+        // Flush Spatie's in-memory and cache-store permission registry.
+        // Required on re-deploys where Redis may hold a stale snapshot of
+        // the roles table taken before the current migration run.
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
+
+        // Ensure the role row exists before any assignment attempt.
         Role::firstOrCreate(['name' => 'superadmin', 'guard_name' => 'web']);
 
         $email    = env('SUPERADMIN_EMAIL', 'admin@smportal.com');
@@ -54,7 +65,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // Assign Spatie role (idempotent — syncRoles replaces any previous role).
+        // syncRoles is idempotent — replaces whatever role the user had before.
         $user->syncRoles(['superadmin']);
 
         // Grant full read + write access to every module.
