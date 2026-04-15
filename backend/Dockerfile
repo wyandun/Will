@@ -98,9 +98,28 @@ CMD ["php-fpm"]
 # Stage 3: railway
 # HTTP server for Railway deployment.
 # Uses PHP built-in server — suitable for shared dev environment.
+#
+# Notes:
+#   - ENTRYPOINT is reset to avoid inheriting the permission-fix script from
+#     the production stage (Railway may run as non-root and chown would fail).
+#   - The Laravel router file is copied to the workdir so the built-in server
+#     can emulate mod_rewrite (serves public/index.php for every route).
+#   - PORT is injected by Railway at runtime; default 8080 is the fallback.
 # ---------------------------------------------------------------------------
 FROM production AS railway
 
+# Copy Laravel's built-in dev-server router to the workdir so it is
+# reachable as ./server.php at runtime.
+RUN cp vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php server.php
+
+# Drop the production entrypoint — Railway does not need the permission fix
+# and running chown as a potentially non-root user would abort the container.
+ENTRYPOINT []
+
 EXPOSE 8080
 
-CMD ["sh", "-c", "php artisan migrate --force && php artisan config:cache && php artisan route:cache && php -S 0.0.0.0:${PORT:-8080} -t public"]
+# Startup sequence:
+#   1. Run pending migrations (--force skips the production confirmation prompt)
+#   2. Cache config and routes for faster boot
+#   3. Start the built-in PHP server rooted at public/ using the Laravel router
+CMD ["sh", "-c", "php artisan migrate --force && php artisan config:cache && php artisan route:cache && php -S 0.0.0.0:${PORT:-8080} -t public server.php"]

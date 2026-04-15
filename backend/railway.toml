@@ -1,0 +1,17 @@
+# railway.toml — SM Portal backend
+# Railway deployment configuration.
+# Docs: https://docs.railway.com/reference/config-as-code
+
+[build]
+# Use the Dockerfile in this directory.
+# The "railway" stage is a PHP built-in server — suitable for shared dev.
+dockerfilePath = "Dockerfile"
+dockerBuildTarget = "railway"
+
+[deploy]
+# Railway injects $PORT at runtime. The CMD in the railway stage reads it.
+# healthcheckPath must return 2xx — Laravel's default / route does this.
+healthcheckPath = "/up"
+healthcheckTimeout = 60
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
