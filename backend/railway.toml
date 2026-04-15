@@ -10,8 +10,8 @@ dockerBuildTarget = "railway"
 
 [deploy]
 # Railway injects $PORT at runtime. The CMD in the railway stage reads it.
-# healthcheckPath must return 2xx — Laravel's default / route does this.
-healthcheckPath = "/up"
-healthcheckTimeout = 60
+# Do NOT define PORT manually in Railway variables — let Railway inject it.
+healthcheckPath = "/api/ping"
+healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3

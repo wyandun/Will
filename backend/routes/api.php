@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\FranchiseController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/ping', fn() => response()->json(['status' => 'ok']));
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
