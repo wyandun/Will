@@ -93,3 +93,14 @@ EXPOSE 9000
 
 ENTRYPOINT ["entrypoint.sh"]
 CMD ["php-fpm"]
+
+# ---------------------------------------------------------------------------
+# Stage 3: railway
+# HTTP server for Railway deployment.
+# Uses PHP built-in server — suitable for shared dev environment.
+# ---------------------------------------------------------------------------
+FROM production AS railway
+
+EXPOSE 8080
+
+CMD ["sh", "-c", "php artisan migrate --force && php artisan config:cache && php artisan route:cache && php -S 0.0.0.0:${PORT:-8080} -t public"]
