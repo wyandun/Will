@@ -122,4 +122,4 @@ EXPOSE 8080
 #   1. Run pending migrations (--force skips the production confirmation prompt)
 #   2. Cache config and routes for faster boot
 #   3. Start the built-in PHP server rooted at public/ using the Laravel router
-CMD ["sh", "-c", "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=${PORT:-8080}"]
+CMD ["sh", "-c", "php artisan migrate --force; php artisan serve --host=0.0.0.0 --port=${PORT:-8080}"]
