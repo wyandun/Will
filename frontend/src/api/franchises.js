@@ -6,10 +6,7 @@ export const franchisesApi = {
    * Superadmin sees all; admin_sm sees only their own.
    */
   getFranchises: () =>
-    apiClient.get('/franchises').then((res) => ({
-      data: res.data.data,
-      meta: res.data.meta,
-    })),
+    apiClient.get('/franchises').then((res) => res.data.data),
 
   /**
    * Create a new franchise.
