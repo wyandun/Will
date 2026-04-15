@@ -12,7 +12,7 @@ dockerBuildTarget = "railway"
 # PORT=8080 is set here so Railway's edge proxy and the PHP server agree on
 # the same port. Railway injects PORT at runtime but uses the EXPOSE hint to
 # know which port to forward to — pinning it here removes the ambiguity.
-startCommand = "php artisan migrate --force && php -S 0.0.0.0:8080 -t public"
+startCommand = "php artisan migrate --force && php artisan db:seed --force && php -S 0.0.0.0:8080 -t public"
 healthcheckPath = "/api/v1/ping"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
