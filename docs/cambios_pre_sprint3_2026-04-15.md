@@ -18,10 +18,10 @@ Los cambios se agrupan en tres áreas: el servidor (backend), la interfaz de usu
 
 ## Resumen Ejecutivo
 
-Se corrigieron **12 puntos** identificados durante la revisión interna de calidad:
+Se corrigieron **20 puntos** identificados durante la revisión interna de calidad:
 
-- 3 correcciones de seguridad y permisos de acceso (servidor)
-- 3 correcciones de interfaz y experiencia de usuario (frontend)
+- 7 correcciones de seguridad y permisos de acceso (servidor)
+- 6 correcciones de interfaz y experiencia de usuario (frontend)
 - 6 mejoras en la estructura y consistencia de la base de datos
 
 Ningún cambio altera la funcionalidad visible para el usuario final. Todos los ajustes son preventivos o correctivos sobre comportamientos que podrían haber generado errores en el Sprint 3.
@@ -193,6 +193,105 @@ Para que el sistema pueda acceder a estos mapas de forma eficiente y consistente
 
 **Qué problema resolvía:**
 Sin estas relaciones definidas, acceder a los mapas de una empresa requería escribir consultas personalizadas en cada lugar del código donde se necesitaran, aumentando el riesgo de errores y duplicación de lógica.
+
+---
+
+## Area 1 (continuación): Servidor (Backend)
+
+### Cambio 13 — Restricción de alcance al asignar un Business Bishop
+
+**Qué se cambió:**
+Se agregó una verificación que impide que un administrador de franquicia (`admin_sm`) pueda asignar un Business Bishop a una empresa que no pertenece a su franquicia.
+
+**Por qué se cambió:**
+El documento de negocio establece que el BB es el "patrocinador inversor" de una empresa específica dentro de una franquicia. La jerarquía es: Strategic Mates → Franquicia → Empresa → BB. Un administrador de una franquicia no tiene autoridad sobre empresas de otra franquicia. Sin esta validación, era posible realizar asignaciones cruzadas entre franquicias.
+
+**Qué problema resolvía:**
+Un `admin_sm` podía asignar un BB a una empresa de otra franquicia, rompiendo la jerarquía del sistema.
+
+---
+
+### Cambio 14 — Corrección de comparaciones de franquicia en permisos de empresa
+
+**Qué se cambió:**
+Se aplicó conversión explícita a número entero en todas las comparaciones de ID de franquicia dentro de los permisos de ver, editar y eliminar empresas.
+
+**Por qué se cambió:**
+Misma causa raíz que el Cambio 3. La política de empresas comparaba identificadores sin garantizar que ambos lados sean del mismo tipo, lo que podía hacer que un administrador con los permisos correctos fuera rechazado por error.
+
+**Qué problema resolvía:**
+Posibles falsos negativos en controles de acceso: un `admin_sm` legítimo podría recibir un error de acceso denegado sobre empresas que sí le corresponden.
+
+---
+
+### Cambio 15 — Creación automática de mapas de proceso al registrar empresa
+
+**Qué se cambió:**
+El proceso estándar de creación de empresa ahora también crea automáticamente los dos mapas de proceso obligatorios, dentro de una transacción que garantiza que si algo falla, la empresa tampoco se crea.
+
+**Por qué se cambió:**
+El documento de negocio establece explícitamente:
+
+> "Cada empresa tiene exactamente 2 mapas de procesos: uno de tipo 'franquiciadora' y uno de tipo 'franquiciada'. Ambos son creados automáticamente cuando se registra la empresa."
+
+Antes de este cambio, esa regla solo se cumplía cuando se usaba el flujo de Close Deal, pero no al crear una empresa por la vía directa.
+
+**Qué problema resolvía:**
+Era posible crear empresas sin sus mapas de proceso, violando una regla de negocio crítica del sistema.
+
+---
+
+### Cambio 16 — Corrección del manejo de sesiones al iniciar sesión
+
+**Qué se cambió:**
+Se eliminó una instrucción que borraba todas las sesiones activas del usuario al momento de iniciar sesión desde un nuevo dispositivo o pestaña.
+
+**Por qué se cambió:**
+Si un usuario tiene el portal abierto en dos pestañas y inicia sesión desde una tercera, las dos sesiones anteriores quedaban inválidas de forma silenciosa. El usuario vería errores de acceso en las pestañas anteriores sin entender por qué.
+
+**Qué problema resolvía:**
+Cierres de sesión silenciosos e inesperados al usar el portal en múltiples pestañas o dispositivos simultáneamente.
+
+---
+
+## Area 2 (continuación): Interfaz de Usuario (Frontend)
+
+### Cambio 17 — Campos opcionales de empresa ahora pueden borrarse
+
+**Qué se cambió:**
+Al editar una empresa, los campos opcionales que el usuario deja en blanco (teléfono, industria, correo, ciudad, estado, país, dirección, notas) ahora se envían correctamente al servidor, permitiendo eliminar información previamente guardada. Además, los campos de ciudad, correo y notas fueron habilitados para guardarse correctamente en la base de datos.
+
+**Por qué se cambió:**
+Antes, si el usuario borraba el teléfono de una empresa y guardaba los cambios, el sistema ignoraba el campo vacío y mantenía el valor anterior. Esto hacía imposible corregir información ingresada por error.
+
+**Qué problema resolvía:**
+Información incorrecta en una empresa que no podía ser eliminada por el usuario.
+
+---
+
+### Cambio 18 — Protección al editar el tipo de franquicia
+
+**Qué se cambió:**
+Al editar una franquicia existente, ya no se envía el campo de tipo al servidor. Antes, el formulario siempre enviaba el tipo `sm` sin importar si se estaba creando o editando una franquicia.
+
+**Por qué se cambió:**
+El sistema maneja dos tipos de franquicia: `sm` (franquicias de Strategic Mates) y `sub` (sub-franquicias abiertas por empresas clientes). Si un administrador editaba cualquier campo de una franquicia existente, el tipo podía ser sobreescrito a `sm` inadvertidamente.
+
+**Qué problema resolvía:**
+Posible cambio accidental del tipo de franquicia al realizar cualquier edición, afectando los permisos y la jerarquía del sistema.
+
+---
+
+### Cambio 19 — Documentación de dependencia de seguridad en rutas protegidas
+
+**Qué se cambió:**
+Se agregó documentación interna al componente de rutas protegidas indicando que este solo verifica el estado local (si el usuario está marcado como autenticado en el dispositivo) y que debe usarse siempre junto con el componente de diseño autenticado, que realiza la verificación real contra el servidor.
+
+**Por qué se cambió:**
+Sin esta aclaración, un desarrollador futuro podría usar el componente de ruta protegida de forma aislada, creyendo que ofrece protección completa, cuando en realidad la verificación contra el servidor la provee otro componente.
+
+**Qué problema resolvía:**
+Riesgo de que usuarios con sesiones revocadas en el servidor pudieran acceder a rutas protegidas si el componente se utilizara de forma incorrecta en el futuro.
 
 ---
 
