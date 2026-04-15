@@ -100,19 +100,33 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
       return;
     }
 
-    // Build clean payload — only include non-empty optional fields
+    // Build payload. When editing, always include optional fields so the
+    // backend (which uses `sometimes` rules) can clear them when the user
+    // removes a value. When creating, omit empty fields entirely.
     const payload = {
       name: form.name.trim(),
       sm_franchise_id: Number(form.sm_franchise_id),
     };
-    if (form.industry.trim()) payload.industry = form.industry.trim();
-    if (form.phone.trim()) payload.phone = form.phone.trim();
-    if (form.email.trim()) payload.email = form.email.trim();
-    if (form.city.trim()) payload.city = form.city.trim();
-    if (form.state.trim()) payload.state = form.state.trim();
-    if (form.country.trim()) payload.country = form.country.trim();
-    if (form.address.trim()) payload.address = form.address.trim();
-    if (form.notes.trim()) payload.notes = form.notes.trim();
+
+    if (isEditing) {
+      payload.industry = form.industry.trim() || null;
+      payload.phone    = form.phone.trim()    || null;
+      payload.email    = form.email.trim()    || null;
+      payload.city     = form.city.trim()     || null;
+      payload.state    = form.state.trim()    || null;
+      payload.country  = form.country.trim()  || null;
+      payload.address  = form.address.trim()  || null;
+      payload.notes    = form.notes.trim()    || null;
+    } else {
+      if (form.industry.trim()) payload.industry = form.industry.trim();
+      if (form.phone.trim())    payload.phone    = form.phone.trim();
+      if (form.email.trim())    payload.email    = form.email.trim();
+      if (form.city.trim())     payload.city     = form.city.trim();
+      if (form.state.trim())    payload.state    = form.state.trim();
+      if (form.country.trim())  payload.country  = form.country.trim();
+      if (form.address.trim())  payload.address  = form.address.trim();
+      if (form.notes.trim())    payload.notes    = form.notes.trim();
+    }
 
     setIsSubmitting(true);
     try {

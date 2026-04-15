@@ -31,9 +31,9 @@ class AuthService
         /** @var User $user */
         $user = Auth::user();
 
-        // Revoke previous tokens so each session starts clean.
-        $user->tokens()->delete();
-
+        // Multi-session is intentionally allowed: revoking all tokens here would
+        // silently log out other open tabs or devices. Token revocation is handled
+        // explicitly in logout() instead.
         $token = $user->createToken('auth_token')->plainTextToken;
 
         // Load module permissions from user_permissions table.

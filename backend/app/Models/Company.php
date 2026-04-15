@@ -20,6 +20,7 @@ class Company extends Model
     protected $fillable = [
         'name',
         'industry',
+        'city',
         'state',
         'country',
         'sm_franchise_id',
@@ -29,7 +30,9 @@ class Company extends Model
         'logo_path',
         'address',
         'phone',
+        'email',
         'website',
+        'notes',
     ];
 
     // ---------------------------------------------------------------------------

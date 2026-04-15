@@ -65,8 +65,9 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
       return;
     }
 
-    // Build clean payload — type is always "sm" from this screen
-    const payload = { name: form.name.trim(), type: 'sm' };
+    // Build clean payload — type is only sent on create (immutable after creation)
+    const payload = { name: form.name.trim() };
+    if (!isEditing) payload.type = 'sm';
     if (form.region.trim()) payload.region = form.region.trim();
     if (form.address.trim()) payload.address = form.address.trim();
     if (form.phone.trim()) payload.phone = form.phone.trim();

@@ -26,7 +26,7 @@ class CompanyPolicy
         }
 
         return $user->hasRole('admin_sm')
-            && $user->sm_franchise_id === $company->sm_franchise_id;
+            && (int) $user->sm_franchise_id === (int) $company->sm_franchise_id;
     }
 
     /**
@@ -47,7 +47,7 @@ class CompanyPolicy
         }
 
         return $user->hasRole('admin_sm')
-            && $user->sm_franchise_id === $company->sm_franchise_id;
+            && (int) $user->sm_franchise_id === (int) $company->sm_franchise_id;
     }
 
     /**
@@ -60,6 +60,6 @@ class CompanyPolicy
         }
 
         return $user->hasRole('admin_sm')
-            && $user->sm_franchise_id === $company->sm_franchise_id;
+            && (int) $user->sm_franchise_id === (int) $company->sm_franchise_id;
     }
 }

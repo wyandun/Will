@@ -41,6 +41,30 @@ class StoreBbAssignmentRequest extends FormRequest
         ];
     }
 
+    /**
+     * Enforce franchise scope: admin_sm cannot assign a BB to a company
+     * that belongs to a different SM franchise.
+     */
+    public function withValidator(\Illuminate\Contracts\Validation\Validator $validator): void
+    {
+        $validator->after(function ($validator): void {
+            $user = $this->user();
+
+            if (! $user->hasRole('admin_sm')) {
+                return;
+            }
+
+            $company = \App\Models\Company::find($this->input('company_id'));
+
+            if ($company && (int) $user->sm_franchise_id !== (int) $company->sm_franchise_id) {
+                $validator->errors()->add(
+                    'company_id',
+                    'Solo puedes asignar un BB a empresas dentro de tu franquicia.'
+                );
+            }
+        });
+    }
+
     public function messages(): array
     {
         return [

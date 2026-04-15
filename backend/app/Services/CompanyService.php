@@ -30,13 +30,36 @@ class CompanyService
     }
 
     /**
-     * Create a new company record.
+     * Create a new company record and its two required BPMN process maps
+     * inside a single DB transaction.
+     *
+     * CRITICAL BUSINESS RULE: every company must have exactly two process maps:
+     *   - type='franquiciadora'
+     *   - type='franquiciada'
      *
      * @param  array<string, mixed>  $data
      */
     public function create(array $data): Company
     {
-        $company = Company::create($data);
+        $company = DB::transaction(function () use ($data): Company {
+            $company = Company::create($data);
+
+            ProcessMap::create([
+                'company_id' => $company->id,
+                'type'       => 'franquiciadora',
+                'name_es'    => 'Mapa Franquiciadora',
+                'name_en'    => 'Franchisor Map',
+            ]);
+
+            ProcessMap::create([
+                'company_id' => $company->id,
+                'type'       => 'franquiciada',
+                'name_es'    => 'Mapa Franquiciada',
+                'name_en'    => 'Franchisee Map',
+            ]);
+
+            return $company;
+        });
 
         Log::info('Company created', [
             'company_id' => $company->id,
