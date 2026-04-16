@@ -1,0 +1,708 @@
+// ============================================================
+// SM Portal — Database Schema v4
+// Generated from Laravel migrations
+// dbdiagram.io DBML format
+// ============================================================
+
+// ============================================================
+// GROUP: Auth
+// ============================================================
+
+Table users {
+  id bigint [pk, increment]
+  name varchar
+  email varchar [unique]
+  password varchar
+  email_verified_at timestamp [null]
+  sm_franchise_id bigint [null, note: "FK → franchises; set for admin_sm role"]
+  company_id bigint [null, note: "FK → companies; set for sb_owner / sb_employee"]
+  sub_franchise_id bigint [null, note: "FK → franchises; set for sub_franchise roles"]
+  avatar_path varchar [null]
+  job_title varchar [null]
+  phone varchar(30) [null]
+  bio text [null]
+  remember_token varchar [null]
+  deleted_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table personal_access_tokens {
+  id bigint [pk, increment]
+  tokenable_type varchar [note: "Polymorphic type"]
+  tokenable_id bigint [note: "Polymorphic ID"]
+  name text
+  token varchar(64) [unique]
+  abilities text [null]
+  last_used_at timestamp [null]
+  expires_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table permissions {
+  id bigint [pk, increment]
+  name varchar [note: "Spatie permission name"]
+  guard_name varchar
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (name, guard_name) [unique]
+  }
+}
+
+Table roles {
+  id bigint [pk, increment]
+  name varchar [note: "superadmin | admin_sm | sb_owner | sb_employee | bb | sub_franchise_owner | sub_franchise_admin"]
+  guard_name varchar
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (name, guard_name) [unique]
+  }
+}
+
+Table model_has_permissions {
+  permission_id bigint [note: "FK → permissions"]
+  model_type varchar
+  model_id bigint
+}
+
+Table model_has_roles {
+  role_id bigint [note: "FK → roles"]
+  model_type varchar
+  model_id bigint
+}
+
+Table role_has_permissions {
+  permission_id bigint [note: "FK → permissions"]
+  role_id bigint [note: "FK → roles"]
+}
+
+// ============================================================
+// GROUP: Franchises
+// ============================================================
+
+Table franchises {
+  id bigint [pk, increment]
+  name varchar
+  type varchar(10) [note: "sm | sub"]
+  parent_company_id bigint [null, note: "FK → companies; null for SM franchises"]
+  owner_user_id bigint [null, note: "FK → users"]
+  region varchar [null]
+  address varchar [null]
+  phone varchar(30) [null]
+  deleted_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ============================================================
+// GROUP: Companies
+// ============================================================
+
+Table companies {
+  id bigint [pk, increment]
+  name varchar
+  industry varchar [null]
+  state varchar(50) [null]
+  city varchar(100) [null]
+  country varchar(50) [default: "USA"]
+  sm_franchise_id bigint [note: "FK → franchises; which SM franchise manages this SB"]
+  employees_count int [null]
+  annual_revenue decimal(15,2) [null]
+  years_operating smallint [null]
+  logo_path varchar [null]
+  address varchar [null]
+  phone varchar(30) [null]
+  email varchar [null]
+  website varchar [null]
+  notes text [null]
+  deleted_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table bb_assignments {
+  id bigint [pk, increment]
+  bb_user_id bigint [note: "FK → users; the BB who sponsors this company"]
+  company_id bigint [unique, note: "FK → companies; one BB per company"]
+  assigned_at timestamp
+  assigned_by bigint [note: "FK → users; the admin who made the assignment"]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table user_permissions {
+  id bigint [pk, increment]
+  user_id bigint [note: "FK → users"]
+  module varchar(30) [note: "feed | contracts | repository | processes | accounting | inventory | tracking | catalog | calendar"]
+  can_read boolean [default: false]
+  can_write boolean [default: false]
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (user_id, module) [unique]
+  }
+}
+
+// ============================================================
+// GROUP: Assessments
+// ============================================================
+
+Table assessment_contacts {
+  id bigint [pk, increment]
+  type varchar(30) [note: "sb_assessment_1 | sb_assessment_2 | bb_application"]
+  data jsonb [note: "All form answers stored as JSONB"]
+  score decimal(5,2) [null, note: "Overall score for Assessment 1"]
+  score_breakdown jsonb [null, note: "Per-dimension scores {A: x, B: x, ...}"]
+  status varchar(20) [default: "pending", note: "pending | reviewed | approved | rejected | converted"]
+  converted_company_id bigint [null, note: "FK → companies; set when Close Deal is executed"]
+  reviewed_by bigint [null, note: "FK → users"]
+  reviewed_at timestamp [null]
+  decision_id bigint [null, note: "FK → assessment_decisions"]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table assessment_decisions {
+  id bigint [pk, increment]
+  code varchar(60) [unique, note: "Machine-readable key e.g. approved_with_conditions"]
+  label_es varchar
+  label_en varchar
+  is_active boolean [default: true]
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ============================================================
+// GROUP: Feed
+// ============================================================
+
+Table posts {
+  id bigint [pk, increment]
+  author_id bigint [note: "FK → users"]
+  franchise_id bigint [null, note: "FK → franchises; null = global post"]
+  title varchar
+  body text
+  type varchar(20) [note: "announcement | news | training | alert"]
+  visibility varchar(20) [note: "global | franchise | company"]
+  is_pinned boolean [default: false]
+  file_path varchar [null]
+  file_type varchar(50) [null, note: "MIME type"]
+  file_name varchar [null]
+  scheduled_at timestamp [null]
+  deleted_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table post_interactions {
+  id bigint [pk, increment]
+  post_id bigint [note: "FK → posts"]
+  user_id bigint [note: "FK → users"]
+  type varchar(20) [note: "like | comment | share"]
+  content text [null, note: "Only populated for type=comment"]
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (post_id, user_id) [note: "Partial unique index WHERE type = like (enforced via raw SQL)"]
+  }
+}
+
+// ============================================================
+// GROUP: Contracts
+// ============================================================
+
+Table contracts {
+  id bigint [pk, increment]
+  company_id bigint [note: "FK → companies"]
+  title varchar
+  description text [null]
+  status varchar(20) [default: "draft", note: "draft | sent | signed | expired | cancelled"]
+  docuseal_template_id varchar [null]
+  docuseal_submission_id varchar [null]
+  elaborated_by bigint [null, note: "FK → users; consultant who drafted"]
+  reviewed_by bigint [null, note: "FK → users; reviewer"]
+  approved_by bigint [null, note: "FK → users; final approver"]
+  signed_document_url varchar [null, note: "Replaces legacy onedrive_url"]
+  signed_at timestamp [null]
+  deleted_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ============================================================
+// GROUP: Repository
+// ============================================================
+
+Table repositories {
+  id bigint [pk, increment]
+  company_id bigint [note: "FK → companies"]
+  sub_franchise_id bigint [null, note: "FK → franchises; null = company-level repository"]
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (company_id) [note: "Partial unique index WHERE sub_franchise_id IS NULL (enforced via raw SQL)"]
+  }
+}
+
+Table repository_documents {
+  id bigint [pk, increment]
+  repository_id bigint [note: "FK → repositories"]
+  section varchar(20) [note: "setup | process"]
+  category varchar(30) [note: "legal | hr | certificates | marketing | sops | process_linked"]
+  process_code varchar(30) [null, note: "Loose ref e.g. GTH-P01; not a FK — used when category=process_linked"]
+  title varchar
+  description text [null]
+  file_path varchar
+  file_type varchar(50) [note: "MIME type"]
+  file_size bigint [note: "bytes"]
+  uploaded_by bigint [note: "FK → users"]
+  uploaded_by_type varchar(10) [note: "sm | client"]
+  version smallint [default: 1]
+  parent_id bigint [null, note: "FK → repository_documents; self-referential for version chain"]
+  is_current boolean [default: true]
+  deleted_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ============================================================
+// GROUP: Processes
+// ============================================================
+
+Table process_maps {
+  id bigint [pk, increment]
+  company_id bigint [note: "FK → companies"]
+  type varchar(20) [note: "franquiciadora | franquiciada"]
+  name_es varchar
+  name_en varchar
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (company_id, type) [unique, note: "Enforces exactly 2 maps per company at DB level"]
+  }
+}
+
+Table process_categories {
+  id bigint [pk, increment]
+  process_map_id bigint [note: "FK → process_maps"]
+  type varchar(20) [note: "strategic | value_chain | support"]
+  name_es varchar
+  name_en varchar
+  order_index smallint [default: 0]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table processes {
+  id bigint [pk, increment]
+  category_id bigint [note: "FK → process_categories"]
+  code varchar(20) [note: "Short code e.g. GTH, SC, MKT"]
+  name_es varchar
+  name_en varchar
+  order_index smallint [default: 0]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table sub_processes {
+  id bigint [pk, increment]
+  process_id bigint [note: "FK → processes"]
+  code varchar(30) [note: "e.g. GTH-P01"]
+  name_es varchar
+  name_en varchar
+  bpmn_xml_es text [null, note: "BPMN diagram in Spanish"]
+  bpmn_xml_en text [null, note: "BPMN diagram in English — AI-translated"]
+  order_index smallint [default: 0]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table process_documents {
+  id bigint [pk, increment]
+  sub_process_id bigint [note: "FK → sub_processes"]
+  code varchar(40) [note: "e.g. GTH-P01-FOR-01"]
+  type varchar(20) [note: "manual | form | record | policy | certificate"]
+  title_es varchar
+  title_en varchar
+  description text [null]
+  file_url varchar [null, note: "Replaces legacy onedrive_url"]
+  version smallint [default: 1]
+  parent_id bigint [null, note: "FK → process_documents; self-referential for version chain"]
+  is_current boolean [default: true]
+  uploaded_by bigint [null, note: "FK → users"]
+  deleted_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ============================================================
+// GROUP: Accounting
+// ============================================================
+
+Table chart_of_accounts {
+  id bigint [pk, increment]
+  company_id bigint [note: "FK → companies"]
+  code varchar(20) [note: "Hierarchical account code e.g. 1, 1.1, 1.1.1"]
+  name varchar
+  type varchar(20) [note: "asset | liability | equity | revenue | expense"]
+  parent_id bigint [null, note: "FK → chart_of_accounts; self-referential hierarchy"]
+  is_system boolean [default: false, note: "True = seeded by SM, cannot be deleted"]
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (company_id, code) [unique]
+  }
+}
+
+Table financial_documents {
+  id bigint [pk, increment]
+  company_id bigint [note: "FK → companies"]
+  type varchar(20) [note: "bank_statement | invoice | receipt"]
+  file_path varchar
+  file_type varchar(50) [note: "MIME type"]
+  original_filename varchar
+  processed_at timestamp [null]
+  processing_status varchar(20) [default: "pending", note: "pending | processing | completed | failed"]
+  uploaded_by bigint [note: "FK → users"]
+  deleted_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table journal_entries {
+  id bigint [pk, increment]
+  company_id bigint [note: "FK → companies"]
+  financial_document_id bigint [null, note: "FK → financial_documents; null for manual entries"]
+  description text
+  date date
+  status varchar(20) [default: "pending_review", note: "pending_review | approved | rejected"]
+  ai_confidence decimal(3,2) [null, note: "< 0.70 requires manual review before approval"]
+  created_by bigint [note: "FK → users"]
+  approved_by bigint [null, note: "FK → users"]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table journal_entry_lines {
+  id bigint [pk, increment]
+  journal_entry_id bigint [note: "FK → journal_entries"]
+  account_id bigint [note: "FK → chart_of_accounts"]
+  type varchar(10) [note: "debit | credit"]
+  amount decimal(15,2)
+  description varchar [null]
+
+  note: "No timestamps — lines are atomic with their parent entry"
+}
+
+Table bank_transactions {
+  id bigint [pk, increment]
+  company_id bigint [note: "FK → companies"]
+  financial_document_id bigint [note: "FK → financial_documents"]
+  date date
+  description varchar
+  amount decimal(15,2)
+  type varchar(10) [note: "debit | credit"]
+  matched_journal_entry_id bigint [null, note: "FK → journal_entries; replaces legacy transaction_matches table"]
+  match_confidence decimal(3,2) [null, note: "AI confidence 0.00–1.00; null if unmatched"]
+  match_status varchar(20) [default: "unmatched", note: "unmatched | matched | ignored"]
+  matched_at timestamp [null]
+  matched_by bigint [null, note: "FK → users; null for AI matches"]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table pos_connections {
+  id bigint [pk, increment]
+  company_id bigint [note: "FK → companies"]
+  provider varchar(30) [note: "square | stripe | shopify | clover | woocommerce"]
+  access_token text [null, note: "Encrypted at rest via Laravel model cast"]
+  refresh_token text [null, note: "Encrypted at rest via Laravel model cast"]
+  expires_at timestamp [null]
+  is_active boolean [default: true]
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ============================================================
+// GROUP: Inventory
+// ============================================================
+
+Table inventory_items {
+  id bigint [pk, increment]
+  company_id bigint [note: "FK → companies"]
+  sub_franchise_id bigint [null, note: "FK → franchises; null = company-level stock"]
+  sku varchar(60) [null]
+  name varchar
+  description text [null]
+  unit varchar(20) [note: "unit | kg | liter | box | hour | meter | other"]
+  cost_price decimal(15,2) [default: 0]
+  sell_price decimal(15,2) [default: 0]
+  current_stock decimal(10,2) [default: 0]
+  min_stock decimal(10,2) [default: 0, note: "Alert threshold for low-stock notifications"]
+  account_id bigint [null, note: "FK → chart_of_accounts; for automatic journal entry generation"]
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (company_id, sku) [unique]
+  }
+}
+
+Table inventory_movements {
+  id bigint [pk, increment]
+  item_id bigint [note: "FK → inventory_items"]
+  type varchar(20) [note: "in | out | adjustment"]
+  quantity decimal(10,2)
+  unit_cost decimal(15,2) [null, note: "Cost per unit at time of movement"]
+  journal_entry_id bigint [null, note: "FK → journal_entries; auto-generated GL entry"]
+  notes text [null]
+  created_by bigint [note: "FK → users"]
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ============================================================
+// GROUP: Catalog & Tracking
+// ============================================================
+
+Table catalog_items {
+  id bigint [pk, increment]
+  level varchar(20) [note: "bundle | service | deliverable"]
+  parent_id bigint [null, note: "FK → catalog_items; null for bundles; bundle.id for services; service.id for deliverables"]
+  name_es varchar
+  name_en varchar
+  description_es text [null]
+  description_en text [null]
+  is_monthly boolean [default: false, note: "True for deliverables that repeat every month"]
+  order_index smallint [default: 0]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table client_trackings {
+  id bigint [pk, increment]
+  company_id bigint [note: "FK → companies"]
+  catalog_item_id bigint [note: "FK → catalog_items; must be deliverable-level (enforced in service layer)"]
+  status varchar(20) [default: "pending", note: "pending | in_progress | review | completed | cancelled"]
+  estimated_start date [null]
+  estimated_end date [null]
+  actual_end date [null]
+  month_number tinyint [null, note: "1–12 for monthly recurring deliverables; null for one-time"]
+  year smallint [null, note: "Calendar year for monthly recurring deliverables; null for one-time"]
+  notes text [null]
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (company_id, catalog_item_id, month_number, year) [unique, name: "unique_tracking_per_company_item_period"]
+  }
+}
+
+// ============================================================
+// GROUP: Calendar
+// ============================================================
+
+Table events {
+  id bigint [pk, increment]
+  user_id bigint [note: "FK → users; creator"]
+  title varchar
+  description text [null]
+  start_at timestamp
+  end_at timestamp
+  location varchar [null]
+  color varchar(10) [null, note: "Hex color for FullCalendar display"]
+  visibility varchar(20) [default: "private", note: "private | franchise | public"]
+  all_day boolean [default: false]
+  deleted_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table event_shares {
+  id bigint [pk, increment]
+  event_id bigint [note: "FK → events"]
+  user_id bigint [note: "FK → users"]
+  created_at timestamp
+
+  indexes {
+    (event_id, user_id) [unique]
+  }
+}
+
+// ============================================================
+// Table Groups
+// ============================================================
+
+TableGroup Auth {
+  users
+  personal_access_tokens
+  permissions
+  roles
+  model_has_permissions
+  model_has_roles
+  role_has_permissions
+}
+
+TableGroup Franchises {
+  franchises
+}
+
+TableGroup Companies {
+  companies
+  bb_assignments
+  user_permissions
+}
+
+TableGroup Assessments {
+  assessment_contacts
+  assessment_decisions
+}
+
+TableGroup Feed {
+  posts
+  post_interactions
+}
+
+TableGroup Contracts {
+  contracts
+}
+
+TableGroup Repository {
+  repositories
+  repository_documents
+}
+
+TableGroup Processes {
+  process_maps
+  process_categories
+  processes
+  sub_processes
+  process_documents
+}
+
+TableGroup Accounting {
+  chart_of_accounts
+  financial_documents
+  journal_entries
+  journal_entry_lines
+  bank_transactions
+  pos_connections
+}
+
+TableGroup Inventory {
+  inventory_items
+  inventory_movements
+}
+
+TableGroup "Catalog & Tracking" {
+  catalog_items
+  client_trackings
+}
+
+TableGroup Calendar {
+  events
+  event_shares
+}
+
+// ============================================================
+// Foreign Key Relationships (Ref)
+// ============================================================
+
+// --- Auth ---
+Ref: model_has_permissions.permission_id > permissions.id
+Ref: model_has_roles.role_id > roles.id
+Ref: role_has_permissions.permission_id > permissions.id
+Ref: role_has_permissions.role_id > roles.id
+
+// --- Circular triad: users ↔ franchises ↔ companies ---
+// (resolved in migration 000004 with deferred FKs)
+Ref: users.sm_franchise_id > franchises.id
+Ref: users.company_id > companies.id
+Ref: users.sub_franchise_id > franchises.id
+Ref: franchises.owner_user_id > users.id
+Ref: franchises.parent_company_id > companies.id
+Ref: companies.sm_franchise_id > franchises.id
+
+// --- Companies ---
+Ref: bb_assignments.bb_user_id > users.id
+Ref: bb_assignments.company_id > companies.id
+Ref: bb_assignments.assigned_by > users.id
+Ref: user_permissions.user_id > users.id
+
+// --- Assessments ---
+Ref: assessment_contacts.converted_company_id > companies.id
+Ref: assessment_contacts.reviewed_by > users.id
+Ref: assessment_contacts.decision_id > assessment_decisions.id
+
+// --- Feed ---
+Ref: posts.author_id > users.id
+Ref: posts.franchise_id > franchises.id
+Ref: post_interactions.post_id > posts.id
+Ref: post_interactions.user_id > users.id
+
+// --- Contracts ---
+Ref: contracts.company_id > companies.id
+Ref: contracts.elaborated_by > users.id
+Ref: contracts.reviewed_by > users.id
+Ref: contracts.approved_by > users.id
+
+// --- Repository ---
+Ref: repositories.company_id > companies.id
+Ref: repositories.sub_franchise_id > franchises.id
+Ref: repository_documents.repository_id > repositories.id
+Ref: repository_documents.uploaded_by > users.id
+Ref: repository_documents.parent_id > repository_documents.id
+
+// --- Processes ---
+Ref: process_maps.company_id > companies.id
+Ref: process_categories.process_map_id > process_maps.id
+Ref: processes.category_id > process_categories.id
+Ref: sub_processes.process_id > processes.id
+Ref: process_documents.sub_process_id > sub_processes.id
+Ref: process_documents.parent_id > process_documents.id
+Ref: process_documents.uploaded_by > users.id
+
+// --- Accounting ---
+Ref: chart_of_accounts.company_id > companies.id
+Ref: chart_of_accounts.parent_id > chart_of_accounts.id
+Ref: financial_documents.company_id > companies.id
+Ref: financial_documents.uploaded_by > users.id
+Ref: journal_entries.company_id > companies.id
+Ref: journal_entries.financial_document_id > financial_documents.id
+Ref: journal_entries.created_by > users.id
+Ref: journal_entries.approved_by > users.id
+Ref: journal_entry_lines.journal_entry_id > journal_entries.id
+Ref: journal_entry_lines.account_id > chart_of_accounts.id
+Ref: bank_transactions.company_id > companies.id
+Ref: bank_transactions.financial_document_id > financial_documents.id
+Ref: bank_transactions.matched_journal_entry_id > journal_entries.id
+Ref: bank_transactions.matched_by > users.id
+Ref: pos_connections.company_id > companies.id
+
+// --- Inventory ---
+Ref: inventory_items.company_id > companies.id
+Ref: inventory_items.sub_franchise_id > franchises.id
+Ref: inventory_items.account_id > chart_of_accounts.id
+Ref: inventory_movements.item_id > inventory_items.id
+Ref: inventory_movements.journal_entry_id > journal_entries.id
+Ref: inventory_movements.created_by > users.id
+
+// --- Catalog & Tracking ---
+Ref: catalog_items.parent_id > catalog_items.id
+Ref: client_trackings.company_id > companies.id
+Ref: client_trackings.catalog_item_id > catalog_items.id
+
+// --- Calendar ---
+Ref: events.user_id > users.id
+Ref: event_shares.event_id > events.id
+Ref: event_shares.user_id > users.id
