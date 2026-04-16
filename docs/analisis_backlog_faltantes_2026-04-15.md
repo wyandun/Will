@@ -24,16 +24,16 @@ Las 17 historias están agrupadas por sprint sugerido y ordenadas según su depe
 | A | Invitación por enlace para nuevos usuarios | Invitación por email | Sprint 2 | Alta |
 | B | Recuperación de contraseña | Reset de contraseña | Sprint 2 | Alta |
 | C | Seed formal de los 7 roles | Seed de roles | Sprint 2 | Alta |
-| D | Vista global del superadmin | Panel global superadmin | Sprint 2 | Media |
+| D | Vista global del superadmin | Panel global superadmin | Sprint 3 | Media |
 | E | Close Deal atómico con todo | Close Deal completo | Sprint 3 | Alta |
 | F | Catálogo formal de decisiones de assessment | Catálogo de decisiones | Sprint 3 | Media |
 | G | Vincular assessment con empresa creada | Traza assessment → empresa | Sprint 3 | Media |
 | H | Campo type en mapas de proceso BPMN | Tipo de mapa BPMN | Sprint 4 | Alta |
 | I | Sub_franchise_owner ve mapa franquiciada | Vista mapa sub-franquicia | Sprint 4 | Alta |
 | J | 3 firmantes explícitos en contratos | Firmantes en contratos | Sprint 4 | Alta |
-| K | Scope del BB a su empresa únicamente | Acceso BB restringido | Sprint 5 | Alta |
+| K | Scope del BB a su empresa únicamente | Acceso BB restringido | Sprint 4 | Alta |
 | L | Integración POS | Conexión POS automática | Sprint 5 | Media |
-| M | sb_employee con módulos limitados | Permisos por módulo | Sprint 5 | Alta |
+| M | sb_employee con módulos limitados | Permisos por módulo | Sprint 3 | Alta |
 | N | sub_franchise_admin gestiona su equipo | Gestión sub-franquicia | Sprint 6 | Media |
 | O | Crear sub-franquicias desde empresa SB | Crear sub-franquicias | Sprint 6 | Media |
 | P | Panel global de métricas para superadmin | Métricas globales | Sprint 6 | Baja |
