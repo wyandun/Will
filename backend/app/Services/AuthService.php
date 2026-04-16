@@ -54,10 +54,12 @@ class AuthService
 
         return [
             'user' => [
-                'id'          => $user->id,
-                'name'        => $user->name,
-                'email'       => $user->email,
-                'avatar_path' => $user->avatar_path ?? null,
+                'id'              => $user->id,
+                'name'            => $user->name,
+                'email'           => $user->email,
+                'avatar_path'     => $user->avatar_path ?? null,
+                // Needed by the frontend to pre-fill the franchise dropdown for admin_sm.
+                'sm_franchise_id' => $user->sm_franchise_id ?? null,
             ],
             'token'       => $token,
             'role'        => $role,
@@ -88,10 +90,12 @@ class AuthService
 
         return [
             'user' => [
-                'id'          => $user->id,
-                'name'        => $user->name,
-                'email'       => $user->email,
-                'avatar_path' => $user->avatar_path ?? null,
+                'id'              => $user->id,
+                'name'            => $user->name,
+                'email'           => $user->email,
+                'avatar_path'     => $user->avatar_path ?? null,
+                // Needed by the frontend to pre-fill the franchise dropdown for admin_sm.
+                'sm_franchise_id' => $user->sm_franchise_id ?? null,
             ],
             'token'       => null,
             'role'        => $role,
@@ -100,11 +104,14 @@ class AuthService
     }
 
     /**
-     * Revoke all Sanctum tokens for the given user (full logout).
+     * Revoke the current Sanctum token for the given user (single-session logout).
+     *
+     * Multi-session is intentionally allowed, so only the token used in this
+     * request is revoked — other open tabs or devices remain authenticated.
      */
     public function logout(User $user): void
     {
-        $user->tokens()->delete();
+        $user->currentAccessToken()->delete();
 
         Log::info('User logged out', ['user_id' => $user->id]);
     }

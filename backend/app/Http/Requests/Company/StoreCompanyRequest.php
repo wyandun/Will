@@ -42,6 +42,16 @@ class StoreCompanyRequest extends FormRequest
         $validator->after(function (Validator $validator): void {
             $user = $this->user();
 
+            // Guard: admin_sm must have a franchise assigned before scoping can work.
+            if ($user->hasRole('admin_sm') && ! $user->sm_franchise_id) {
+                $validator->errors()->add(
+                    'sm_franchise_id',
+                    'Tu cuenta no tiene una franquicia asignada. Contacta al superadmin.'
+                );
+
+                return;
+            }
+
             if (
                 $user->hasRole('admin_sm')
                 && (int) $this->input('sm_franchise_id') !== (int) $user->sm_franchise_id

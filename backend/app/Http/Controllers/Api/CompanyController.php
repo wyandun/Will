@@ -31,9 +31,14 @@ class CompanyController extends Controller
     }
 
     /**
-     * Create a new company.
+     * Create a new company (internal/superadmin direct route).
      *
      * POST /api/v1/companies
+     *
+     * NOTE: This is an internal route for superadmin use. The canonical flow used
+     * by the frontend is POST /api/v1/companies/close-deal (closeDeal()), which
+     * also creates the two required BPMN process maps in the same transaction.
+     * Use store() only when creating a company record in isolation.
      */
     public function store(StoreCompanyRequest $request): JsonResponse
     {

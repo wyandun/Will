@@ -66,7 +66,9 @@ class CompanyService
             'name'       => $company->name,
         ]);
 
-        return $company;
+        // Load franchise relationship so CompanyResource can serialize franchise_name,
+        // consistent with closeDeal() which does the same before returning.
+        return $company->load('franchise');
     }
 
     /**

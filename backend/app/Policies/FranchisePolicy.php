@@ -26,7 +26,7 @@ class FranchisePolicy
         }
 
         return $user->hasRole('admin_sm')
-            && $user->sm_franchise_id === $franchise->id;
+            && (int) $user->sm_franchise_id === (int) $franchise->id;
     }
 
     /**

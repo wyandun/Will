@@ -26,7 +26,6 @@ const EMPTY_FORM = {
 export default function CompanyFormModal({ company, onClose, onSave }) {
   const isEditing = company !== null;
   const role = useAuthStore((s) => s.role);
-  const user = useAuthStore((s) => s.user);
   const isAdminSm = role === 'admin_sm';
 
   const [form, setForm] = useState(EMPTY_FORM);
@@ -47,7 +46,9 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
       .finally(() => setFranchisesLoading(false));
   }, []);
 
-  // Pre-fill form when editing or set franchise for admin_sm on create
+  // Pre-fill form when editing or reset form for create mode.
+  // Note: admin_sm franchise auto-selection is handled in the effect below,
+  // after the franchises list finishes loading.
   useEffect(() => {
     if (company) {
       setForm({
@@ -63,17 +64,22 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
         notes: company.notes ?? '',
       });
     } else {
-      setForm({
-        ...EMPTY_FORM,
-        // Auto-select franchise for admin_sm on create
-        sm_franchise_id: isAdminSm && user?.sm_franchise_id
-          ? String(user.sm_franchise_id)
-          : '',
-      });
+      setForm({ ...EMPTY_FORM });
     }
     setErrors({});
     setApiError('');
-  }, [company, isAdminSm, user]);
+  }, [company]);
+
+  // After franchises load, auto-select the only available franchise for admin_sm
+  // in create mode. Edit mode already has sm_franchise_id from the company object.
+  useEffect(() => {
+    if (franchisesLoading) return;
+    if (company) return; // edit mode — do not override the company's franchise
+    if (!isAdminSm) return; // superadmin picks manually
+    if (franchises.length === 1) {
+      setForm((prev) => ({ ...prev, sm_franchise_id: String(franchises[0].id) }));
+    }
+  }, [franchisesLoading, franchises, company, isAdminSm]);
 
   function handleChange(e) {
     const { name, value } = e.target;
