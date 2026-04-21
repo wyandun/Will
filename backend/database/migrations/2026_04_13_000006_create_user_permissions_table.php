@@ -11,8 +11,9 @@ return new class extends Migration
      * Replaces the old JSON blob in users.permissions.
      *
      * One row per user per module. The unique constraint prevents duplicates.
-     * Modules: feed, contracts, repository, processes, accounting,
-     *          inventory, tracking, catalog, calendar
+     * Module values are enforced at the application layer via App\Enums\PermissionModule.
+     *
+     * v2 changes: 'inventory' removed (module eliminated), 'applications' added.
      */
     public function up(): void
     {
@@ -23,9 +24,8 @@ return new class extends Migration
                 ->constrained('users')
                 ->cascadeOnDelete();
 
-            // Module enum values match the portal module list from CLAUDE.md
             $table->string('module', 30)->comment(
-                'feed | contracts | repository | processes | accounting | inventory | tracking | catalog | calendar'
+                'feed | contracts | repository | processes | accounting | tracking | catalog | calendar | applications'
             );
 
             $table->boolean('can_read')->default(false);

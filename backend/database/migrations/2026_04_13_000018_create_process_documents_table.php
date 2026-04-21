@@ -7,36 +7,50 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Process documents — supporting files for a sub-process (manuals, forms, records, etc.).
+     * Process documents — supporting files attached to any level of the process tree.
      *
-     * code format: '{PROCESS_CODE}-{TYPE_PREFIX}-{sequence}', e.g. 'GTH-P01-FOR-01'
+     * Polymorphic design: a document can belong to a Process, SubProcess, or SubSubProcess.
+     * documentable_type stores the morph map alias (process | sub_process | sub_sub_process).
+     * documentable_id stores the PK of the owning model.
+     *
+     * Document type codes:
+     *   MP  = Manual de Procedimiento
+     *   FOR = Formato
+     *   MN  = Manual
+     *   IN  = Instructivo
+     *   AN  = Anexo
+     *   PO  = Política
+     *   PR  = Procedimiento
+     *   CR  = Criterio / Referencia
+     *
+     * code format: '{PROCESS_CODE}-{TYPE}-{sequence}', e.g. 'GTH-P01-FOR-01'
      * file_url replaces legacy onedrive_url.
      *
-     * Versioning follows the same pattern as repository_documents:
-     * new version → new row with parent_id set, is_current=true on latest.
+     * Versioning: new version → new row with parent_id set, is_current=true on latest.
      *
-     * Soft deletes preserve audit trail.
+     * NOTE: The FK from sub_processes.manual_document_id and
+     * sub_sub_processes.manual_document_id back to this table is added in a
+     * separate migration after both tables exist (circular reference resolution).
      */
     public function up(): void
     {
         Schema::create('process_documents', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('sub_process_id')
-                ->constrained('sub_processes')
-                ->cascadeOnDelete();
+            // Polymorphic parent: process | sub_process | sub_sub_process
+            $table->string('documentable_type', 80);
+            $table->unsignedBigInteger('documentable_id');
 
-            // e.g. 'GTH-P01-FOR-01' where FOR = form, MAN = manual, REG = record, etc.
-            $table->string('code', 40)->comment('e.g. GTH-P01-FOR-01');
+            $table->string('code', 60)->comment('e.g. GTH-P01-FOR-01');
 
-            $table->string('type', 20)->comment('manual | form | record | policy | certificate');
+            $table->string('type', 5)->comment('MP | FOR | MN | IN | AN | PO | PR | CR');
 
-            $table->string('title_es');
-            $table->string('title_en');
+            $table->string('title_es', 200);
+            $table->string('title_en', 200);
             $table->text('description')->nullable();
 
             // Storage URL — replaces legacy onedrive_url
-            $table->string('file_url')->nullable()->comment('Replaces legacy onedrive_url');
+            $table->string('file_url', 500)->nullable();
 
             $table->unsignedSmallInteger('version')->default(1);
 
@@ -56,8 +70,8 @@ return new class extends Migration
             $table->softDeletes();
             $table->timestamps();
 
-            $table->index(['sub_process_id', 'is_current']);
-            $table->index('code');
+            $table->index(['documentable_type', 'documentable_id']);
+            $table->unique(['code', 'version']);
             $table->index('type');
         });
     }

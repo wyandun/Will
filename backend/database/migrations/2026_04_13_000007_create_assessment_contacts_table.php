@@ -8,12 +8,13 @@ return new class extends Migration
 {
     /**
      * Public form submissions — no authentication required.
-     * Covers Assessment 1 (63 questions / 9 dimensions), Assessment 2, and BB applications.
+     * Assessment 1 is split into 4 stages: operational maturity, franchise
+     * alignment, BB simulator, and results (with downloadable PDF).
      *
-     * All form answers are stored in the JSONB `data` column for flexibility,
-     * since each assessment type has a different question structure.
+     * Stage data is stored in separate JSONB columns so each stage can be
+     * saved independently as the user progresses.
      *
-     * When status becomes 'converted', the converted_company_id is populated
+     * When status becomes 'converted', converted_company_id is populated
      * via the "Close Deal" action which also creates the company record,
      * two process maps, and the default user account.
      */
@@ -22,17 +23,30 @@ return new class extends Migration
         Schema::create('assessment_contacts', function (Blueprint $table) {
             $table->id();
 
-            $table->string('type', 30)->comment('sb_assessment_1 | sb_assessment_2 | bb_application');
+            $table->string('type', 30)->comment('sb_assessment_1 | sb_assessment_3 | bb_application');
 
-            // All form answers stored as JSONB for flexibility across assessment types
-            $table->jsonb('data');
+            // Only populated for sb_assessment_1 — tracks which stage the user is on
+            $table->string('current_stage', 30)->nullable()->comment(
+                'operational_maturity | franchise_alignment | bb_simulator | results'
+            );
 
-            // Assessment 1 has scoring across 9 dimensions (A–I)
-            $table->decimal('score', 5, 2)->nullable()->comment('Overall score for Assessment 1');
-            $table->jsonb('score_breakdown')->nullable()->comment('Per-dimension scores {A: x, B: x, ...}');
+            // Stage-specific JSONB payloads (sb_assessment_1 only)
+            $table->jsonb('stage_1_data')->nullable()->comment('Operational maturity — 7 dimensions (answers + scores)');
+            $table->jsonb('stage_2_data')->nullable()->comment('Franchise alignment answers');
+            $table->jsonb('stage_3_data')->nullable()->comment('BB simulator inputs + 5-year projection output');
+            $table->jsonb('stage_4_data')->nullable()->comment('Final result snapshot + PDF metadata');
 
-            $table->string('status', 20)->default('pending')->comment(
-                'pending | reviewed | approved | rejected | converted'
+            // Generic payload for Assessment 3 and BB application
+            $table->jsonb('data')->nullable();
+
+            $table->decimal('score', 5, 2)->nullable()->comment('Final aggregated score');
+            $table->jsonb('score_breakdown')->nullable()->comment('Per-dimension breakdown');
+
+            // Path to the generated PDF produced at stage 4
+            $table->string('result_pdf_path', 255)->nullable();
+
+            $table->string('status', 20)->default('in_progress')->comment(
+                'in_progress | pending | reviewed | approved | rejected | converted'
             );
 
             // Set when Close Deal is executed; triggers company + process map creation
@@ -52,8 +66,14 @@ return new class extends Migration
 
             $table->index('type');
             $table->index('status');
+            $table->index('current_stage');
             $table->index(['type', 'status']);
             $table->index('created_at');
+
+            // GIN indexes for fast key searches inside stage JSONB columns
+            $table->rawIndex('USING GIN (stage_1_data)', 'assessment_contacts_stage_1_data_gin');
+            $table->rawIndex('USING GIN (stage_2_data)', 'assessment_contacts_stage_2_data_gin');
+            $table->rawIndex('USING GIN (stage_3_data)', 'assessment_contacts_stage_3_data_gin');
         });
     }
 

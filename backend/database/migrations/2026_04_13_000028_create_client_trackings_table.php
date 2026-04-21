@@ -9,6 +9,9 @@ return new class extends Migration
     /**
      * Client trackings — progress tracking for deliverables assigned to companies.
      *
+     * Supports both Kanban (status field) and Gantt (estimated_start,
+     * estimated_end, actual_start, actual_end, progress_percent) views.
+     *
      * Only deliverable-level catalog_items should be referenced here.
      * This is enforced in the Service layer (TrackingService) — the DB
      * stores the FK but cannot check the level discriminator natively.
@@ -34,9 +37,14 @@ return new class extends Migration
                 'pending | in_progress | review | completed | cancelled'
             );
 
+            // Gantt bar dates
             $table->date('estimated_start')->nullable();
             $table->date('estimated_end')->nullable();
+            $table->date('actual_start')->nullable();
             $table->date('actual_end')->nullable();
+
+            // 0–100 for Gantt bar fill percentage
+            $table->unsignedTinyInteger('progress_percent')->default(0);
 
             // For is_monthly=true deliverables: 1=Jan, 2=Feb, ..., 12=Dec
             $table->unsignedTinyInteger('month_number')->nullable()
@@ -48,6 +56,7 @@ return new class extends Migration
 
             $table->index(['company_id', 'status']);
             $table->index(['company_id', 'catalog_item_id']);
+            $table->index(['estimated_start', 'estimated_end'], 'trackings_gantt_dates_idx');
             $table->index('created_at');
         });
     }

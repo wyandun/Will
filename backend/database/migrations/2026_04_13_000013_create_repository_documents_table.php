@@ -9,15 +9,18 @@ return new class extends Migration
     /**
      * Repository documents — files stored within a company or sub-franchise repository.
      *
+     * Three tabs map to three section values:
+     *   setup  — Company Setup: legal, HR, certificates, marketing, SOPs
+     *   process — Process Documents: manuals and forms linked to the process map
+     *   record  — Records by Process: completed records uploaded by the client
+     *
      * Versioning: when a new version is uploaded, a new row is created with
      * parent_id pointing to the previous version. Only the row with is_current=true
-     * is shown by default. Queries should always filter by is_current=true.
+     * is shown by default.
      *
      * process_code stores a string reference like 'GTH-P01' instead of a FK
      * to sub_processes, because documents may reference process codes that
      * haven't been mapped yet (decoupled for flexibility).
-     *
-     * Soft deletes preserve version history audit trail.
      */
     public function up(): void
     {
@@ -28,16 +31,22 @@ return new class extends Migration
                 ->constrained('repositories')
                 ->cascadeOnDelete();
 
-            $table->string('section', 20)->comment('setup | process');
-            $table->string('category', 30)->comment(
-                'legal | hr | certificates | marketing | sops | process_linked'
+            $table->string('section', 20)->comment('setup | process | record');
+            $table->string('category', 30)->nullable()->comment(
+                'legal | hr | certificates | marketing | sops | process_linked | record_linked'
             );
 
-            // Loose reference to a process code (not a FK — see docblock)
-            $table->string('process_code', 30)->nullable()
-                ->comment('e.g. GTH-P01 — used when category=process_linked');
+            // Loose reference to a process code (not a FK — decoupled for flexibility)
+            $table->string('process_code', 40)->nullable()
+                ->comment('e.g. GTH-P01 — required when section = process or record');
 
-            $table->string('title');
+            // Record-specific fields (required when section = record)
+            $table->date('record_date')->nullable()
+                ->comment('Date the record covers — required when section = record');
+            $table->string('record_period', 60)->nullable()
+                ->comment('Optional label e.g. 2026-Q1');
+
+            $table->string('title', 200);
             $table->text('description')->nullable();
 
             $table->string('file_path');
@@ -64,8 +73,8 @@ return new class extends Migration
             $table->softDeletes();
             $table->timestamps();
 
-            $table->index(['repository_id', 'section', 'category']);
-            $table->index(['repository_id', 'is_current']);
+            $table->index(['repository_id', 'section', 'is_current'], 'repo_docs_repository_section_current_idx');
+            $table->index(['section', 'category']);
             $table->index('process_code');
             $table->index('created_at');
         });

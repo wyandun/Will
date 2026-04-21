@@ -7,16 +7,11 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Financial documents — uploaded files that trigger AI processing.
+     * Financial documents — pure file vault for company financial records.
      *
-     * On upload, the ProcessFinancialDocument job is dispatched to:
-     *   1. Run OCR (Tesseract) or parse native PDF text
-     *   2. Send to OpenAI for transaction extraction
-     *   3. Create bank_transactions rows
-     *   4. Create journal_entries (with ai_confidence score)
-     *
-     * processing_status tracks the async job lifecycle.
-     * Soft deletes preserve the audit trail.
+     * v2 simplification: all AI/OCR processing has been removed. This table
+     * is now only a file repository. QuickBooks Online handles all accounting
+     * logic. Admins upload statements, invoices, and receipts here for reference.
      */
     public function up(): void
     {
@@ -27,17 +22,15 @@ return new class extends Migration
                 ->constrained('companies')
                 ->cascadeOnDelete();
 
-            $table->string('type', 20)->comment('bank_statement | invoice | receipt');
+            $table->string('type', 20)->comment('bank_statement | invoice | receipt | other');
 
             $table->string('file_path');
-            $table->string('file_type', 50)->comment('MIME type');
+            $table->string('file_type', 60)->comment('MIME type');
             $table->string('original_filename');
 
-            // AI processing lifecycle
-            $table->timestamp('processed_at')->nullable();
-            $table->string('processing_status', 20)->default('pending')->comment(
-                'pending | processing | completed | failed'
-            );
+            // Optional period reference for bank statements (e.g. '2026-04')
+            $table->string('period_label', 40)->nullable();
+            $table->text('notes')->nullable();
 
             $table->foreignId('uploaded_by')
                 ->constrained('users')
@@ -46,8 +39,7 @@ return new class extends Migration
             $table->softDeletes();
             $table->timestamps();
 
-            $table->index(['company_id', 'type']);
-            $table->index(['company_id', 'processing_status']);
+            $table->index(['company_id', 'type', 'created_at'], 'financial_documents_company_type_created_idx');
             $table->index('created_at');
         });
     }
