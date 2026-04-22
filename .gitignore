@@ -29,11 +29,24 @@ Thumbs.db
 
 # Scripts and internal docs (not part of the project)
 linear_import.py
+linear_import_final.py
+linear_add_missing.py
+linear_update_v2.py
 project_charter_generator.py
 PROJECT_CHARTER_ACTUALIZADO.md
 PLAN_ARQUITECTURA.md
 DOCUMENTO_TECNICO.md
 Project_Charter_SM_Portal_v3.docx
+*.pdf
+*.docx
 CLAUDE.md
 /database/
 agentes/
+
+# Claude Code local config
+.claude/
+
+# Internal analysis docs
+docs/Linear/
+docs/Home_Issues_Analysis.md
+docs/guia_base_de_datos_2026-04-18.md

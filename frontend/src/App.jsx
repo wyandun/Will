@@ -101,6 +101,22 @@ export default function App() {
           <Route path="/accounting"  element={<StubPage title="Accounting & Finance" />} />
           <Route path="/inventory"   element={<StubPage title="Inventory" />} />
           <Route path="/tracking"    element={<StubPage title="Tracking" />} />
+          <Route
+            path="/catalog"
+            element={
+              <RoleRoute roles={['superadmin']}>
+                <StubPage title="Service Catalog" />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/sb-applications"
+            element={
+              <RoleRoute roles={ADMIN_ROLES}>
+                <StubPage title="SB Applications" />
+              </RoleRoute>
+            }
+          />
           <Route path="/calendar"    element={<StubPage title="Calendar" />} />
           <Route path="/profile"     element={<StubPage title="Profile" />} />
         </Route>

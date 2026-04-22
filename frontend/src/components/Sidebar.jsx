@@ -100,6 +100,23 @@ function IconCalendar() {
   );
 }
 
+function IconCatalog() {
+  return (
+    <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" />
+    </svg>
+  );
+}
+
+function IconSBApp() {
+  return (
+    <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+    </svg>
+  );
+}
+
 function IconProfile() {
   return (
     <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
@@ -151,8 +168,9 @@ function buildNavItems(role, permissions) {
   const items = [
     { key: 'dashboard',   label: 'Dashboard',   path: '/',             icon: <IconDashboard />,  show: true },
     { key: 'franchises',  label: 'Franchises',  path: '/franchises',   icon: <IconFranchises />, show: isAdmin },
-    { key: 'companies',   label: 'Companies',   path: '/companies',    icon: <IconCompanies />,  show: isAdmin },
-    { key: 'users',       label: 'Users',       path: '/users',        icon: <IconUsers />,      show: isAdmin },
+    { key: 'companies',      label: 'Companies',      path: '/companies',       icon: <IconCompanies />,  show: isAdmin },
+    { key: 'sb-applications', label: 'SB Applications', path: '/sb-applications', icon: <IconSBApp />,      show: isAdmin },
+    { key: 'users',          label: 'Users',          path: '/users',           icon: <IconUsers />,      show: isAdmin },
     { key: 'feed',        label: 'Feed',        path: '/feed',         icon: <IconFeed />,       show: canRead('feed') },
     { key: 'contracts',   label: 'Contracts',   path: '/contracts',    icon: <IconContracts />,  show: canRead('contracts') },
     { key: 'repository',  label: 'Repository',  path: '/repository',   icon: <IconRepository />, show: canRead('repository') },
@@ -160,6 +178,7 @@ function buildNavItems(role, permissions) {
     { key: 'accounting',  label: 'Accounting',  path: '/accounting',   icon: <IconAccounting />, show: canRead('accounting') },
     { key: 'inventory',   label: 'Inventory',   path: '/inventory',    icon: <IconInventory />,  show: canRead('inventory') },
     { key: 'tracking',    label: 'Tracking',    path: '/tracking',     icon: <IconTracking />,   show: canRead('tracking') },
+    { key: 'catalog',     label: 'Catalog',     path: '/catalog',      icon: <IconCatalog />,    show: role === 'superadmin' },
     { key: 'calendar',    label: 'Calendar',    path: '/calendar',     icon: <IconCalendar />,   show: canRead('calendar') },
     { key: 'profile',     label: 'Profile',     path: '/profile',      icon: <IconProfile />,    show: true },
   ];
@@ -226,8 +245,18 @@ export default function Sidebar() {
 
       {/* Footer: user info + logout */}
       <div className="border-t border-slate-700 px-4 py-4 space-y-3">
-        {/* User info */}
-        <div className="flex items-center gap-3 min-w-0">
+        {/* User info — links to profile */}
+        <NavLink
+          to="/profile"
+          className={({ isActive }) =>
+            [
+              'flex items-center gap-3 min-w-0 rounded-lg px-2 py-1.5 -mx-2 transition-colors',
+              isActive
+                ? 'bg-slate-700'
+                : 'hover:bg-slate-700/60',
+            ].join(' ')
+          }
+        >
           <div className="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center shrink-0">
             <span className="text-slate-300 text-xs font-semibold uppercase leading-none">
               {user?.name?.charAt(0) ?? '?'}
@@ -241,7 +270,7 @@ export default function Sidebar() {
               {ROLE_LABELS[role] ?? role}
             </span>
           </div>
-        </div>
+        </NavLink>
 
         {/* Logout */}
         <button
