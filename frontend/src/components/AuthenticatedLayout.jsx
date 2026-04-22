@@ -1,27 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { SECTION_BY_PATH } from './navConfig';
 
-const SECTION_LABELS = {
-  '/':                'Dashboard',
-  '/franchises':      'Franchises',
-  '/companies':       'Companies',
-  '/sb-applications': 'SB Applications',
-  '/users':           'Users & Permissions',
-  '/feed':            'Feed',
-  '/contracts':       'Contracts',
-  '/repository':      'Document Repository',
-  '/processes':       'Process Maps',
-  '/accounting':      'Accounting & Finance',
-  '/inventory':       'Inventory',
-  '/tracking':        'Tracking',
-  '/catalog':         'Service Catalog',
-  '/calendar':        'Calendar',
-  '/profile':         'My Profile',
-};
-
-function usePageTitle() {
+function useActiveSection() {
   const { pathname } = useLocation();
-  return SECTION_LABELS[pathname] ?? 'SM Portal';
+  return SECTION_BY_PATH[pathname] ?? { label: 'SM Portal', icon: null };
 }
 import { useAuthVerify } from '../hooks/useAuthVerify';
 import { useAuthStore } from '../store/authStore';
@@ -196,7 +179,7 @@ function UserDropdown() {
  */
 export default function AuthenticatedLayout() {
   const { loading } = useAuthVerify();
-  const pageTitle = usePageTitle();
+  const activeSection = useActiveSection();
 
   if (loading) {
     return (
@@ -240,9 +223,12 @@ export default function AuthenticatedLayout() {
           <span className="text-sm font-semibold text-slate-700 tracking-wide">Strategic Mates</span>
         </div>
 
-        {/* Center — active section name */}
-        <div className="flex-1 flex items-center justify-center">
-          <span className="text-sm font-semibold text-slate-700">{pageTitle}</span>
+        {/* Center — active section icon + name */}
+        <div className="flex-1 flex items-center justify-center gap-2 text-slate-700">
+          {activeSection.icon && (
+            <span className="text-slate-500">{activeSection.icon}</span>
+          )}
+          <span className="text-sm font-semibold">{activeSection.label}</span>
         </div>
 
         {/* Right — language selector + user dropdown */}
