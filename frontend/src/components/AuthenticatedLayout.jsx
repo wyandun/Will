@@ -124,9 +124,9 @@ function UserDropdown() {
         <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
           <span className="text-white text-xs font-bold leading-none">{initials}</span>
         </div>
-        <div className="hidden sm:flex flex-col items-start leading-none">
-          <span className="text-sm font-medium text-slate-700">{user?.name ?? 'User'}</span>
-          <span className="text-xs text-slate-400 mt-0.5">{roleLabel}</span>
+        <div className="hidden sm:flex flex-col items-start leading-none max-w-[120px]">
+          <span className="text-sm font-medium text-slate-700 truncate w-full">{user?.name ?? 'User'}</span>
+          <span className="text-xs text-slate-400 mt-0.5 truncate w-full">{roleLabel}</span>
         </div>
         {/* Chevron */}
         <svg
@@ -232,9 +232,9 @@ export default function AuthenticatedLayout() {
         </div>
 
         {/* Right — language selector + user dropdown */}
-        <div className="w-64 flex items-center justify-end gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <LanguageSelector />
-          <div className="w-px h-5 bg-slate-200 mx-1" />
+          <div className="w-px h-5 bg-slate-200" />
           <UserDropdown />
         </div>
       </header>
