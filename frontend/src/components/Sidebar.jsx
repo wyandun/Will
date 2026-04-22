@@ -180,7 +180,6 @@ function buildNavItems(role, permissions) {
     { key: 'tracking',    label: 'Tracking',    path: '/tracking',     icon: <IconTracking />,   show: canRead('tracking') },
     { key: 'catalog',     label: 'Catalog',     path: '/catalog',      icon: <IconCatalog />,    show: role === 'superadmin' },
     { key: 'calendar',    label: 'Calendar',    path: '/calendar',     icon: <IconCalendar />,   show: canRead('calendar') },
-    { key: 'profile',     label: 'Profile',     path: '/profile',      icon: <IconProfile />,    show: true },
   ];
 
   return items.filter((item) => item.show);
@@ -219,15 +218,7 @@ export default function Sidebar() {
     ].join(' ');
 
   return (
-    <aside className="fixed inset-y-0 left-0 w-64 bg-slate-800 flex flex-col z-20">
-      {/* Brand */}
-      <div className="flex items-center gap-2 px-5 py-5 border-b border-slate-700">
-        <div className="w-7 h-7 rounded-md bg-blue-500 flex items-center justify-center shrink-0">
-          <span className="text-white text-xs font-bold leading-none">SM</span>
-        </div>
-        <span className="text-white font-semibold text-sm tracking-wide">Strategic Mates</span>
-      </div>
-
+    <aside className="fixed top-14 left-0 bottom-0 w-64 bg-slate-800 flex flex-col z-20">
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
         {navItems.map((item) => (
@@ -243,42 +234,36 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      {/* Footer: user info + logout */}
-      <div className="border-t border-slate-700 px-4 py-4 space-y-3">
-        {/* User info — links to profile */}
+      {/* Footer: avatar + logout */}
+      <div className="border-t border-slate-700 px-4 py-4 flex items-center gap-3">
+        {/* Avatar — rounded square, 2 initials, clickeable → profile */}
         <NavLink
           to="/profile"
-          className={({ isActive }) =>
-            [
-              'flex items-center gap-3 min-w-0 rounded-lg px-2 py-1.5 -mx-2 transition-colors',
-              isActive
-                ? 'bg-slate-700'
-                : 'hover:bg-slate-700/60',
-            ].join(' ')
-          }
+          title="Account settings"
+          className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center shrink-0 hover:bg-blue-500 transition-colors"
         >
-          <div className="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center shrink-0">
-            <span className="text-slate-300 text-xs font-semibold uppercase leading-none">
-              {user?.name?.charAt(0) ?? '?'}
-            </span>
-          </div>
-          <div className="min-w-0">
-            <p className="text-white text-sm font-medium truncate leading-tight">
-              {user?.name ?? 'User'}
-            </p>
-            <span className="inline-block mt-0.5 text-xs px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 leading-none">
-              {ROLE_LABELS[role] ?? role}
-            </span>
-          </div>
+          <span className="text-white text-xs font-bold leading-none uppercase">
+            {user?.name
+              ? user.name.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('')
+              : '?'}
+          </span>
         </NavLink>
 
-        {/* Logout */}
+        {/* Name + role */}
+        <div className="flex-1 min-w-0">
+          <p className="text-white text-sm font-medium truncate leading-tight">
+            {user?.name ?? 'User'}
+          </p>
+          <span className="text-xs text-slate-400 truncate">{ROLE_LABELS[role] ?? role}</span>
+        </div>
+
+        {/* Logout icon button */}
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-700/60 hover:text-white transition-colors"
+          title="Sign out"
+          className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-700 hover:text-white transition-colors shrink-0"
         >
           <IconLogout />
-          Sign out
         </button>
       </div>
     </aside>
