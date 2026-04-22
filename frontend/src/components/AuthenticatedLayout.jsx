@@ -1,5 +1,28 @@
 import { useState, useEffect, useRef } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+
+const SECTION_LABELS = {
+  '/':                'Dashboard',
+  '/franchises':      'Franchises',
+  '/companies':       'Companies',
+  '/sb-applications': 'SB Applications',
+  '/users':           'Users & Permissions',
+  '/feed':            'Feed',
+  '/contracts':       'Contracts',
+  '/repository':      'Document Repository',
+  '/processes':       'Process Maps',
+  '/accounting':      'Accounting & Finance',
+  '/inventory':       'Inventory',
+  '/tracking':        'Tracking',
+  '/catalog':         'Service Catalog',
+  '/calendar':        'Calendar',
+  '/profile':         'My Profile',
+};
+
+function usePageTitle() {
+  const { pathname } = useLocation();
+  return SECTION_LABELS[pathname] ?? 'SM Portal';
+}
 import { useAuthVerify } from '../hooks/useAuthVerify';
 import { useAuthStore } from '../store/authStore';
 import { authApi } from '../api/auth';
@@ -173,6 +196,7 @@ function UserDropdown() {
  */
 export default function AuthenticatedLayout() {
   const { loading } = useAuthVerify();
+  const pageTitle = usePageTitle();
 
   if (loading) {
     return (
@@ -207,11 +231,22 @@ export default function AuthenticatedLayout() {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header — fixed full-width at top, always above sidebar */}
-      <header className="fixed top-0 left-0 right-0 h-14 bg-white border-b border-slate-200 z-30 flex items-center justify-between px-6">
-        <p className="text-sm text-slate-400 font-medium tracking-wide uppercase select-none">
-          SM Portal
-        </p>
-        <div className="flex items-center gap-2">
+      <header className="fixed top-0 left-0 right-0 h-14 bg-white border-b border-slate-200 z-30 flex items-center px-6">
+        {/* Left — logo mark */}
+        <div className="w-64 flex items-center gap-2 shrink-0 pl-0">
+          <div className="w-7 h-7 rounded-md bg-blue-600 flex items-center justify-center shrink-0">
+            <span className="text-white text-xs font-bold leading-none">SM</span>
+          </div>
+          <span className="text-sm font-semibold text-slate-700 tracking-wide">Strategic Mates</span>
+        </div>
+
+        {/* Center — active section name */}
+        <div className="flex-1 flex items-center justify-center">
+          <span className="text-sm font-semibold text-slate-700">{pageTitle}</span>
+        </div>
+
+        {/* Right — language selector + user dropdown */}
+        <div className="w-64 flex items-center justify-end gap-2">
           <LanguageSelector />
           <div className="w-px h-5 bg-slate-200 mx-1" />
           <UserDropdown />
