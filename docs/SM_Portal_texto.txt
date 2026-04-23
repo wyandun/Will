@@ -1,0 +1,176 @@
+ARQUITECTURA DE MÓDULOS
+1. Resumen de Módulos
+El portal cuenta con los siguientes módulos activos, en simplificación o por eliminar:
+Módulo Descripción Estado Acceso
+Home Panel principal con resumen de Activo Todos
+actividad, métricas clave y accesos
+rápidos.
+Calendar Calendario de eventos, reuniones y Activo Todos
+actividades del cliente.
+Feed Muro de comunicaciones internas, Activo Todos
+noticias y publicaciones de Strategic
+Mates.
+Process Maps Mapas de proceso BPMN con Activo Todos
+subprocess, subsubprocess,
+documentos y walkthrough.
+Repositories Repositorio documental con Company Activo Todos
+Setup, Process Documents y Records by
+Process.
+Contracts Gestión y firma de contratos entre Activo Admin / SM
+Strategic Mates y el cliente.
+Tracking Seguimiento de entregables y proyectos Activo Admin / SM
+activos por cliente (vista Gantt).
+Catalog Catálogo de servicios y paquetes Activo Todos
+ofrecidos por Strategic Mates.
+Assessments Evaluaciones de madurez empresarial y Activo Público / SM
+simulador Business Bishop (Assessment
+1 y 3).
+Applications Panel de gestión de aplicaciones Small Activo Superadmin
+Business (solo superadmin).
+Franchises Gestión de franquicias y empresas Activo Admin / SM
+clientes vinculadas al programa.
+Accounting Repositorio de facturas y extractos Simplificar Admin /
+bancarios. Dashboard de resumen QBO. Cliente
+Inventory Módulo de inventario — se elimina del Eliminar —
+portal. Migrado a QuickBooks.
+2. Detalle por Módulo
+2.1 Home / Dashboard
+Ruta /
+Acceso Todos los roles autenticados
+Estado actual Activo y funcional
+Descripción Panel principal que muestra un resumen de la actividad del
+cliente: documentos recientes, eventos próximos, métricas
+clave y accesos rápidos a los módulos principales.
+Cambios previstos Ninguno en esta fase.
+2.2 Calendar
+Ruta /calendar
+Acceso Roles con permiso 'calendar'
+Estado actual Activo y funcional
+Descripción Calendario de eventos, reuniones, fechas clave y actividades
+relacionadas con el cliente y el programa de Strategic Mates.
+Cambios previstos Ninguno en esta fase.
+2.3 Feed
+Ruta /feed
+Acceso Roles con permiso 'feed'
+Estado actual Activo y funcional
+Descripción Muro de comunicaciones internas. Permite publicar noticias,
+actualizaciones, recursos y comunicados de Strategic Mates
+hacia los clientes.
+Funcionalidades Publicaciones con imagen, likes, comentarios, compartir.
+Noticias del sector (feed_news).
+Cambios previstos Ninguno en esta fase.
+2.4 Process Maps
+Ruta /process-maps y subvistas
+Acceso Roles con permiso 'process_maps'
+Estado actual Activo y funcional
+Descripción Módulo central de gestión de procesos empresariales. Cada
+cliente tiene un mapa de procesos organizado por categorías
+(estratégicos, cadena de valor, soporte).
+Niveles Proceso → Subproceso → Sub-subproceso
+Funcionalidades Diagramas BPMN interactivos (ES/EN), nodos vinculados a
+documentos o subprocesos, walkthrough paso a paso, botón
+Ver Manual, documentos por proceso (MP, FOR, MN, IN, AN, PO,
+PR, CR).
+Visibilidad cliente Ve diagrama, walkthrough, Ver Manual y documentos. No puede
+editar ni eliminar.
+Cambios previstos Ninguno en esta fase.
+2.5 Repositories
+Ruta /repositories y /repositories/:id
+Acceso Roles con permiso 'repositories'
+Estado actual Activo y funcional — recientemente reestructurado
+Descripción Repositorio documental principal del cliente. Organizado en tres
+pestañas.
+Tab 1: Company Setup Documentos iniciales requeridos al cliente: legales, RRHH,
+certificados, marketing, SOPs.
+Tab 2: Process Documents Todos los manuales, formatos e instructivos cargados en el
+mapa de procesos, visualizados en árbol por categoría →
+proceso → subproceso.
+Tab 3: Records by Process Registros y documentos llenados subidos al repositorio,
+organizados por proceso. Botón 'Añadir registro' con selector de
+proceso/subproceso.
+Visibilidad cliente Puede ver y descargar documentos. No puede editar ni eliminar.
+Cambios previstos Ninguno en esta fase.
+2.6 Contracts
+Ruta /contracts y /contracts/:id
+Acceso Admin y superadmin. Clientes pueden ver sus propios contratos.
+Estado actual Activo y funcional
+Descripción Gestión de contratos entre Strategic Mates y los clientes.
+Permite crear, ver y gestionar contratos con estado y
+entregables asociados.
+Cambios previstos Ninguno en esta fase.
+2.7 Tracking
+Ruta /tracking y /tracking/:id
+Acceso Roles con permiso 'tracking'
+Estado actual Activo y funcional
+Descripción Seguimiento de proyectos, entregables y tareas por cliente.
+Incluye vista Gantt para visualizar el progreso y fechas clave del
+proyecto.
+Cambios previstos Ninguno en esta fase.
+2.8 Catalog
+Ruta /catalog
+Acceso Roles con permiso 'catalog'
+Estado actual Activo y funcional
+Descripción Catálogo de servicios, paquetes y productos ofrecidos por
+Strategic Mates. Permite a los clientes explorar las opciones
+disponibles.
+Cambios previstos Ninguno en esta fase.
+2.9 Assessments
+Ruta /assessment/1 y /assessment/3
+Acceso Público (sin login requerido)
+Estado actual Activo y funcional — recientemente rediseñado
+Descripción Evaluaciones de diagnóstico empresarial. El Assessment 1
+incluye matriz de madurez operativa (7 dimensiones + legal +
+involucramiento), evaluación de alineación al programa de
+franquicias y simulador Business Bishop completo con
+proyección a 5 años.
+Assessment 1 Madurez → Franquicia → Simulador BB → Resultados con
+diagnóstico personalizado.
+Assessment 3 Evaluación complementaria (en revisión). Por ajustar.
+Cambios previstos Generación de PDF con resultados por cliente (pendiente).
+2.10 Applications (Small Business)
+Ruta /admin/applications
+Acceso Solo superadmin
+Estado actual Activo y funcional
+Descripción Panel de gestión de aplicaciones del programa Small Business /
+Franquicia con Propósito. Permite revisar, calificar y gestionar
+las evaluaciones enviadas por clientes potenciales.
+Cambios previstos Permitir que mediante API se encuentre información actualizada
+del sector del cliente y solo en esta vista se visualice esos
+datos.
+2.11 Franchises
+Ruta /franchises y /franchises/:id
+Acceso Roles con permiso 'franchises'
+Estado actual Activo y funcional
+Descripción Gestión de franquicias y empresas clientes vinculadas al
+programa Strategic Mates. Incluye gestión de usuarios por
+franquicia.
+Cambios previstos Ninguno en esta fase.
+2.12 Accounting — SIMPLIFICAR
+⚠ Este módulo debe simplificarse significativamente. La contabilidad real se maneja en
+QuickBooks Online.
+Ruta /accounting
+Acceso Roles con permiso 'accounting'
+Estado actual ⚠ Pendiente de simplificación
+Qué se queda Repositorio de facturas y extractos bancarios subidos por el
+cliente o SM. Dashboard de resumen con enlace/integración a
+QuickBooks Online.
+Qué se elimina Toda la lógica de contabilidad interna: plan de cuentas, asientos
+contables, conciliaciones, reportes P&L propios del portal.
+Nueva propuesta Pantalla simple con: (1) acceso directo a QBO, (2) sección de
+carga de facturas/extractos, (3) resumen visual básico de
+documentos cargados.
+Integración QBO QuickBooks Online maneja inventario, contabilidad, facturación
+y reportes financieros completos.
+Prioridad Media — funcional pero pendiente de rediseño.
+2.13 Inventory — ELIMINAR
+✗ Este módulo se elimina completamente del portal. El inventario se gestiona en QuickBooks
+Online.
+Acceso actual Roles con permiso 'catalog' (entradas de inventario)
+Estado actual ✗ Marcado para eliminación
+Razón QuickBooks Online cubre completamente la gestión de
+inventario: productos, movimientos, valorización, reportes.
+Qué se elimina Tabla de items de inventario, movimientos, pantalla de
+inventario del portal, rutas asociadas.
+Qué se hace con los datos Los datos existentes se pueden exportar antes de la eliminación
+si se requiere historial.
+Prioridad Alta — eliminar en la próxima fase de desarrollo.

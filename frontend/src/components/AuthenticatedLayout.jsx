@@ -215,12 +215,9 @@ export default function AuthenticatedLayout() {
     <div className="min-h-screen bg-slate-50">
       {/* Header — fixed full-width at top, always above sidebar */}
       <header className="fixed top-0 left-0 right-0 h-14 bg-white border-b border-slate-200 z-30 flex items-center px-6">
-        {/* Left — logo mark */}
-        <div className="w-64 flex items-center gap-2 shrink-0 pl-0">
-          <div className="w-7 h-7 rounded-md bg-blue-600 flex items-center justify-center shrink-0">
-            <span className="text-white text-xs font-bold leading-none">SM</span>
-          </div>
-          <span className="text-sm font-semibold text-slate-700 tracking-wide">Strategic Mates</span>
+        {/* Left — logo */}
+        <div className="w-64 flex items-center shrink-0 pl-0">
+          <img src="/logo.png" alt="Strategic Mates" className="h-8 w-auto object-contain" />
         </div>
 
         {/* Center — active section icon + name */}

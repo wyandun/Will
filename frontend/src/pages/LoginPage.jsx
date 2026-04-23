@@ -87,11 +87,8 @@ export default function LoginPage() {
       {/* ── Left panel (hidden on mobile) ── */}
       <div className="hidden lg:flex lg:w-1/2 bg-slate-900 flex-col items-center justify-center px-12 py-16">
         {/* Brand */}
-        <div className="flex items-center gap-3 mb-10">
-          <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center shrink-0">
-            <span className="text-white text-sm font-bold leading-none">SM</span>
-          </div>
-          <span className="text-white text-2xl font-bold tracking-tight">Strategic Mates</span>
+        <div className="flex items-center justify-center mb-10">
+          <img src="/logo.png" alt="Strategic Mates" className="h-14 w-auto object-contain" />
         </div>
 
         {/* Tagline */}
@@ -119,13 +116,8 @@ export default function LoginPage() {
       <div className="flex-1 bg-gray-50 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
           {/* Heading — visible on mobile where the left panel is hidden */}
-          <div className="text-center mb-8 lg:hidden">
-            <div className="inline-flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-                <span className="text-white text-xs font-bold">SM</span>
-              </div>
-              <span className="text-xl font-bold text-slate-800">Strategic Mates</span>
-            </div>
+          <div className="flex justify-center mb-8 lg:hidden">
+            <img src="/logo.png" alt="Strategic Mates" className="h-10 w-auto object-contain" />
           </div>
 
           <div className="text-center mb-8">

@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project Charter — SM Portal · Strategic Mates</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 10.5pt;
+    color: #1e293b;
+    background: #fff;
+    line-height: 1.45;
+  }
+
+  @page {
+    size: A4;
+    margin: 14mm 16mm 12mm 16mm;
+  }
+
+  @media print {
+    body { font-size: 9.5pt; }
+    .page-break { page-break-before: always; }
+  }
+
+  .page {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 18px 22px 14px;
+  }
+
+  /* ── HEADER ── */
+  .doc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 3px solid #2563EB;
+    padding-bottom: 10px;
+    margin-bottom: 14px;
+  }
+  .doc-header img {
+    height: 46px;
+    width: auto;
+    object-fit: contain;
+  }
+  .doc-header-right {
+    text-align: right;
+  }
+  .doc-title {
+    font-size: 15pt;
+    font-weight: 700;
+    color: #2563EB;
+    letter-spacing: -0.3px;
+  }
+  .doc-subtitle {
+    font-size: 8.5pt;
+    color: #64748b;
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── SECTION HEADERS ── */
+  .section-title {
+    font-size: 8pt;
+    font-weight: 700;
+    color: #2563EB;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    border-bottom: 1.5px solid #dbeafe;
+    padding-bottom: 3px;
+    margin-bottom: 7px;
+    margin-top: 13px;
+  }
+
+  /* ── TWO-COLUMN GRID ── */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 18px;
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0 14px;
+  }
+  .col-span-2 { grid-column: span 2; }
+
+  /* ── INFO PAIRS ── */
+  .info-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 3px;
+    align-items: baseline;
+  }
+  .info-label {
+    font-size: 8pt;
+    font-weight: 600;
+    color: #475569;
+    min-width: 90px;
+    flex-shrink: 0;
+  }
+  .info-value {
+    font-size: 9.5pt;
+    color: #1e293b;
+  }
+
+  /* ── OVERVIEW BOX ── */
+  .overview-box {
+    background: #f0f7ff;
+    border-left: 3px solid #2563EB;
+    border-radius: 0 4px 4px 0;
+    padding: 7px 10px;
+    font-size: 9.5pt;
+    color: #1e293b;
+    margin-bottom: 2px;
+  }
+
+  /* ── ACTOR TREE ── */
+  .actor-tree {
+    font-size: 9pt;
+    color: #334155;
+    line-height: 1.6;
+  }
+  .actor-tree .actor-root {
+    font-weight: 700;
+    color: #2563EB;
+  }
+  .actor-tree .l1 { padding-left: 14px; }
+  .actor-tree .l2 { padding-left: 28px; }
+  .actor-tree .l3 { padding-left: 42px; color: #64748b; }
+  .actor-tree .connector { color: #94a3b8; margin-right: 3px; }
+
+  /* ── TECH STACK PILLS ── */
+  .pill-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+  }
+  .pill {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1d4ed8;
+    font-size: 7.5pt;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+
+  /* ── ROLES ── */
+  .role-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+  }
+  .role-badge {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    color: #334155;
+    font-size: 7.5pt;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-family: "SF Mono", "Consolas", "Courier New", monospace;
+  }
+
+  /* ── SCOPE MODULES ── */
+  .scope-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px 16px;
+    margin-top: 4px;
+  }
+  .scope-item {
+    font-size: 9pt;
+    color: #1e293b;
+    padding: 2px 0;
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+  }
+  .scope-item::before {
+    content: "▸";
+    color: #2563EB;
+    font-size: 7pt;
+    flex-shrink: 0;
+  }
+  .scope-item.infra::before { color: #64748b; }
+
+  /* ── PHASE 2 BOX ── */
+  .phase2-box {
+    border: 1.5px dashed #93c5fd;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-top: 10px;
+    background: #fafcff;
+  }
+  .phase2-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+  }
+  .phase2-title {
+    font-size: 8pt;
+    font-weight: 700;
+    color: #60a5fa;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+  .badge-coming {
+    background: #dbeafe;
+    color: #2563EB;
+    font-size: 6.5pt;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 1px solid #bfdbfe;
+  }
+  .scope-grid.phase2 .scope-item::before { color: #93c5fd; }
+  .scope-grid.phase2 .scope-item { color: #64748b; }
+
+  /* ── DIVIDER ── */
+  .divider {
+    border: none;
+    border-top: 1px solid #e2e8f0;
+    margin: 10px 0;
+  }
+
+  /* ── FOOTER ── */
+  .doc-footer {
+    border-top: 1.5px solid #e2e8f0;
+    margin-top: 14px;
+    padding-top: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 7.5pt;
+    color: #94a3b8;
+  }
+  .doc-footer span { font-weight: 600; color: #64748b; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="doc-header">
+    <img src="../logo.png" alt="Strategic Mates">
+    <div class="doc-header-right">
+      <div class="doc-title">SM Portal — Project Charter</div>
+      <div class="doc-subtitle">Strategic Mates · Portal B2B SaaS · Fase 1</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div>
+      <div class="section-title">Información General</div>
+      <div class="info-row"><span class="info-label">Cliente</span><span class="info-value">Strategic Mates</span></div>
+      <div class="info-row"><span class="info-label">Proyecto</span><span class="info-value">SM Portal — Sistema de gestión interna</span></div>
+      <div class="info-row"><span class="info-label">Desarrollador</span><span class="info-value">Aquiles Dev (equipo de 1)</span></div>
+      <div class="info-row"><span class="info-label">Tipo</span><span class="info-value">Plataforma SaaS B2B — uso interno y de clientes</span></div>
+      <div class="info-row"><span class="info-label">Estado</span><span class="info-value">Fase 1 en desarrollo activo</span></div>
+    </div>
+    <div>
+      <div class="section-title">Descripción del Proyecto</div>
+      <div class="overview-box">
+        Migración completa del portal operativo de Strategic Mates a una plataforma moderna. Reemplaza el sistema anterior (Firestore + HTML/PHP) con una solución robusta, segura y escalable que centraliza la gestión de franquicias, empresas SB, contratos, documentos, contabilidad y procesos internos.
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div>
+      <div class="section-title">Actores del Sistema</div>
+      <div class="actor-tree">
+        <div class="actor-root">Strategic Mates <span style="font-weight:400;color:#64748b;font-size:8pt;">(Superadmin)</span></div>
+        <div class="l1"><span class="connector">└─</span>SM Franchises <span style="color:#64748b;font-size:8pt;">(ej: SM Florida, SM Texas)</span></div>
+        <div class="l2"><span class="connector">└─</span>Small Businesses / SBs <span style="color:#64748b;font-size:8pt;">(clientes)</span></div>
+        <div class="l3"><span class="connector">├─</span>Business Bishop <span style="color:#94a3b8;font-size:8pt;">(inversor patrocinador)</span></div>
+        <div class="l3"><span class="connector">└─</span>Sub-Franquicias <span style="color:#94a3b8;font-size:8pt;">(abiertas por el dueño del SB)</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="section-title">Roles del Sistema</div>
+      <div class="role-list">
+        <span class="role-badge">superadmin</span>
+        <span class="role-badge">admin_sm</span>
+        <span class="role-badge">sb_owner</span>
+        <span class="role-badge">sb_employee</span>
+        <span class="role-badge">bb</span>
+        <span class="role-badge">sub_franchise_owner</span>
+        <span class="role-badge">sub_franchise_admin</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">Tecnologías Utilizadas</div>
+  <div class="pill-group">
+    <span class="pill">Laravel 12 + PHP 8.4</span>
+    <span class="pill">React 19 + Vite</span>
+    <span class="pill">Tailwind CSS v4</span>
+    <span class="pill">PostgreSQL 16</span>
+    <span class="pill">Redis 7</span>
+    <span class="pill">Docker Compose</span>
+    <span class="pill">Sanctum + Spatie Permissions</span>
+    <span class="pill">DocuSeal (firma electrónica)</span>
+    <span class="pill">QuickBooks Online</span>
+    <span class="pill">OpenAI API</span>
+    <span class="pill">bpmn-js</span>
+    <span class="pill">FullCalendar</span>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section-title">Fase 1 — Alcance Actual</div>
+
+  <div style="margin-bottom:6px;">
+    <div style="font-size:8pt;font-weight:600;color:#475569;margin-bottom:4px;">Infraestructura y configuración base</div>
+    <div class="scope-grid">
+      <div class="scope-item infra">Repositorio Git + Docker Compose</div>
+      <div class="scope-item infra">Base de datos: 29 tablas, migraciones y seeders</div>
+      <div class="scope-item infra">Backend Laravel 12 con autenticación y permisos</div>
+      <div class="scope-item infra">Frontend React 19 con ruteo y estado global</div>
+    </div>
+  </div>
+
+  <div style="margin-bottom:4px;">
+    <div style="font-size:8pt;font-weight:600;color:#475569;margin-bottom:4px;">Módulos del portal</div>
+    <div class="scope-grid">
+      <div class="scope-item">Login y autenticación (split layout)</div>
+      <div class="scope-item">Dashboard / Home con KPIs y accesos rápidos</div>
+      <div class="scope-item">Invitación de usuarios por email</div>
+      <div class="scope-item">SM Franchises (gestión de franquicias)</div>
+      <div class="scope-item">Perfil de usuario con avatar y contraseña</div>
+      <div class="scope-item">Companies (gestión de empresas SB)</div>
+      <div class="scope-item">Header con selector de idioma (EN/ES)</div>
+      <div class="scope-item">SB Applications (scoring, análisis AI, Close Deal)</div>
+      <div class="scope-item">Sidebar dinámico por rol y permisos</div>
+      <div class="scope-item">Users &amp; Permissions por módulo</div>
+      <div class="scope-item">Feed (publicaciones internas)</div>
+      <div class="scope-item">Process Maps (editor BPMN bilingüe, 2 por SB)</div>
+      <div class="scope-item">Contracts (firma digital DocuSeal, 3 firmantes)</div>
+      <div class="scope-item">Accounting &amp; Finance (integración QuickBooks)</div>
+      <div class="scope-item">Document Repository (carga, revisión, aprobación)</div>
+      <div class="scope-item">Tracking (proyectos, tareas, Gantt)</div>
+      <div class="scope-item">Service Catalog (solo superadmin)</div>
+      <div class="scope-item">Calendar (eventos internos con FullCalendar)</div>
+    </div>
+  </div>
+
+  <div class="phase2-box">
+    <div class="phase2-header">
+      <span class="phase2-title">Fase 2 — Alcance Futuro</span>
+      <span class="badge-coming">Post-lanzamiento Fase 1</span>
+    </div>
+    <div class="scope-grid phase2">
+      <div class="scope-item">Assessment público (wizard 4 etapas, 63 preguntas, PDF)</div>
+      <div class="scope-item">Formulario público BB Application</div>
+      <div class="scope-item">Assessment 3 (auditoría)</div>
+      <div class="scope-item">Flujo completo Close Deal (UI + auto-creación de empresa)</div>
+      <div class="scope-item">Landing page pública de Strategic Mates</div>
+    </div>
+  </div>
+
+  <div class="doc-footer">
+    <div><span>Aquiles Dev</span> · Desarrollador independiente</div>
+    <div>Versión 1.0 · Abril 2026</div>
+    <div style="color:#ef4444;font-weight:600;font-size:7.5pt;">CONFIDENCIAL</div>
+  </div>
+
+</div>
+</body>
+</html>
