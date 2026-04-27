@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BbAssignmentController;
 use App\Http\Controllers\Api\CompanyController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FranchiseController;
 use Illuminate\Support\Facades\Route;
 
@@ -53,4 +54,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('bb-assignments', [BbAssignmentController::class, 'store']);
     Route::delete('bb-assignments/{bbAssignment}', [BbAssignmentController::class, 'destroy']);
+
+    // Dashboard
+    Route::prefix('dashboard')->group(function () {
+        Route::get('/kpis', [DashboardController::class, 'kpis']);
+        Route::get('/feed', [DashboardController::class, 'feed']);
+        Route::get('/events', [DashboardController::class, 'events']);
+        Route::get('/tracking', [DashboardController::class, 'tracking']);
+        Route::get('/contracts', [DashboardController::class, 'contracts']);
+        Route::get('/documents', [DashboardController::class, 'documents']);
+        Route::get('/process-maps', [DashboardController::class, 'processMaps']);
+    });
 });
