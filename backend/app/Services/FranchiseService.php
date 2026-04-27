@@ -17,12 +17,18 @@ class FranchiseService
      */
     public function list(User $authUser): LengthAwarePaginator
     {
+        // Only select the columns that FranchiseResource serializes — avoids
+        // loading large text fields (address, etc.) on listing queries.
+        $columns = ['id', 'name', 'type', 'parent_company_id', 'owner_user_id', 'region', 'address', 'phone', 'created_at', 'updated_at'];
+
         if ($authUser->hasRole('superadmin')) {
-            return Franchise::paginate(25);
+            return Franchise::select($columns)->paginate(25);
         }
 
         // admin_sm sees only their own franchise.
-        return Franchise::where('id', $authUser->sm_franchise_id)->paginate(25);
+        return Franchise::select($columns)
+            ->where('id', $authUser->sm_franchise_id)
+            ->paginate(25);
     }
 
     /**

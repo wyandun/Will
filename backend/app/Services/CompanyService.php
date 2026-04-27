@@ -19,12 +19,25 @@ class CompanyService
      */
     public function list(User $authUser): LengthAwarePaginator
     {
+        // Only select the columns that CompanyResource serializes on listings.
+        // QBO token fields (qbo_access_token, qbo_refresh_token) are large
+        // encrypted text columns — never needed on a list endpoint.
+        $columns = [
+            'id', 'name', 'industry', 'address', 'city', 'phone', 'email',
+            'website', 'state', 'country', 'logo_path', 'employees_count',
+            'annual_revenue', 'years_operating', 'sm_franchise_id',
+            'created_at', 'updated_at',
+        ];
+
         if ($authUser->hasRole('superadmin')) {
-            return Company::with('franchise')->paginate(25);
+            return Company::select($columns)
+                ->with('franchise:id,name')
+                ->paginate(25);
         }
 
         // admin_sm sees only companies managed by their franchise.
-        return Company::with('franchise')
+        return Company::select($columns)
+            ->with('franchise:id,name')
             ->where('sm_franchise_id', $authUser->sm_franchise_id)
             ->paginate(25);
     }
