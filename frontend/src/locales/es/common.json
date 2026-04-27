@@ -68,7 +68,20 @@
   },
   "dashboard": {
     "title": "Inicio",
-    "welcome": "Bienvenido al portal de Strategic Mates."
+    "welcome": "Bienvenido al portal de Strategic Mates.",
+    "good_morning": "Buenos días",
+    "good_afternoon": "Buenas tardes",
+    "good_evening": "Buenas noches",
+    "unreviewed_docs": "docs sin revisar",
+    "active_projects": "proyectos activos",
+    "kpi_events": "Eventos",
+    "kpi_events_sub": "Próximos 14 días",
+    "kpi_pending_sig": "Firma pendiente",
+    "kpi_pending_sig_sub": "Contratos",
+    "kpi_projects": "Proyectos activos",
+    "kpi_projects_sub": "Seguimiento",
+    "kpi_to_review": "Por revisar",
+    "kpi_to_review_sub": "Documentos"
   },
   "franchises": {
     "title": "Franquicias",

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BbAssignmentController;
 use App\Http\Controllers\Api\CompanyController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FranchiseController;
 use Illuminate\Support\Facades\Route;
 
@@ -44,6 +45,8 @@ Route::prefix('auth')->middleware('auth:sanctum')->group(function () {
 // Protected resources — require Sanctum authentication
 // ---------------------------------------------------------------------------
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/dashboard/kpis', [DashboardController::class, 'kpis']);
+
     Route::apiResource('franchises', FranchiseController::class);
 
     // close-deal must be declared BEFORE apiResource to prevent {company}

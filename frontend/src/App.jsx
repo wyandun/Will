@@ -5,19 +5,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AuthenticatedLayout from './components/AuthenticatedLayout';
 import FranchisesPage from './pages/franchises/FranchisesPage';
 import CompaniesPage from './pages/companies/CompaniesPage';
+import DashboardPage from './pages/dashboard/DashboardPage';
 import { useAuthStore } from './store/authStore';
-
-// ─── Pages ───────────────────────────────────────────────────────────────────
-
-function DashboardPage() {
-  const { t } = useTranslation('common');
-  return (
-    <div>
-      <h1 className="text-2xl font-semibold text-slate-800 mb-1">{t('dashboard.title')}</h1>
-      <p className="text-sm text-slate-500">{t('dashboard.welcome')}</p>
-    </div>
-  );
-}
 
 /**
  * Generic placeholder rendered for modules that are not yet implemented.

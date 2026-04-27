@@ -68,7 +68,20 @@
   },
   "dashboard": {
     "title": "Dashboard",
-    "welcome": "Welcome to the Strategic Mates portal."
+    "welcome": "Welcome to the Strategic Mates portal.",
+    "good_morning": "Good morning",
+    "good_afternoon": "Good afternoon",
+    "good_evening": "Good evening",
+    "unreviewed_docs": "unreviewed docs",
+    "active_projects": "active projects",
+    "kpi_events": "Events",
+    "kpi_events_sub": "Next 14 days",
+    "kpi_pending_sig": "Pending signature",
+    "kpi_pending_sig_sub": "Contracts",
+    "kpi_projects": "Projects active",
+    "kpi_projects_sub": "Tracking",
+    "kpi_to_review": "To review",
+    "kpi_to_review_sub": "Documents"
   },
   "franchises": {
     "title": "Franchises",
