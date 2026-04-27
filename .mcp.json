@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "linear": {
+      "type": "http",
+      "url": "https://mcp.linear.app/mcp",
+      "headers": {
+        "Authorization": "Bearer lin_api_tElh3IJZFhzdRBwS34JHpKk9sWTJxE2A8UpTr0Da"
+      }
+    }
+  }
+}

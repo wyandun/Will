@@ -5,7 +5,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AuthenticatedLayout from './components/AuthenticatedLayout';
 import FranchisesPage from './pages/franchises/FranchisesPage';
 import CompaniesPage from './pages/companies/CompaniesPage';
-import DashboardPage from './pages/dashboard/DashboardPage';
 import { useAuthStore } from './store/authStore';
 
 /**
@@ -62,7 +61,7 @@ export default function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<DashboardPage />} />
+          <Route index element={<StubPage title={t('nav.dashboard')} />} />
           <Route
             path="/franchises"
             element={

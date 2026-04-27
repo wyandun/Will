@@ -9,7 +9,21 @@
       "Bash(pip install:*)",
       "Bash(python -m pip install python-docx)",
       "Bash(\"C:\\\\Users\\\\cazad\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python311\\\\python.exe\" project_charter_generator.py)",
-      "Bash(python -c ':*)"
+      "Bash(python -c ':*)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(LINEAR_API_KEY=test LINEAR_TEAM_ID=test DRY_RUN=true node --input-type=module create_linear_issues.js)",
+      "Bash(python -c ' *)",
+      "Bash(python3 -c ' *)",
+      "Bash(node -e ' *)",
+      "Bash(git rm *)",
+      "PowerShell($c = Get-Content -Raw 'C:\\\\Users\\\\cazad\\\\.claude\\\\projects\\\\d--Trabajo-Will\\\\8139dc72-565c-46e6-a305-05b6442e9020\\\\tool-results\\\\mcp-linear-list_issues-1776982332903.txt'; $c.Substring\\(20000, 20000\\))",
+      "PowerShell($c = Get-Content -Raw 'C:\\\\Users\\\\cazad\\\\.claude\\\\projects\\\\d--Trabajo-Will\\\\8139dc72-565c-46e6-a305-05b6442e9020\\\\tool-results\\\\mcp-linear-list_issues-1776982332903.txt'; $c.Substring\\(40000, 20000\\))",
+      "Bash(python3 -c \"content = open\\(r'd:\\\\Trabajo\\\\Will\\\\docs\\\\SM_Portal_texto.txt', encoding='utf-8'\\).read\\(\\); print\\('TOTAL_CHARS:', len\\(content\\)\\)\")",
+      "Bash(grep -oE '\"id\":\"__TRACKED_VAR__[^}]{0,800}' C:/Users/cazad/.claude/projects/d--Trabajo-Will/8139dc72-565c-46e6-a305-05b6442e9020/tool-results/mcp-linear-list_issues-1776982332903.txt)",
+      "Bash(grep -oE '\"id\":\"WILT-__TRACKED_VAR__\"[^[]{0,2500}' C:/Users/cazad/.claude/projects/d--Trabajo-Will/8139dc72-565c-46e6-a305-05b6442e9020/tool-results/mcp-linear-list_issues-1776982332903.txt)",
+      "Bash(grep -E \"\\\\.\\(jsx?|tsx?|json\\)$\")",
+      "Bash(git push *)"
     ]
   }
 }
