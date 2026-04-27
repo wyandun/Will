@@ -593,30 +593,18 @@ export default function DashboardPage() {
   const [processMaps, setProcessMaps] = useState([]);
 
   useEffect(() => {
-    const load = async () => {
-      const [kpisRes, feedRes, eventsRes, trackingRes, contractsRes, docsRes, mapsRes] =
-        await Promise.allSettled([
-          dashboardApi.getKpis(),
-          dashboardApi.getFeed(),
-          dashboardApi.getEvents(),
-          dashboardApi.getTracking(),
-          dashboardApi.getContracts(),
-          dashboardApi.getDocuments(),
-          dashboardApi.getProcessMaps(),
-        ]);
-
-      if (kpisRes.status === 'fulfilled') setKpis(kpisRes.value ?? DEFAULT_KPIS);
-      if (feedRes.status === 'fulfilled') setFeed(feedRes.value ?? []);
-      if (eventsRes.status === 'fulfilled') setEvents(eventsRes.value ?? []);
-      if (trackingRes.status === 'fulfilled') setTracking(trackingRes.value ?? []);
-      if (contractsRes.status === 'fulfilled') setContracts(contractsRes.value ?? DEFAULT_CONTRACTS);
-      if (docsRes.status === 'fulfilled') setDocuments(docsRes.value ?? []);
-      if (mapsRes.status === 'fulfilled') setProcessMaps(mapsRes.value ?? []);
-
-      setLoading(false);
-    };
-
-    load();
+    dashboardApi.getAll()
+      .then((data) => {
+        if (data.kpis)         setKpis(data.kpis);
+        if (data.feed)         setFeed(data.feed);
+        if (data.events)       setEvents(data.events);
+        if (data.tracking)     setTracking(data.tracking);
+        if (data.contracts)    setContracts(data.contracts);
+        if (data.documents)    setDocuments(data.documents);
+        if (data.process_maps) setProcessMaps(data.process_maps);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   return (

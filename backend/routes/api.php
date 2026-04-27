@@ -57,6 +57,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Dashboard
     Route::prefix('dashboard')->group(function () {
+        Route::get('/', [DashboardController::class, 'index']);
         Route::get('/kpis', [DashboardController::class, 'kpis']);
         Route::get('/feed', [DashboardController::class, 'feed']);
         Route::get('/events', [DashboardController::class, 'events']);

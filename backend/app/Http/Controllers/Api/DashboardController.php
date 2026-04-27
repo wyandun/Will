@@ -11,6 +11,24 @@ class DashboardController extends Controller
 {
     public function __construct(private DashboardService $dashboardService) {}
 
+    public function index(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'kpis'         => $this->dashboardService->getKpis($user),
+                'feed'         => $this->dashboardService->getFeed($user),
+                'events'       => $this->dashboardService->getEvents($user),
+                'tracking'     => $this->dashboardService->getTracking($user),
+                'contracts'    => $this->dashboardService->getContracts($user),
+                'documents'    => $this->dashboardService->getDocuments($user),
+                'process_maps' => $this->dashboardService->getProcessMaps($user),
+            ],
+        ]);
+    }
+
     public function kpis(Request $request): JsonResponse
     {
         $data = $this->dashboardService->getKpis($request->user());
