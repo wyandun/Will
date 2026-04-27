@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { franchisesApi } from '../../api/franchises';
 
@@ -24,6 +25,7 @@ const EMPTY_FORM = {
  *   onSave     — async fn(formData, id?) — called with cleaned payload on submit
  */
 export default function CompanyFormModal({ company, onClose, onSave }) {
+  const { t } = useTranslation('common');
   const isEditing = company !== null;
   const role = useAuthStore((s) => s.role);
   const isAdminSm = role === 'admin_sm';
@@ -91,8 +93,8 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
 
   function validate() {
     const next = {};
-    if (!form.name.trim()) next.name = 'Name is required.';
-    if (!form.sm_franchise_id) next.sm_franchise_id = 'Franchise is required.';
+    if (!form.name.trim()) next.name = t('companies.form.name_required');
+    if (!form.sm_franchise_id) next.sm_franchise_id = t('companies.form.franchise_required');
     return next;
   }
 
@@ -139,7 +141,7 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
       await onSave(payload, isEditing ? company.id : undefined);
     } catch (error) {
       const message =
-        error?.response?.data?.message ?? 'An unexpected error occurred. Please try again.';
+        error?.response?.data?.message ?? t('common.unexpected_error');
       setApiError(message);
     } finally {
       setIsSubmitting(false);
@@ -165,12 +167,12 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 shrink-0">
           <h2 className="text-base font-semibold text-slate-800">
-            {isEditing ? 'Edit Company' : 'New Company'}
+            {isEditing ? t('companies.edit_title') : t('companies.new_title')}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t('common.close')}
             className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
@@ -192,7 +194,7 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
             {/* Name */}
             <div>
               <label htmlFor="cf-name" className="block text-sm font-medium text-slate-700 mb-1">
-                Name <span className="text-red-500">*</span>
+                {t('companies.form.name')} <span className="text-red-500">{t('common.required')}</span>
               </label>
               <input
                 id="cf-name"
@@ -201,7 +203,7 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
                 value={form.name}
                 onChange={handleChange}
                 disabled={isSubmitting}
-                placeholder="e.g. Taco Express LLC"
+                placeholder={t('companies.form.name_placeholder')}
                 className={`${inputBase} ${errors.name ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
               />
               {errors.name && (
@@ -212,7 +214,7 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
             {/* Franchise */}
             <div>
               <label htmlFor="cf-franchise" className="block text-sm font-medium text-slate-700 mb-1">
-                Franchise <span className="text-red-500">*</span>
+                {t('companies.form.franchise')} <span className="text-red-500">{t('common.required')}</span>
               </label>
               <select
                 id="cf-franchise"
@@ -223,7 +225,7 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
                 className={`${inputBase} ${errors.sm_franchise_id ? 'border-red-400 bg-red-50' : 'border-slate-300'} ${isAdminSm ? 'cursor-not-allowed' : ''}`}
               >
                 <option value="">
-                  {franchisesLoading ? 'Loading franchises…' : 'Select a franchise'}
+                  {franchisesLoading ? t('companies.form.franchise_loading') : t('companies.form.franchise_select')}
                 </option>
                 {franchises.map((f) => (
                   <option key={f.id} value={String(f.id)}>
@@ -240,7 +242,7 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="cf-industry" className="block text-sm font-medium text-slate-700 mb-1">
-                  Industry
+                  {t('companies.form.industry')}
                 </label>
                 <input
                   id="cf-industry"
@@ -249,13 +251,13 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
                   value={form.industry}
                   onChange={handleChange}
                   disabled={isSubmitting}
-                  placeholder="e.g. Food & Beverage"
+                  placeholder={t('companies.form.industry_placeholder')}
                   className={`${inputBase} border-slate-300`}
                 />
               </div>
               <div>
                 <label htmlFor="cf-phone" className="block text-sm font-medium text-slate-700 mb-1">
-                  Phone
+                  {t('companies.form.phone')}
                 </label>
                 <input
                   id="cf-phone"
@@ -264,7 +266,7 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
                   value={form.phone}
                   onChange={handleChange}
                   disabled={isSubmitting}
-                  placeholder="e.g. 5551234567"
+                  placeholder={t('companies.form.phone_placeholder')}
                   className={`${inputBase} border-slate-300`}
                 />
               </div>
@@ -273,7 +275,7 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
             {/* Email */}
             <div>
               <label htmlFor="cf-email" className="block text-sm font-medium text-slate-700 mb-1">
-                Email
+                {t('companies.form.email')}
               </label>
               <input
                 id="cf-email"
@@ -282,7 +284,7 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
                 value={form.email}
                 onChange={handleChange}
                 disabled={isSubmitting}
-                placeholder="e.g. contact@tacoexpress.com"
+                placeholder={t('companies.form.email_placeholder')}
                 className={`${inputBase} border-slate-300`}
               />
             </div>
@@ -291,7 +293,7 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="cf-city" className="block text-sm font-medium text-slate-700 mb-1">
-                  City
+                  {t('companies.form.city')}
                 </label>
                 <input
                   id="cf-city"
@@ -300,13 +302,13 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
                   value={form.city}
                   onChange={handleChange}
                   disabled={isSubmitting}
-                  placeholder="e.g. Miami"
+                  placeholder={t('companies.form.city_placeholder')}
                   className={`${inputBase} border-slate-300`}
                 />
               </div>
               <div>
                 <label htmlFor="cf-state" className="block text-sm font-medium text-slate-700 mb-1">
-                  State
+                  {t('companies.form.state')}
                 </label>
                 <input
                   id="cf-state"
@@ -315,7 +317,7 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
                   value={form.state}
                   onChange={handleChange}
                   disabled={isSubmitting}
-                  placeholder="e.g. FL"
+                  placeholder={t('companies.form.state_placeholder')}
                   className={`${inputBase} border-slate-300`}
                 />
               </div>
@@ -324,7 +326,7 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
             {/* Country */}
             <div>
               <label htmlFor="cf-country" className="block text-sm font-medium text-slate-700 mb-1">
-                Country
+                {t('companies.form.country')}
               </label>
               <input
                 id="cf-country"
@@ -333,7 +335,7 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
                 value={form.country}
                 onChange={handleChange}
                 disabled={isSubmitting}
-                placeholder="e.g. USA"
+                placeholder={t('companies.form.country_placeholder')}
                 className={`${inputBase} border-slate-300`}
               />
             </div>
@@ -341,7 +343,7 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
             {/* Address */}
             <div>
               <label htmlFor="cf-address" className="block text-sm font-medium text-slate-700 mb-1">
-                Address
+                {t('companies.form.address')}
               </label>
               <input
                 id="cf-address"
@@ -350,7 +352,7 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
                 value={form.address}
                 onChange={handleChange}
                 disabled={isSubmitting}
-                placeholder="e.g. 123 Main St"
+                placeholder={t('companies.form.address_placeholder')}
                 className={`${inputBase} border-slate-300`}
               />
             </div>
@@ -358,7 +360,7 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
             {/* Notes */}
             <div>
               <label htmlFor="cf-notes" className="block text-sm font-medium text-slate-700 mb-1">
-                Notes
+                {t('companies.form.notes')}
               </label>
               <textarea
                 id="cf-notes"
@@ -367,7 +369,7 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
                 value={form.notes}
                 onChange={handleChange}
                 disabled={isSubmitting}
-                placeholder="Any additional notes about this company…"
+                placeholder={t('companies.form.notes_placeholder')}
                 className={`${inputBase} border-slate-300 resize-none`}
               />
             </div>
@@ -381,7 +383,7 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
               disabled={isSubmitting}
               className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 bg-white border border-slate-300 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
@@ -389,8 +391,8 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
               className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isSubmitting
-                ? isEditing ? 'Saving…' : 'Creating…'
-                : isEditing ? 'Save Changes' : 'Close Deal'}
+                ? isEditing ? t('common.saving') : t('companies.creating')
+                : isEditing ? t('common.save') : t('companies.create')}
             </button>
           </div>
         </form>

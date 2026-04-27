@@ -1,4 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/authStore';
 import { authApi } from '../api/auth';
 import { NAV_SECTIONS } from './navConfig';
@@ -11,16 +12,6 @@ function IconLogout() {
     </svg>
   );
 }
-
-const ROLE_LABELS = {
-  superadmin: 'Superadmin',
-  admin_sm: 'SM Admin',
-  sb_owner: 'SB Owner',
-  sb_employee: 'Employee',
-  bb: 'Business Bishop',
-  sub_franchise_owner: 'SF Owner',
-  sub_franchise_admin: 'SF Admin',
-};
 
 function buildNavItems(role, permissions) {
   const adminRoles = ['superadmin', 'admin_sm'];
@@ -52,6 +43,7 @@ function buildNavItems(role, permissions) {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function Sidebar() {
+  const { t } = useTranslation('common');
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const role = useAuthStore((s) => s.role);
@@ -81,6 +73,8 @@ export default function Sidebar() {
         : 'text-slate-400 hover:bg-slate-700/60 hover:text-white',
     ].join(' ');
 
+  const roleLabel = t(`roles.${role}`, { defaultValue: role });
+
   return (
     <aside className="fixed top-14 left-0 bottom-0 w-64 bg-slate-800 flex flex-col z-20">
       {/* Navigation */}
@@ -93,7 +87,7 @@ export default function Sidebar() {
             className={linkClass}
           >
             {item.icon}
-            {item.label}
+            {t(item.labelKey)}
           </NavLink>
         ))}
       </nav>
@@ -103,7 +97,7 @@ export default function Sidebar() {
         {/* Avatar — rounded square, 2 initials, clickeable → profile */}
         <NavLink
           to="/profile"
-          title="Account settings"
+          title={t('nav.profile')}
           className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center shrink-0 hover:bg-blue-500 transition-colors"
         >
           <span className="text-white text-xs font-bold leading-none uppercase">
@@ -118,13 +112,13 @@ export default function Sidebar() {
           <p className="text-white text-sm font-medium truncate leading-tight">
             {user?.name ?? 'User'}
           </p>
-          <span className="text-xs text-slate-400 truncate">{ROLE_LABELS[role] ?? role}</span>
+          <span className="text-xs text-slate-400 truncate">{roleLabel}</span>
         </div>
 
         {/* Logout icon button */}
         <button
           onClick={handleLogout}
-          title="Sign out"
+          title={t('auth.sign_out')}
           className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-700 hover:text-white transition-colors shrink-0"
         >
           <IconLogout />

@@ -1,30 +1,22 @@
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { SECTION_BY_PATH } from './navConfig';
 
 function useActiveSection() {
   const { pathname } = useLocation();
-  return SECTION_BY_PATH[pathname] ?? { label: 'SM Portal', icon: null };
+  return SECTION_BY_PATH[pathname] ?? { labelKey: null, icon: null };
 }
 import { useAuthVerify } from '../hooks/useAuthVerify';
 import { useAuthStore } from '../store/authStore';
 import { authApi } from '../api/auth';
 import Sidebar from './Sidebar';
 
-const ROLE_LABELS = {
-  superadmin: 'Super Admin',
-  admin_sm: 'SM Admin',
-  sb_owner: 'SB Owner',
-  sb_employee: 'Employee',
-  bb: 'Business Bishop',
-  sub_franchise_owner: 'SF Owner',
-  sub_franchise_admin: 'SF Admin',
-};
-
 // ─── Language selector ────────────────────────────────────────────────────────
 
 function LanguageSelector() {
-  const [lang, setLang] = useState('EN');
+  const { t, i18n } = useTranslation('common');
+  const currentLang = i18n.language === 'es' ? 'es' : 'en';
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -35,6 +27,12 @@ function LanguageSelector() {
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
+  const handleLanguageChange = (lang) => {
+    i18n.changeLanguage(lang);
+    localStorage.setItem('language', lang);
+    setOpen(false);
+  };
+
   return (
     <div ref={ref} className="relative">
       <button
@@ -44,20 +42,23 @@ function LanguageSelector() {
         <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253M3 12c0 .778.099 1.533.284 2.253" />
         </svg>
-        {lang}
+        {currentLang.toUpperCase()}
         <svg className={`w-3.5 h-3.5 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
       </button>
       {open && (
-        <div className="absolute right-0 mt-1.5 w-24 bg-white rounded-xl shadow-lg border border-slate-200 py-1 z-50">
-          {['EN', 'ES'].map((l) => (
+        <div className="absolute right-0 mt-1.5 w-28 bg-white rounded-xl shadow-lg border border-slate-200 py-1 z-50">
+          {[
+            { code: 'en', label: t('header.language_en') },
+            { code: 'es', label: t('header.language_es') },
+          ].map(({ code, label }) => (
             <button
-              key={l}
-              onClick={() => { setLang(l); setOpen(false); }}
-              className={`w-full px-4 py-2 text-sm text-left transition-colors ${lang === l ? 'text-blue-600 font-semibold bg-blue-50' : 'text-slate-700 hover:bg-slate-50'}`}
+              key={code}
+              onClick={() => handleLanguageChange(code)}
+              className={`w-full px-4 py-2 text-sm text-left transition-colors ${currentLang === code ? 'text-blue-600 font-semibold bg-blue-50' : 'text-slate-700 hover:bg-slate-50'}`}
             >
-              {l === 'EN' ? '🇺🇸 English' : '🇪🇸 Español'}
+              {label}
             </button>
           ))}
         </div>
@@ -69,6 +70,7 @@ function LanguageSelector() {
 // ─── User dropdown ────────────────────────────────────────────────────────────
 
 function UserDropdown() {
+  const { t } = useTranslation('common');
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const clearAuth = useAuthStore((s) => s.clearAuth);
@@ -110,7 +112,8 @@ function UserDropdown() {
   const initials = user?.name
     ? user.name.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('')
     : '?';
-  const roleLabel = ROLE_LABELS[useAuthStore.getState().role] ?? useAuthStore.getState().role;
+  const role = useAuthStore.getState().role;
+  const roleLabel = t(`roles.${role}`, { defaultValue: role });
 
   return (
     <div ref={containerRef} className="relative">
@@ -150,7 +153,7 @@ function UserDropdown() {
             <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
             </svg>
-            View Profile
+            {t('header.view_profile')}
           </button>
 
           <div className="my-1 border-t border-slate-100" />
@@ -162,7 +165,7 @@ function UserDropdown() {
             <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
             </svg>
-            Sign out
+            {t('auth.sign_out')}
           </button>
         </div>
       )}
@@ -178,6 +181,7 @@ function UserDropdown() {
  * then renders the fixed sidebar + scrollable content area.
  */
 export default function AuthenticatedLayout() {
+  const { t } = useTranslation('common');
   const { loading } = useAuthVerify();
   const activeSection = useActiveSection();
 
@@ -205,11 +209,13 @@ export default function AuthenticatedLayout() {
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
             />
           </svg>
-          <p className="text-sm text-slate-500">Loading…</p>
+          <p className="text-sm text-slate-500">{t('common.loading')}</p>
         </div>
       </div>
     );
   }
+
+  const activeSectionLabel = activeSection.labelKey ? t(activeSection.labelKey) : 'SM Portal';
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -225,7 +231,7 @@ export default function AuthenticatedLayout() {
           {activeSection.icon && (
             <span className="text-slate-500">{activeSection.icon}</span>
           )}
-          <span className="text-sm font-semibold">{activeSection.label}</span>
+          <span className="text-sm font-semibold">{activeSectionLabel}</span>
         </div>
 
         {/* Right — language selector + user dropdown */}

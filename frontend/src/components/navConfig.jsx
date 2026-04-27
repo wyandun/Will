@@ -1,9 +1,10 @@
-// Shared navigation config — icons + labels + paths used by Sidebar and Header
+// Shared navigation config — icons + i18n keys + paths used by Sidebar and Header
+// Labels are translation keys resolved at render time via t(item.labelKey)
 
 export const NAV_SECTIONS = [
   {
     key: 'dashboard',
-    label: 'Dashboard',
+    labelKey: 'nav.dashboard',
     path: '/',
     icon: (
       <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
@@ -13,7 +14,7 @@ export const NAV_SECTIONS = [
   },
   {
     key: 'franchises',
-    label: 'Franchises',
+    labelKey: 'nav.franchises',
     path: '/franchises',
     icon: (
       <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
@@ -23,7 +24,7 @@ export const NAV_SECTIONS = [
   },
   {
     key: 'companies',
-    label: 'Companies',
+    labelKey: 'nav.companies',
     path: '/companies',
     icon: (
       <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
@@ -33,7 +34,7 @@ export const NAV_SECTIONS = [
   },
   {
     key: 'sb-applications',
-    label: 'SB Applications',
+    labelKey: 'nav.sb_applications',
     path: '/sb-applications',
     icon: (
       <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
@@ -43,7 +44,7 @@ export const NAV_SECTIONS = [
   },
   {
     key: 'users',
-    label: 'Users',
+    labelKey: 'nav.users',
     path: '/users',
     icon: (
       <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
@@ -53,7 +54,7 @@ export const NAV_SECTIONS = [
   },
   {
     key: 'feed',
-    label: 'Feed',
+    labelKey: 'nav.feed',
     path: '/feed',
     icon: (
       <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
@@ -63,7 +64,7 @@ export const NAV_SECTIONS = [
   },
   {
     key: 'contracts',
-    label: 'Contracts',
+    labelKey: 'nav.contracts',
     path: '/contracts',
     icon: (
       <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
@@ -73,7 +74,7 @@ export const NAV_SECTIONS = [
   },
   {
     key: 'repository',
-    label: 'Repository',
+    labelKey: 'nav.repository',
     path: '/repository',
     icon: (
       <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
@@ -83,7 +84,7 @@ export const NAV_SECTIONS = [
   },
   {
     key: 'processes',
-    label: 'Process Maps',
+    labelKey: 'nav.process_maps',
     path: '/processes',
     icon: (
       <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
@@ -93,7 +94,7 @@ export const NAV_SECTIONS = [
   },
   {
     key: 'accounting',
-    label: 'Accounting & Finance',
+    labelKey: 'nav.accounting',
     path: '/accounting',
     icon: (
       <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
@@ -103,7 +104,7 @@ export const NAV_SECTIONS = [
   },
   {
     key: 'inventory',
-    label: 'Inventory',
+    labelKey: 'nav.inventory',
     path: '/inventory',
     icon: (
       <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
@@ -113,7 +114,7 @@ export const NAV_SECTIONS = [
   },
   {
     key: 'tracking',
-    label: 'Tracking',
+    labelKey: 'nav.tracking',
     path: '/tracking',
     icon: (
       <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
@@ -123,7 +124,7 @@ export const NAV_SECTIONS = [
   },
   {
     key: 'catalog',
-    label: 'Service Catalog',
+    labelKey: 'nav.service_catalog',
     path: '/catalog',
     icon: (
       <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
@@ -134,7 +135,7 @@ export const NAV_SECTIONS = [
   },
   {
     key: 'calendar',
-    label: 'Calendar',
+    labelKey: 'nav.calendar',
     path: '/calendar',
     icon: (
       <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
@@ -144,7 +145,7 @@ export const NAV_SECTIONS = [
   },
   {
     key: 'profile',
-    label: 'My Profile',
+    labelKey: 'nav.profile',
     path: '/profile',
     icon: (
       <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const EMPTY_FORM = {
   name: '',
@@ -16,6 +17,7 @@ const EMPTY_FORM = {
  *   onSave     — async fn(formData, id?) — called with cleaned payload on submit
  */
 export default function FranchiseFormModal({ franchise, onClose, onSave }) {
+  const { t } = useTranslation('common');
   const isEditing = franchise !== null;
 
   const [form, setForm] = useState(EMPTY_FORM);
@@ -50,8 +52,8 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
 
   function validate() {
     const next = {};
-    if (!form.name.trim()) next.name = 'Name is required.';
-    if (form.phone.length > 30) next.phone = 'Phone must be 30 characters or fewer.';
+    if (!form.name.trim()) next.name = t('franchises.form.name_required');
+    if (form.phone.length > 30) next.phone = t('franchises.form.phone_max');
     return next;
   }
 
@@ -77,7 +79,7 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
       await onSave(payload, isEditing ? franchise.id : undefined);
     } catch (error) {
       const message =
-        error?.response?.data?.message ?? 'An unexpected error occurred. Please try again.';
+        error?.response?.data?.message ?? t('common.unexpected_error');
       setApiError(message);
     } finally {
       setIsSubmitting(false);
@@ -98,12 +100,12 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
           <h2 className="text-base font-semibold text-slate-800">
-            {isEditing ? 'Edit Franchise' : 'New Franchise'}
+            {isEditing ? t('franchises.edit_title') : t('franchises.new_title')}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t('common.close')}
             className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
@@ -125,7 +127,7 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
             {/* Name */}
             <div>
               <label htmlFor="fm-name" className="block text-sm font-medium text-slate-700 mb-1">
-                Name <span className="text-red-500">*</span>
+                {t('franchises.form.name')} <span className="text-red-500">{t('common.required')}</span>
               </label>
               <input
                 id="fm-name"
@@ -134,7 +136,7 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
                 value={form.name}
                 onChange={handleChange}
                 disabled={isSubmitting}
-                placeholder="e.g. SM Florida"
+                placeholder={t('franchises.form.name_placeholder')}
                 className={[
                   'w-full rounded-lg border px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400',
                   'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
@@ -150,7 +152,7 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
             {/* Region */}
             <div>
               <label htmlFor="fm-region" className="block text-sm font-medium text-slate-700 mb-1">
-                Region
+                {t('franchises.form.region')}
               </label>
               <input
                 id="fm-region"
@@ -159,7 +161,7 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
                 value={form.region}
                 onChange={handleChange}
                 disabled={isSubmitting}
-                placeholder="e.g. Florida"
+                placeholder={t('franchises.form.region_placeholder')}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 transition"
               />
             </div>
@@ -167,7 +169,7 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
             {/* Phone */}
             <div>
               <label htmlFor="fm-phone" className="block text-sm font-medium text-slate-700 mb-1">
-                Phone
+                {t('franchises.form.phone')}
               </label>
               <input
                 id="fm-phone"
@@ -176,7 +178,7 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
                 value={form.phone}
                 onChange={handleChange}
                 disabled={isSubmitting}
-                placeholder="e.g. 5551234567"
+                placeholder={t('franchises.form.phone_placeholder')}
                 maxLength={30}
                 className={[
                   'w-full rounded-lg border px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400',
@@ -193,7 +195,7 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
             {/* Address */}
             <div>
               <label htmlFor="fm-address" className="block text-sm font-medium text-slate-700 mb-1">
-                Address
+                {t('franchises.form.address')}
               </label>
               <input
                 id="fm-address"
@@ -202,7 +204,7 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
                 value={form.address}
                 onChange={handleChange}
                 disabled={isSubmitting}
-                placeholder="e.g. 123 Main St, Miami, FL"
+                placeholder={t('franchises.form.address_placeholder')}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 transition"
               />
             </div>
@@ -216,7 +218,7 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
               disabled={isSubmitting}
               className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 bg-white border border-slate-300 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
@@ -224,8 +226,8 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
               className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isSubmitting
-                ? isEditing ? 'Saving…' : 'Creating…'
-                : isEditing ? 'Save Changes' : 'Create Franchise'}
+                ? isEditing ? t('common.saving') : t('franchises.creating')
+                : isEditing ? t('common.save') : t('franchises.create')}
             </button>
           </div>
         </form>

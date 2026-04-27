@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import LoginPage from './pages/LoginPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import AuthenticatedLayout from './components/AuthenticatedLayout';
@@ -9,10 +10,11 @@ import { useAuthStore } from './store/authStore';
 // ─── Pages ───────────────────────────────────────────────────────────────────
 
 function DashboardPage() {
+  const { t } = useTranslation('common');
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-slate-800 mb-1">Dashboard</h1>
-      <p className="text-sm text-slate-500">Welcome to the Strategic Mates portal.</p>
+      <h1 className="text-2xl font-semibold text-slate-800 mb-1">{t('dashboard.title')}</h1>
+      <p className="text-sm text-slate-500">{t('dashboard.welcome')}</p>
     </div>
   );
 }
@@ -22,6 +24,7 @@ function DashboardPage() {
  * Replace each one with its real page component as development progresses.
  */
 function StubPage({ title }) {
+  const { t } = useTranslation('common');
   return (
     <div className="flex flex-col items-center justify-center py-24 text-center">
       <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mb-5">
@@ -30,7 +33,7 @@ function StubPage({ title }) {
         </svg>
       </div>
       <h2 className="text-xl font-semibold text-slate-700">{title}</h2>
-      <p className="mt-2 text-sm text-slate-400">This module is coming soon.</p>
+      <p className="mt-2 text-sm text-slate-400">{t('common.coming_soon')}</p>
     </div>
   );
 }
@@ -55,6 +58,7 @@ function RoleRoute({ roles, children }) {
 // ─── App ─────────────────────────────────────────────────────────────────────
 
 export default function App() {
+  const { t } = useTranslation('common');
   return (
     <BrowserRouter>
       <Routes>
@@ -90,22 +94,22 @@ export default function App() {
             path="/users"
             element={
               <RoleRoute roles={ADMIN_ROLES}>
-                <StubPage title="Users & Permissions" />
+                <StubPage title={t('nav.users')} />
               </RoleRoute>
             }
           />
-          <Route path="/feed"        element={<StubPage title="Feed" />} />
-          <Route path="/contracts"   element={<StubPage title="Contracts" />} />
-          <Route path="/repository"  element={<StubPage title="Document Repository" />} />
-          <Route path="/processes"   element={<StubPage title="Process Maps" />} />
-          <Route path="/accounting"  element={<StubPage title="Accounting & Finance" />} />
-          <Route path="/inventory"   element={<StubPage title="Inventory" />} />
-          <Route path="/tracking"    element={<StubPage title="Tracking" />} />
+          <Route path="/feed"        element={<StubPage title={t('nav.feed')} />} />
+          <Route path="/contracts"   element={<StubPage title={t('nav.contracts')} />} />
+          <Route path="/repository"  element={<StubPage title={t('nav.repository')} />} />
+          <Route path="/processes"   element={<StubPage title={t('nav.process_maps')} />} />
+          <Route path="/accounting"  element={<StubPage title={t('nav.accounting')} />} />
+          <Route path="/inventory"   element={<StubPage title={t('nav.inventory')} />} />
+          <Route path="/tracking"    element={<StubPage title={t('nav.tracking')} />} />
           <Route
             path="/catalog"
             element={
               <RoleRoute roles={['superadmin']}>
-                <StubPage title="Service Catalog" />
+                <StubPage title={t('nav.service_catalog')} />
               </RoleRoute>
             }
           />
@@ -113,12 +117,12 @@ export default function App() {
             path="/sb-applications"
             element={
               <RoleRoute roles={ADMIN_ROLES}>
-                <StubPage title="SB Applications" />
+                <StubPage title={t('nav.sb_applications')} />
               </RoleRoute>
             }
           />
-          <Route path="/calendar"    element={<StubPage title="Calendar" />} />
-          <Route path="/profile"     element={<StubPage title="Profile" />} />
+          <Route path="/calendar"    element={<StubPage title={t('nav.calendar')} />} />
+          <Route path="/profile"     element={<StubPage title={t('nav.profile')} />} />
         </Route>
 
         {/* Catch-all: redirect unknown paths to root */}
