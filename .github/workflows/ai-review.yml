@@ -8,13 +8,57 @@ permissions:
   contents: read
   pull-requests: write
 
+# ─── Job 1: PHP static analysis (Pint formatting + syntax check) ──────────────
 jobs:
-  review:
-    name: Claude AI Review
+  lint-php:
+    name: PHP Lint
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer
+
+      - name: Install dependencies
+        working-directory: backend
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Run Pint (formatting check)
+        working-directory: backend
+        run: ./vendor/bin/pint --test
+
+# ─── Job 2: JS/React static analysis (ESLint) ─────────────────────────────────
+  lint-js:
+    name: JS Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: frontend
+        run: npm run lint
+
+# ─── Job 3: Claude AI review — solo corre si lint-php y lint-js pasan ─────────
+  ai-review:
+    name: Claude AI Review
+    runs-on: ubuntu-latest
+    needs: [lint-php, lint-js]
+    steps:
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -22,67 +66,90 @@ jobs:
         id: diff
         run: |
           git diff origin/${{ github.base_ref }}...HEAD \
-            -- '*.php' '*.js' '*.jsx' '*.ts' '*.tsx' '*.json' '*.yml' \
+            -- '*.php' '*.js' '*.jsx' '*.ts' '*.tsx' \
             ':!*.lock' ':!package-lock.json' \
             > pr_diff.txt
 
-          # Truncate to 12000 chars to stay within token limits
-          truncated=$(head -c 12000 pr_diff.txt)
-          echo "diff<<EOF" >> $GITHUB_OUTPUT
-          echo "$truncated" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          LINES=$(wc -l < pr_diff.txt)
+          echo "lines=$LINES" >> $GITHUB_OUTPUT
 
-          lines=$(wc -l < pr_diff.txt)
-          echo "lines=$lines" >> $GITHUB_OUTPUT
-
-      - name: Skip if diff is empty
-        if: steps.diff.outputs.lines == '0'
-        run: |
-          echo "No relevant changes to review."
-          exit 0
+          # Truncate to 14000 chars (~3500 tokens) to leave room for response
+          TRUNCATED=$(head -c 14000 pr_diff.txt)
+          echo "diff<<DIFF_EOF" >> $GITHUB_OUTPUT
+          echo "$TRUNCATED" >> $GITHUB_OUTPUT
+          echo "DIFF_EOF" >> $GITHUB_OUTPUT
 
       - name: Claude AI Review
+        if: steps.diff.outputs.lines != '0'
         id: claude
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          PR_TITLE="${{ github.event.pull_request.title }}"
-          PR_BODY="${{ github.event.pull_request.body }}"
-          DIFF="${{ steps.diff.outputs.diff }}"
+          DIFF='${{ steps.diff.outputs.diff }}'
+          TITLE='${{ github.event.pull_request.title }}'
 
           PAYLOAD=$(jq -n \
-            --arg title "$PR_TITLE" \
-            --arg body "$PR_BODY" \
+            --arg title "$TITLE" \
             --arg diff "$DIFF" \
             '{
               model: "claude-sonnet-4-6",
-              max_tokens: 1024,
+              max_tokens: 1500,
               messages: [{
                 role: "user",
-                content: ("You are a senior code reviewer for SM Portal, a B2B SaaS platform built with Laravel 12 + React 19 + PostgreSQL.\n\nReview the following pull request and provide concise, actionable feedback.\n\nPR Title: " + $title + "\nPR Description: " + $body + "\n\nDiff:\n```\n" + $diff + "\n```\n\nFocus on:\n- Security issues (SQL injection, XSS, exposed credentials, missing auth)\n- Bugs and logic errors\n- Laravel/React best practices violations\n- N+1 queries or performance red flags\n- Missing error handling at system boundaries\n\nFormat your response in markdown with these sections (omit sections with no issues):\n### ✅ What looks good\n### ⚠️ Issues to fix\n### 💡 Suggestions\n\nBe direct and specific. Reference file names and line numbers when possible. If the diff is too small or trivial, say so briefly.")
+                content: (
+                  "You are a senior engineer reviewing a pull request for SM Portal — a B2B SaaS built with Laravel 12, React 19, PostgreSQL 16 and Redis.\n\n" +
+                  "Static analysis (Pint + ESLint) already passed, so syntax and formatting are correct.\n" +
+                  "Your job is to review code QUALITY: look for optimization opportunities, repeated code, bad patterns, and improvements.\n\n" +
+                  "PR: " + $title + "\n\n" +
+                  "Diff:\n```\n" + $diff + "\n```\n\n" +
+                  "Review guidelines:\n" +
+                  "- Repeated logic that should be extracted to a helper, service, or hook\n" +
+                  "- N+1 queries or missing eager loading in Laravel\n" +
+                  "- React components doing too many things (violates single responsibility)\n" +
+                  "- Hardcoded values that should be constants or config\n" +
+                  "- Missing or inconsistent error handling at API boundaries\n" +
+                  "- Security: missing authorization checks, exposed data, unvalidated input\n" +
+                  "- Anything that will cause pain to maintain in 6 months\n\n" +
+                  "Format in markdown. Use these sections (skip any with nothing to say):\n" +
+                  "### ✅ Looks good\n" +
+                  "### 🔴 Must fix (bugs or security issues)\n" +
+                  "### 🟡 Should improve (code quality, patterns)\n" +
+                  "### 💡 Optional suggestions\n\n" +
+                  "Be specific: reference file names and approximate line numbers. If the change is trivial or low-risk, say so in one line."
+                )
               }]
             }')
 
-          RESPONSE=$(curl -s https://api.anthropic.com/v1/messages \
+          RESPONSE=$(curl -sf https://api.anthropic.com/v1/messages \
             -H "x-api-key: $ANTHROPIC_API_KEY" \
             -H "anthropic-version: 2023-06-01" \
             -H "content-type: application/json" \
             -d "$PAYLOAD")
 
-          REVIEW=$(echo "$RESPONSE" | jq -r '.content[0].text // "Claude review unavailable."')
+          REVIEW=$(echo "$RESPONSE" | jq -r '.content[0].text // "⚠️ Claude review unavailable."')
 
-          echo "review<<EOF" >> $GITHUB_OUTPUT
+          echo "review<<REVIEW_EOF" >> $GITHUB_OUTPUT
           echo "$REVIEW" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "REVIEW_EOF" >> $GITHUB_OUTPUT
 
       - name: Post review comment
+        if: steps.diff.outputs.lines != '0'
         uses: actions/github-script@v7
         env:
           REVIEW: ${{ steps.claude.outputs.review }}
         with:
           script: |
             const review = process.env.REVIEW;
-            const body = `## 🤖 Claude AI Review\n\n${review}\n\n---\n*Powered by [Claude](https://anthropic.com) · SM Portal CI*`;
+            const body = [
+              '## 🤖 Claude AI Review',
+              '',
+              '> Static analysis passed ✅ — this is a quality review only.',
+              '',
+              review,
+              '',
+              '---',
+              '*SM Portal CI · Powered by Claude Sonnet*',
+            ].join('\n');
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
