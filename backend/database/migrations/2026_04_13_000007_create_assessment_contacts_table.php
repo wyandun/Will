@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -70,11 +71,13 @@ return new class extends Migration
             $table->index(['type', 'status']);
             $table->index('created_at');
 
-            // GIN indexes for fast key searches inside stage JSONB columns
-            $table->rawIndex('USING GIN (stage_1_data)', 'assessment_contacts_stage_1_data_gin');
-            $table->rawIndex('USING GIN (stage_2_data)', 'assessment_contacts_stage_2_data_gin');
-            $table->rawIndex('USING GIN (stage_3_data)', 'assessment_contacts_stage_3_data_gin');
         });
+
+        // GIN indexes — must use DB::statement because rawIndex() wraps in parens
+        // which produces invalid syntax for USING GIN
+        DB::statement('CREATE INDEX assessment_contacts_stage_1_data_gin ON assessment_contacts USING GIN (stage_1_data)');
+        DB::statement('CREATE INDEX assessment_contacts_stage_2_data_gin ON assessment_contacts USING GIN (stage_2_data)');
+        DB::statement('CREATE INDEX assessment_contacts_stage_3_data_gin ON assessment_contacts USING GIN (stage_3_data)');
     }
 
     public function down(): void
