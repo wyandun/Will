@@ -1,4 +1,4 @@
-name: AI Code Review
+name: Code Review Pipeline
 
 on:
   pull_request:
@@ -7,11 +7,12 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  issues: write
 
-# ─── Job 1: PHP static analysis (Pint formatting + syntax check) ──────────────
+# ─── Phase 1: Static Analysis (blocks Phase 2 if it fails) ───────────────────
 jobs:
-  lint-php:
-    name: PHP Lint
+  static-analysis:
+    name: Static Analysis
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,20 +23,17 @@ jobs:
           php-version: '8.4'
           tools: composer
 
-      - name: Install dependencies
+      - name: Install backend dependencies
         working-directory: backend
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
-      - name: Run Pint (formatting check)
+      - name: Pint — formatting check
         working-directory: backend
         run: ./vendor/bin/pint --test
 
-# ─── Job 2: JS/React static analysis (ESLint) ─────────────────────────────────
-  lint-js:
-    name: JS Lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+      - name: PHPStan — static analysis
+        working-directory: backend
+        run: ./vendor/bin/phpstan analyse --memory-limit=512M --no-progress
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -44,19 +42,19 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install dependencies
+      - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci
 
-      - name: Run ESLint
+      - name: ESLint — static analysis
         working-directory: frontend
         run: npm run lint
 
-# ─── Job 3: Claude AI review — solo corre si lint-php y lint-js pasan ─────────
+# ─── Phase 2: Claude AI Review (only runs if Phase 1 passes) ─────────────────
   ai-review:
     name: Claude AI Review
     runs-on: ubuntu-latest
-    needs: [lint-php, lint-js]
+    needs: static-analysis
     steps:
       - uses: actions/checkout@v4
         with:
@@ -73,7 +71,6 @@ jobs:
           LINES=$(wc -l < pr_diff.txt)
           echo "lines=$LINES" >> $GITHUB_OUTPUT
 
-          # Truncate to 14000 chars (~3500 tokens) to leave room for response
           TRUNCATED=$(head -c 14000 pr_diff.txt)
           echo "diff<<DIFF_EOF" >> $GITHUB_OUTPUT
           echo "$TRUNCATED" >> $GITHUB_OUTPUT
@@ -92,14 +89,14 @@ jobs:
             --arg title "$TITLE" \
             --arg diff "$DIFF" \
             '{
-              model: "claude-sonnet-4-6",
+              model: "claude-haiku-4-5-20251001",
               max_tokens: 1500,
               messages: [{
                 role: "user",
                 content: (
                   "You are a senior engineer reviewing a pull request for SM Portal — a B2B SaaS built with Laravel 12, React 19, PostgreSQL 16 and Redis.\n\n" +
-                  "Static analysis (Pint + ESLint) already passed, so syntax and formatting are correct.\n" +
-                  "Your job is to review code QUALITY: look for optimization opportunities, repeated code, bad patterns, and improvements.\n\n" +
+                  "Static analysis (Pint + PHPStan + ESLint) already passed, so syntax, types and formatting are correct.\n" +
+                  "Your job is to review code QUALITY: architecture, scalability, repeated logic, bad patterns, and improvements.\n\n" +
                   "PR: " + $title + "\n\n" +
                   "Diff:\n```\n" + $diff + "\n```\n\n" +
                   "Review guidelines:\n" +
@@ -143,12 +140,12 @@ jobs:
             const body = [
               '## 🤖 Claude AI Review',
               '',
-              '> Static analysis passed ✅ — this is a quality review only.',
+              '> Static analysis passed (Pint + PHPStan + ESLint) ✅ — this is a quality review only.',
               '',
               review,
               '',
               '---',
-              '*SM Portal CI · Powered by Claude Sonnet*',
+              '*SM Portal CI · Powered by Claude Haiku*',
             ].join('\n');
 
             await github.rest.issues.createComment({
