@@ -1,0 +1,92 @@
+name: AI Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    name: Claude AI Review
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get PR diff
+        id: diff
+        run: |
+          git diff origin/${{ github.base_ref }}...HEAD \
+            -- '*.php' '*.js' '*.jsx' '*.ts' '*.tsx' '*.json' '*.yml' \
+            ':!*.lock' ':!package-lock.json' \
+            > pr_diff.txt
+
+          # Truncate to 12000 chars to stay within token limits
+          truncated=$(head -c 12000 pr_diff.txt)
+          echo "diff<<EOF" >> $GITHUB_OUTPUT
+          echo "$truncated" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          lines=$(wc -l < pr_diff.txt)
+          echo "lines=$lines" >> $GITHUB_OUTPUT
+
+      - name: Skip if diff is empty
+        if: steps.diff.outputs.lines == '0'
+        run: |
+          echo "No relevant changes to review."
+          exit 0
+
+      - name: Claude AI Review
+        id: claude
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_BODY="${{ github.event.pull_request.body }}"
+          DIFF="${{ steps.diff.outputs.diff }}"
+
+          PAYLOAD=$(jq -n \
+            --arg title "$PR_TITLE" \
+            --arg body "$PR_BODY" \
+            --arg diff "$DIFF" \
+            '{
+              model: "claude-sonnet-4-6",
+              max_tokens: 1024,
+              messages: [{
+                role: "user",
+                content: ("You are a senior code reviewer for SM Portal, a B2B SaaS platform built with Laravel 12 + React 19 + PostgreSQL.\n\nReview the following pull request and provide concise, actionable feedback.\n\nPR Title: " + $title + "\nPR Description: " + $body + "\n\nDiff:\n```\n" + $diff + "\n```\n\nFocus on:\n- Security issues (SQL injection, XSS, exposed credentials, missing auth)\n- Bugs and logic errors\n- Laravel/React best practices violations\n- N+1 queries or performance red flags\n- Missing error handling at system boundaries\n\nFormat your response in markdown with these sections (omit sections with no issues):\n### ✅ What looks good\n### ⚠️ Issues to fix\n### 💡 Suggestions\n\nBe direct and specific. Reference file names and line numbers when possible. If the diff is too small or trivial, say so briefly.")
+              }]
+            }')
+
+          RESPONSE=$(curl -s https://api.anthropic.com/v1/messages \
+            -H "x-api-key: $ANTHROPIC_API_KEY" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "content-type: application/json" \
+            -d "$PAYLOAD")
+
+          REVIEW=$(echo "$RESPONSE" | jq -r '.content[0].text // "Claude review unavailable."')
+
+          echo "review<<EOF" >> $GITHUB_OUTPUT
+          echo "$REVIEW" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Post review comment
+        uses: actions/github-script@v7
+        env:
+          REVIEW: ${{ steps.claude.outputs.review }}
+        with:
+          script: |
+            const review = process.env.REVIEW;
+            const body = `## 🤖 Claude AI Review\n\n${review}\n\n---\n*Powered by [Claude](https://anthropic.com) · SM Portal CI*`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
