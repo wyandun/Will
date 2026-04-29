@@ -71,7 +71,12 @@ jobs:
           LINES=$(wc -l < pr_diff.txt)
           echo "lines=$LINES" >> $GITHUB_OUTPUT
 
-          TRUNCATED=$(head -c 14000 pr_diff.txt)
+          # Truncate at a line boundary (~400 lines) to avoid cutting mid-function
+          TRUNCATED=$(head -n 400 pr_diff.txt)
+          TOTAL_LINES=$LINES
+          if [ "$TOTAL_LINES" -gt 400 ]; then
+            TRUNCATED="$TRUNCATED"$'\n'"# ⚠️ Diff truncated: showing 400 of $TOTAL_LINES lines. Review the full diff on GitHub."
+          fi
           echo "diff<<DIFF_EOF" >> $GITHUB_OUTPUT
           echo "$TRUNCATED" >> $GITHUB_OUTPUT
           echo "DIFF_EOF" >> $GITHUB_OUTPUT
