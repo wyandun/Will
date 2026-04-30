@@ -155,4 +155,5 @@ export const NAV_SECTIONS = [
   },
 ];
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const SECTION_BY_PATH = Object.fromEntries(NAV_SECTIONS.map((s) => [s.path, s]));

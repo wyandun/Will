@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -112,7 +113,7 @@ function getGreeting(t) {
   return t('dashboard.good_evening');
 }
 
-function formatDate(t) {
+function formatDate() {
   const now = new Date();
   return now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 }
@@ -199,7 +200,7 @@ function Banner({ kpis, loading }) {
             {user?.name ?? 'there'}.
           </span>
         </p>
-        <p className="text-slate-400 text-sm mt-1">{formatDate(t)}</p>
+        <p className="text-slate-400 text-sm mt-1">{formatDate()}</p>
       </div>
 
       <div className="flex flex-wrap gap-2 mt-6">
@@ -639,3 +640,139 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+// ─── PropTypes ────────────────────────────────────────────────────────────────
+
+const classNameProp = { className: PropTypes.string };
+
+IconCalendar.propTypes = classNameProp;
+IconPen.propTypes = classNameProp;
+IconBriefcase.propTypes = classNameProp;
+IconEye.propTypes = classNameProp;
+IconCheck.propTypes = classNameProp;
+IconFeed.propTypes = classNameProp;
+IconContract.propTypes = classNameProp;
+IconTracking.propTypes = classNameProp;
+IconDocument.propTypes = classNameProp;
+IconMap.propTypes = classNameProp;
+IconHeart.propTypes = classNameProp;
+IconComment.propTypes = classNameProp;
+
+WidgetHeader.propTypes = {
+  icon: PropTypes.node.isRequired,
+  title: PropTypes.string.isRequired,
+  count: PropTypes.number,
+  onViewAll: PropTypes.func.isRequired,
+  light: PropTypes.bool,
+};
+
+EmptyState.propTypes = {
+  message: PropTypes.string.isRequired,
+  light: PropTypes.bool,
+};
+
+Skeleton.propTypes = {
+  className: PropTypes.string,
+};
+
+const kpisPropType = PropTypes.shape({
+  events_next_14_days: PropTypes.number,
+  pending_signature: PropTypes.number,
+  projects_active: PropTypes.number,
+  to_review: PropTypes.number,
+});
+
+Banner.propTypes = {
+  kpis: kpisPropType.isRequired,
+  loading: PropTypes.bool.isRequired,
+};
+
+KpiCard.propTypes = {
+  icon: PropTypes.node.isRequired,
+  value: PropTypes.number,
+  label: PropTypes.string.isRequired,
+  sub: PropTypes.string.isRequired,
+  onClick: PropTypes.func.isRequired,
+  loading: PropTypes.bool.isRequired,
+};
+
+KpiGrid.propTypes = {
+  kpis: kpisPropType.isRequired,
+  loading: PropTypes.bool.isRequired,
+};
+
+PostCard.propTypes = {
+  post: PropTypes.shape({
+    id: PropTypes.number.isRequired,
+    title: PropTypes.string,
+    content: PropTypes.string,
+    author_name: PropTypes.string,
+    author_avatar: PropTypes.string,
+    created_at: PropTypes.string,
+    likes_count: PropTypes.number,
+    comments_count: PropTypes.number,
+  }).isRequired,
+};
+
+LatestPostsWidget.propTypes = {
+  feed: PropTypes.arrayOf(PropTypes.object).isRequired,
+};
+
+UpcomingEventsWidget.propTypes = {
+  events: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.number.isRequired,
+      title: PropTypes.string,
+      start: PropTypes.string,
+    })
+  ).isRequired,
+};
+
+ProgressCircle.propTypes = {
+  pct: PropTypes.number.isRequired,
+};
+
+ProjectTrackingWidget.propTypes = {
+  tracking: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.number.isRequired,
+      name: PropTypes.string,
+      progress: PropTypes.number,
+      company_name: PropTypes.string,
+    })
+  ).isRequired,
+};
+
+ContractsWidget.propTypes = {
+  contracts: PropTypes.shape({
+    pending: PropTypes.number,
+    signed: PropTypes.number,
+    recent: PropTypes.arrayOf(
+      PropTypes.shape({
+        id: PropTypes.number.isRequired,
+        title: PropTypes.string,
+        company_name: PropTypes.string,
+      })
+    ),
+  }).isRequired,
+};
+
+DocumentsWidget.propTypes = {
+  documents: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.number.isRequired,
+      file_name: PropTypes.string,
+      name: PropTypes.string,
+      created_at: PropTypes.string,
+    })
+  ).isRequired,
+};
+
+ProcessMapsWidget.propTypes = {
+  processMaps: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.number.isRequired,
+      name: PropTypes.string,
+    })
+  ).isRequired,
+};

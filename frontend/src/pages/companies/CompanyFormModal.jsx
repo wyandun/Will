@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
@@ -24,6 +25,24 @@ const EMPTY_FORM = {
  *   onClose    — called when the modal should be dismissed (no changes)
  *   onSave     — async fn(formData, id?) — called with cleaned payload on submit
  */
+CompanyFormModal.propTypes = {
+  company: PropTypes.shape({
+    id: PropTypes.number,
+    name: PropTypes.string,
+    sm_franchise_id: PropTypes.number,
+    industry: PropTypes.string,
+    phone: PropTypes.string,
+    email: PropTypes.string,
+    city: PropTypes.string,
+    state: PropTypes.string,
+    country: PropTypes.string,
+    address: PropTypes.string,
+    notes: PropTypes.string,
+  }),
+  onClose: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
+};
+
 export default function CompanyFormModal({ company, onClose, onSave }) {
   const { t } = useTranslation('common');
   const isEditing = company !== null;
