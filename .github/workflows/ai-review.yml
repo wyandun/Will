@@ -102,7 +102,7 @@ jobs:
                   "Static analysis (Pint + PHPStan + ESLint) already passed, so syntax, types and formatting are correct.\n" +
                   "Your job is to review code QUALITY: architecture, scalability, repeated logic, bad patterns, and improvements.\n\n" +
                   "PR: " + $title + "\n\n" +
-                  "Diff:\n\`\`\`\n" + $diff + "\n\`\`\`\n" +
+                  "Diff:\n```\n" + $diff + "\n```\n" +
                   "Review guidelines:\n" +
                   "- Repeated logic that should be extracted to a helper, service, or hook\n" +
                   "- N+1 queries or missing eager loading in Laravel\n" +
