@@ -8,6 +8,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property int|null $sm_franchise_id
+ * @property string $name
+ */
 class Company extends Model
 {
     use SoftDeletes;
@@ -41,6 +45,8 @@ class Company extends Model
 
     /**
      * The SM franchise that manages this company.
+     *
+     * @return BelongsTo<Franchise, $this>
      */
     public function franchise(): BelongsTo
     {

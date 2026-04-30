@@ -37,6 +37,8 @@ class BbAssignment extends Model
 
     /**
      * The company this BB sponsors.
+     *
+     * @return BelongsTo<Company, $this>
      */
     public function company(): BelongsTo
     {

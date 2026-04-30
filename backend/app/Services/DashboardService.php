@@ -164,7 +164,7 @@ class DashboardService
 
         if ($scope !== null && ! empty($scope)) {
             $query->whereIn('posts.company_id', $scope);
-        } elseif ($scope !== null && empty($scope)) {
+        } elseif (empty($scope)) {
             return [];
         }
 

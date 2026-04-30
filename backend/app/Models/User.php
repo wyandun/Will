@@ -10,6 +10,12 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
+/**
+ * @property int|null $sm_franchise_id
+ * @property int|null $company_id
+ * @property int|null $sub_franchise_id
+ * @property string|null $avatar_path
+ */
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -60,6 +66,8 @@ class User extends Authenticatable
     /**
      * Module-level permissions for this user (user_permissions table).
      * Each row represents one module with can_read / can_write flags.
+     *
+     * @return HasMany<UserPermission, $this>
      */
     public function userPermissions(): HasMany
     {
