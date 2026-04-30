@@ -8,17 +8,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('franchises', function (Blueprint ) {
-            ->string('email')->nullable();
-            ->string('country')->nullable();
-            ->string('timezone')->nullable();
+        Schema::table('franchises', function (Blueprint $table) {
+            $table->string('email')->nullable();
+            $table->string('country')->nullable();
+            $table->string('timezone')->nullable();
         });
     }
 
     public function down(): void
     {
-        Schema::table('franchises', function (Blueprint ) {
-            ->dropColumn(['email', 'country', 'timezone']);
+        Schema::table('franchises', function (Blueprint $table) {
+            $table->dropColumn(['email', 'country', 'timezone']);
         });
     }
 };
