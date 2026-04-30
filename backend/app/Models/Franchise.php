@@ -22,11 +22,12 @@ class Franchise extends Model
     protected $fillable = [
         'name',
         'type',
-        'parent_company_id',
-        'owner_user_id',
         'region',
         'address',
         'phone',
+        'email',
+        'country',
+        'timezone',
     ];
 
     // ---------------------------------------------------------------------------

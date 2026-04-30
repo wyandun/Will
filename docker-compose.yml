@@ -81,8 +81,9 @@ services:
       DOCUSEAL_URL: ${DOCUSEAL_URL:-http://docuseal:3000}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
     volumes:
-      # Persist uploaded files and generated PDFs between restarts
+      - ./backend:/var/www/html  # <--- AGREGA ESTA LÍNEA (El puente total)
       - ./backend/storage:/var/www/html/storage
+      - /var/www/html/vendor    # Evita que Windows borre las librerías de Linux
     depends_on:
       postgres:
         condition: service_healthy
