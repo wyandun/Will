@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
@@ -33,6 +34,11 @@ function EmptyState({ onAdd, isSuperadmin }) {
     </div>
   );
 }
+
+EmptyState.propTypes = {
+  onAdd: PropTypes.func.isRequired,
+  isSuperadmin: PropTypes.bool.isRequired,
+};
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 

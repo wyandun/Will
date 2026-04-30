@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -235,3 +236,15 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
     </div>
   );
 }
+
+FranchiseFormModal.propTypes = {
+  franchise: PropTypes.shape({
+    id: PropTypes.number,
+    name: PropTypes.string,
+    region: PropTypes.string,
+    address: PropTypes.string,
+    phone: PropTypes.string,
+  }),
+  onClose: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
+};

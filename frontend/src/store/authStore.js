@@ -4,7 +4,7 @@ import { setTokenGetter } from '../api/client';
 
 const useAuthStore = create(
   persist(
-    (set, get) => ({
+    (set) => ({
       user: null,
       token: null,
       role: null,

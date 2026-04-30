@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import LoginPage from './pages/LoginPage';
@@ -27,6 +28,10 @@ function StubPage({ title }) {
   );
 }
 
+StubPage.propTypes = {
+  title: PropTypes.string.isRequired,
+};
+
 // ─── Role guard ───────────────────────────────────────────────────────────────
 
 const ADMIN_ROLES = ['superadmin', 'admin_sm'];
@@ -43,6 +48,11 @@ function RoleRoute({ roles, children }) {
   }
   return children;
 }
+
+RoleRoute.propTypes = {
+  roles: PropTypes.arrayOf(PropTypes.string).isRequired,
+  children: PropTypes.node.isRequired,
+};
 
 // ─── App ─────────────────────────────────────────────────────────────────────
 
