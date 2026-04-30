@@ -2,10 +2,11 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Franchise;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin \App\Models\Franchise */
+/** @mixin Franchise */
 class FranchiseResource extends JsonResource
 {
     /**
