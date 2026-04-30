@@ -3,18 +3,20 @@ import { useTranslation } from 'react-i18next';
 
 const EMPTY_FORM = {
   name: '',
-  region: '',
-  address: '',
+  email: '',      // NUEVO
   phone: '',
+  country: '',    // NUEVO
+  timezone: '',   // NUEVO
+  address: '',
 };
 
 /**
  * Modal for creating and editing a franchise.
  *
  * Props:
- *   franchise  — null for create mode, franchise object for edit mode
- *   onClose    — called when the modal should be dismissed (no changes)
- *   onSave     — async fn(formData, id?) — called with cleaned payload on submit
+ * franchise  — null for create mode, franchise object for edit mode
+ * onClose    — called when the modal should be dismissed (no changes)
+ * onSave     — async fn(formData, id?) — called with cleaned payload on submit
  */
 export default function FranchiseFormModal({ franchise, onClose, onSave }) {
   const { t } = useTranslation('common');
@@ -25,14 +27,15 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
   const [apiError, setApiError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Pre-fill form when editing
   useEffect(() => {
     if (franchise) {
       setForm({
         name: franchise.name ?? '',
-        region: franchise.region ?? '',
-        address: franchise.address ?? '',
+        email: franchise.email ?? '',       // NUEVO
         phone: franchise.phone ?? '',
+        country: franchise.country ?? '',   // NUEVO
+        timezone: franchise.timezone ?? '', // NUEVO
+        address: franchise.address ?? '',
       });
     } else {
       setForm(EMPTY_FORM);
@@ -70,9 +73,12 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
     // Build clean payload — type is only sent on create (immutable after creation)
     const payload = { name: form.name.trim() };
     if (!isEditing) payload.type = 'sm';
-    if (form.region.trim()) payload.region = form.region.trim();
-    if (form.address.trim()) payload.address = form.address.trim();
+    
+    if (form.email.trim()) payload.email = form.email.trim();       // NUEVO
     if (form.phone.trim()) payload.phone = form.phone.trim();
+    if (form.country.trim()) payload.country = form.country.trim(); // NUEVO
+    if (form.timezone.trim()) payload.timezone = form.timezone.trim(); // NUEVO
+    if (form.address.trim()) payload.address = form.address.trim();
 
     setIsSubmitting(true);
     try {
@@ -149,6 +155,23 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
               )}
             </div>
 
+            {/* Email (NUEVO) */}
+            <div>
+              <label htmlFor="fm-email" className="block text-sm font-medium text-slate-700 mb-1">
+                Email
+              </label>
+              <input
+                id="fm-email"
+                name="email"
+                type="email"
+                value={form.email}
+                onChange={handleChange}
+                disabled={isSubmitting}
+                placeholder="ejemplo@correo.com"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 transition"
+              />
+            </div>
+
             {/* Region */}
             <div>
               <label htmlFor="fm-region" className="block text-sm font-medium text-slate-700 mb-1">
@@ -164,6 +187,40 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
                 placeholder={t('franchises.form.region_placeholder')}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 transition"
               />
+            </div>
+
+            {/* Country & Timezone (NUEVO) */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="fm-country" className="block text-sm font-medium text-slate-700 mb-1">
+                  Country
+                </label>
+                <input
+                  id="fm-country"
+                  name="country"
+                  type="text"
+                  value={form.country}
+                  onChange={handleChange}
+                  disabled={isSubmitting}
+                  placeholder="Ej. Ecuador"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 transition"
+                />
+              </div>
+              <div>
+                <label htmlFor="fm-timezone" className="block text-sm font-medium text-slate-700 mb-1">
+                  Time Zone
+                </label>
+                <input
+                  id="fm-timezone"
+                  name="timezone"
+                  type="text"
+                  value={form.timezone}
+                  onChange={handleChange}
+                  disabled={isSubmitting}
+                  placeholder="Ej. UTC-5"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 transition"
+                />
+              </div>
             </div>
 
             {/* Phone */}
@@ -222,7 +279,7 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !form.name.trim()} // NUEVO: Bloquea si el nombre está vacío
               className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isSubmitting
