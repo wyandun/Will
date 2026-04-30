@@ -15,16 +15,16 @@ class FranchiseResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'                => $this->id,
-            'name'              => $this->name,
-            'type'              => $this->type,
+            'id' => $this->id,
+            'name' => $this->name,
+            'type' => $this->type,
             'parent_company_id' => $this->parent_company_id,
-            'owner_user_id'     => $this->owner_user_id,
-            'region'            => $this->region,
-            'address'           => $this->address,
-            'phone'             => $this->phone,
-            'created_at'        => $this->created_at?->toISOString(),
-            'updated_at'        => $this->updated_at?->toISOString(),
+            'owner_user_id' => $this->owner_user_id,
+            'region' => $this->region,
+            'address' => $this->address,
+            'phone' => $this->phone,
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }

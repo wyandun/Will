@@ -17,23 +17,23 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('process_maps', function (Blueprint $table) {
-            if (!Schema::hasColumn('process_maps', 'description')) {
+            if (! Schema::hasColumn('process_maps', 'description')) {
                 $table->text('description')->nullable()->after('name_en');
             }
 
-            if (!Schema::hasColumn('process_maps', 'brand_color')) {
+            if (! Schema::hasColumn('process_maps', 'brand_color')) {
                 $table->char('brand_color', 7)->nullable()->after('description');
             }
 
-            if (!Schema::hasColumn('process_maps', 'logo_url')) {
+            if (! Schema::hasColumn('process_maps', 'logo_url')) {
                 $table->string('logo_url', 500)->nullable()->after('brand_color');
             }
 
-            if (!Schema::hasColumn('process_maps', 'node_styles')) {
+            if (! Schema::hasColumn('process_maps', 'node_styles')) {
                 $table->json('node_styles')->nullable()->after('logo_url');
             }
 
-            if (!Schema::hasColumn('process_maps', 'is_active')) {
+            if (! Schema::hasColumn('process_maps', 'is_active')) {
                 $table->boolean('is_active')->default(true)->after('node_styles');
             }
         });

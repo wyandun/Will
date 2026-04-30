@@ -23,7 +23,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $result,
+            'data' => $result,
             'message' => 'Inicio de sesión exitoso.',
         ]);
     }
@@ -39,7 +39,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $result,
+            'data' => $result,
             'message' => 'OK.',
         ]);
     }
@@ -55,7 +55,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => null,
+            'data' => null,
             'message' => 'Sesión cerrada correctamente.',
         ]);
     }

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 
 class DashboardService
@@ -36,10 +37,10 @@ class DashboardService
      * Applies a company scope WHERE clause to a query builder.
      * Returns false when the scope is an empty array (user has no accessible companies).
      *
-     * @param  \Illuminate\Database\Query\Builder  $query
-     * @param  int[]|null                          $scope
-     * @param  string                              $column  Fully-qualified column name
-     * @return bool  false means "no results possible"
+     * @param  Builder  $query
+     * @param  int[]|null  $scope
+     * @param  string  $column  Fully-qualified column name
+     * @return bool false means "no results possible"
      */
     private function applyScope($query, ?array $scope, string $column = 'company_id'): bool
     {
@@ -68,27 +69,27 @@ class DashboardService
     {
         $query->where(function ($q) use ($user) {
             $q->where('events.visibility', 'public')
-              ->orWhere(function ($q2) use ($user) {
-                  $q2->where('events.visibility', 'franchise')
-                     ->whereExists(function ($sub) use ($user) {
-                         $sub->select(DB::raw(1))
-                             ->from('users as eu')
-                             ->whereColumn('eu.id', 'events.user_id')
-                             ->where('eu.sm_franchise_id', $user->sm_franchise_id);
-                     });
-              })
-              ->orWhere(function ($q3) use ($user) {
-                  $q3->where('events.visibility', 'private')
-                     ->where(function ($q4) use ($user) {
-                         $q4->where('events.user_id', $user->id)
-                            ->orWhereExists(function ($sub) use ($user) {
-                                $sub->select(DB::raw(1))
-                                    ->from('event_shares')
-                                    ->whereColumn('event_shares.event_id', 'events.id')
-                                    ->where('event_shares.user_id', $user->id);
-                            });
-                     });
-              });
+                ->orWhere(function ($q2) use ($user) {
+                    $q2->where('events.visibility', 'franchise')
+                        ->whereExists(function ($sub) use ($user) {
+                            $sub->select(DB::raw(1))
+                                ->from('users as eu')
+                                ->whereColumn('eu.id', 'events.user_id')
+                                ->where('eu.sm_franchise_id', $user->sm_franchise_id);
+                        });
+                })
+                ->orWhere(function ($q3) use ($user) {
+                    $q3->where('events.visibility', 'private')
+                        ->where(function ($q4) use ($user) {
+                            $q4->where('events.user_id', $user->id)
+                                ->orWhereExists(function ($sub) use ($user) {
+                                    $sub->select(DB::raw(1))
+                                        ->from('event_shares')
+                                        ->whereColumn('event_shares.event_id', 'events.id')
+                                        ->where('event_shares.user_id', $user->id);
+                                });
+                        });
+                });
         });
     }
 
@@ -134,9 +135,9 @@ class DashboardService
 
         return [
             'events_next_14_days' => $eventsNext14Days,
-            'pending_signature'   => $pendingSignature,
-            'projects_active'     => $projectsActive,
-            'to_review'           => $toReview,
+            'pending_signature' => $pendingSignature,
+            'projects_active' => $projectsActive,
+            'to_review' => $toReview,
         ];
     }
 
@@ -161,7 +162,7 @@ class DashboardService
             ->orderByDesc('posts.created_at')
             ->limit(5);
 
-        if ($scope !== null && !empty($scope)) {
+        if ($scope !== null && ! empty($scope)) {
             $query->whereIn('posts.company_id', $scope);
         } elseif ($scope !== null && empty($scope)) {
             return [];
@@ -192,14 +193,14 @@ class DashboardService
 
         return $posts->map(function ($post) use ($likes, $comments) {
             return [
-                'id'             => $post->id,
-                'author_name'    => $post->author_name,
-                'author_avatar'  => $post->author_avatar,
-                'content'        => $post->content,
-                'image_path'     => $post->image_path,
-                'likes_count'    => (int) ($likes[$post->id] ?? 0),
+                'id' => $post->id,
+                'author_name' => $post->author_name,
+                'author_avatar' => $post->author_avatar,
+                'content' => $post->content,
+                'image_path' => $post->image_path,
+                'likes_count' => (int) ($likes[$post->id] ?? 0),
                 'comments_count' => (int) ($comments[$post->id] ?? 0),
-                'created_at'     => $post->created_at,
+                'created_at' => $post->created_at,
             ];
         })->all();
     }
@@ -226,13 +227,13 @@ class DashboardService
 
         $this->applyEventVisibility($query, $user);
 
-        return $query->get()->map(fn($e) => [
-            'id'       => $e->id,
-            'title'    => $e->title,
+        return $query->get()->map(fn ($e) => [
+            'id' => $e->id,
+            'title' => $e->title,
             'start_at' => $e->start_at,
-            'end_at'   => $e->end_at,
-            'all_day'  => (bool) $e->all_day,
-            'color'    => $e->color,
+            'end_at' => $e->end_at,
+            'all_day' => (bool) $e->all_day,
+            'color' => $e->color,
         ])->all();
     }
 
@@ -258,15 +259,15 @@ class DashboardService
             ->orderByDesc('client_trackings.id')
             ->limit(5);
 
-        if (!$this->applyScope($query, $scope, 'client_trackings.company_id')) {
+        if (! $this->applyScope($query, $scope, 'client_trackings.company_id')) {
             return [];
         }
 
-        return $query->get()->map(fn($t) => [
-            'id'               => $t->id,
-            'company_name'     => $t->company_name,
-            'item_name'        => $t->item_name,
-            'status'           => $t->status,
+        return $query->get()->map(fn ($t) => [
+            'id' => $t->id,
+            'company_name' => $t->company_name,
+            'item_name' => $t->item_name,
+            'status' => $t->status,
             'progress_percent' => (int) $t->progress_percent,
         ])->all();
     }
@@ -280,11 +281,11 @@ class DashboardService
         $scope = $this->resolveCompanyScope($user);
 
         $pending = 0;
-        $signed  = 0;
-        $recent  = [];
+        $signed = 0;
+        $recent = [];
 
         $baseQuery = DB::table('contracts');
-        if (!$this->applyScope($baseQuery, $scope)) {
+        if (! $this->applyScope($baseQuery, $scope)) {
             return ['pending' => 0, 'signed' => 0, 'recent' => []];
         }
 
@@ -309,17 +310,17 @@ class DashboardService
             ->limit(3);
         $this->applyScope($recentQuery, $scope, 'contracts.company_id');
 
-        $recent = $recentQuery->get()->map(fn($c) => [
-            'id'           => $c->id,
-            'title'        => $c->title,
-            'status'       => $c->status,
+        $recent = $recentQuery->get()->map(fn ($c) => [
+            'id' => $c->id,
+            'title' => $c->title,
+            'status' => $c->status,
             'company_name' => $c->company_name,
         ])->all();
 
         return [
             'pending' => $pending,
-            'signed'  => $signed,
-            'recent'  => $recent,
+            'signed' => $signed,
+            'recent' => $recent,
         ];
     }
 
@@ -344,18 +345,18 @@ class DashboardService
             ->orderByDesc('repository_documents.created_at')
             ->limit(20);
 
-        if (!$this->applyScope($query, $scope, 'repositories.company_id')) {
+        if (! $this->applyScope($query, $scope, 'repositories.company_id')) {
             return [];
         }
 
         $now = now();
 
-        return $query->get()->map(fn($d) => [
-            'id'        => $d->id,
-            'title'     => $d->title,
-            'source'    => 'Repository',
+        return $query->get()->map(fn ($d) => [
+            'id' => $d->id,
+            'title' => $d->title,
+            'source' => 'Repository',
             'file_type' => $d->file_type,
-            'days_ago'  => (int) $now->diffInDays($d->created_at),
+            'days_ago' => (int) $now->diffInDays($d->created_at),
         ])->all();
     }
 
@@ -377,15 +378,15 @@ class DashboardService
             ])
             ->limit(5);
 
-        if (!$this->applyScope($query, $scope, 'process_maps.company_id')) {
+        if (! $this->applyScope($query, $scope, 'process_maps.company_id')) {
             return [];
         }
 
-        return $query->get()->map(fn($m) => [
-            'id'           => $m->id,
+        return $query->get()->map(fn ($m) => [
+            'id' => $m->id,
             'company_name' => $m->company_name,
-            'name'         => $m->name,
-            'type'         => $m->type,
+            'name' => $m->name,
+            'type' => $m->type,
         ])->all();
     }
 }

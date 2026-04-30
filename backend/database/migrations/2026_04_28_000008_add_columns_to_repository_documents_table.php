@@ -16,15 +16,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('repository_documents', function (Blueprint $table) {
-            if (!Schema::hasColumn('repository_documents', 'setup_category')) {
+            if (! Schema::hasColumn('repository_documents', 'setup_category')) {
                 $table->string('setup_category', 40)->nullable()->after('section');
             }
 
-            if (!Schema::hasColumn('repository_documents', 'code')) {
+            if (! Schema::hasColumn('repository_documents', 'code')) {
                 $table->string('code', 40)->nullable()->after('process_code');
             }
 
-            if (!Schema::hasColumn('repository_documents', 'file_url')) {
+            if (! Schema::hasColumn('repository_documents', 'file_url')) {
                 $table->string('file_url', 500)->nullable()->after('file_path');
             }
         });

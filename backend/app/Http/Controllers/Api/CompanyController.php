@@ -48,7 +48,7 @@ class CompanyController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => new CompanyResource($company),
+            'data' => new CompanyResource($company),
             'message' => 'Empresa creada correctamente.',
         ], 201);
     }
@@ -66,7 +66,7 @@ class CompanyController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => new CompanyResource($company),
+            'data' => new CompanyResource($company),
             'message' => 'OK.',
         ]);
     }
@@ -84,7 +84,7 @@ class CompanyController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => new CompanyResource($company),
+            'data' => new CompanyResource($company),
             'message' => 'Empresa actualizada correctamente.',
         ]);
     }
@@ -102,7 +102,7 @@ class CompanyController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => null,
+            'data' => null,
             'message' => 'Empresa eliminada correctamente.',
         ]);
     }
@@ -121,7 +121,7 @@ class CompanyController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => new CompanyResource($company),
+            'data' => new CompanyResource($company),
             'message' => 'Deal cerrado correctamente. Empresa y mapas de proceso creados.',
         ], 201);
     }

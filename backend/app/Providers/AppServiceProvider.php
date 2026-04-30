@@ -35,7 +35,7 @@ class AppServiceProvider extends ServiceProvider
 
         // 5 attempts per minute keyed by email + IP to slow brute-force attacks.
         RateLimiter::for('login', function (Request $request): Limit {
-            return Limit::perMinute(5)->by($request->input('email') . $request->ip());
+            return Limit::perMinute(5)->by($request->input('email').$request->ip());
         });
     }
 }

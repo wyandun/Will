@@ -43,7 +43,7 @@ class FranchiseController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => new FranchiseResource($franchise),
+            'data' => new FranchiseResource($franchise),
             'message' => 'Franquicia creada correctamente.',
         ], 201);
     }
@@ -59,7 +59,7 @@ class FranchiseController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => new FranchiseResource($franchise),
+            'data' => new FranchiseResource($franchise),
             'message' => 'OK.',
         ]);
     }
@@ -77,7 +77,7 @@ class FranchiseController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => new FranchiseResource($franchise),
+            'data' => new FranchiseResource($franchise),
             'message' => 'Franquicia actualizada correctamente.',
         ]);
     }
@@ -95,7 +95,7 @@ class FranchiseController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => null,
+            'data' => null,
             'message' => 'Franquicia eliminada correctamente.',
         ]);
     }

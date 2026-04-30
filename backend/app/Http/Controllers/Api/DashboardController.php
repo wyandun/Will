@@ -17,13 +17,13 @@ class DashboardController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
-                'kpis'         => $this->dashboardService->getKpis($user),
-                'feed'         => $this->dashboardService->getFeed($user),
-                'events'       => $this->dashboardService->getEvents($user),
-                'tracking'     => $this->dashboardService->getTracking($user),
-                'contracts'    => $this->dashboardService->getContracts($user),
-                'documents'    => $this->dashboardService->getDocuments($user),
+            'data' => [
+                'kpis' => $this->dashboardService->getKpis($user),
+                'feed' => $this->dashboardService->getFeed($user),
+                'events' => $this->dashboardService->getEvents($user),
+                'tracking' => $this->dashboardService->getTracking($user),
+                'contracts' => $this->dashboardService->getContracts($user),
+                'documents' => $this->dashboardService->getDocuments($user),
                 'process_maps' => $this->dashboardService->getProcessMaps($user),
             ],
         ]);
@@ -35,7 +35,7 @@ class DashboardController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $data,
+            'data' => $data,
         ]);
     }
 
@@ -45,7 +45,7 @@ class DashboardController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $data,
+            'data' => $data,
         ]);
     }
 
@@ -55,7 +55,7 @@ class DashboardController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $data,
+            'data' => $data,
         ]);
     }
 
@@ -65,7 +65,7 @@ class DashboardController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $data,
+            'data' => $data,
         ]);
     }
 
@@ -75,7 +75,7 @@ class DashboardController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $data,
+            'data' => $data,
         ]);
     }
 
@@ -85,7 +85,7 @@ class DashboardController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $data,
+            'data' => $data,
         ]);
     }
 
@@ -95,7 +95,7 @@ class DashboardController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $data,
+            'data' => $data,
         ]);
     }
 }

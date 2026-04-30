@@ -42,7 +42,7 @@ class EnsureModulePermission
         if (! $permission || ! $permission->can_read) {
             return response()->json([
                 'success' => false,
-                'data'    => null,
+                'data' => null,
                 'message' => 'No tienes permiso para acceder a este módulo.',
             ], Response::HTTP_FORBIDDEN);
         }
@@ -51,7 +51,7 @@ class EnsureModulePermission
         if (in_array($request->method(), self::WRITE_METHODS, true) && ! $permission->can_write) {
             return response()->json([
                 'success' => false,
-                'data'    => null,
+                'data' => null,
                 'message' => 'No tienes permiso para realizar esta acción en el módulo.',
             ], Response::HTTP_FORBIDDEN);
         }

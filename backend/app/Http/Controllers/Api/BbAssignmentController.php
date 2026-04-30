@@ -28,7 +28,7 @@ class BbAssignmentController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $assignment,
+            'data' => $assignment,
             'message' => 'Business Bishop asignado correctamente.',
         ], 201);
     }
@@ -47,7 +47,7 @@ class BbAssignmentController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => null,
+            'data' => null,
             'message' => 'Business Bishop desasignado correctamente.',
         ]);
     }

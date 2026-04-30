@@ -27,21 +27,21 @@ return new class extends Migration
     public function up(): void
     {
         // permissions(name, guard_name) — Spatie usually creates this; skip if exists
-        if (!$this->indexExists('permissions', 'permissions_name_guard_name_unique')) {
+        if (! $this->indexExists('permissions', 'permissions_name_guard_name_unique')) {
             Schema::table('permissions', function (Blueprint $table) {
                 $table->unique(['name', 'guard_name']);
             });
         }
 
         // user_permissions(user_id, module) — one permission row per user per module
-        if (!$this->indexExists('user_permissions', 'user_permissions_user_id_module_unique')) {
+        if (! $this->indexExists('user_permissions', 'user_permissions_user_id_module_unique')) {
             Schema::table('user_permissions', function (Blueprint $table) {
                 $table->unique(['user_id', 'module']);
             });
         }
 
         // event_shares(event_id, user_id) — prevent duplicate share records
-        if (!$this->indexExists('event_shares', 'event_shares_event_id_user_id_unique')) {
+        if (! $this->indexExists('event_shares', 'event_shares_event_id_user_id_unique')) {
             Schema::table('event_shares', function (Blueprint $table) {
                 $table->unique(['event_id', 'user_id']);
             });

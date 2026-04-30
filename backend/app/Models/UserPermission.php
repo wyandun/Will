@@ -21,7 +21,7 @@ class UserPermission extends Model
     protected function casts(): array
     {
         return [
-            'can_read'  => 'boolean',
+            'can_read' => 'boolean',
             'can_write' => 'boolean',
         ];
     }

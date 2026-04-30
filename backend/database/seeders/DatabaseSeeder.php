@@ -43,13 +43,13 @@ class DatabaseSeeder extends Seeder
         // Ensure the Spatie role exists before assigning it.
         Role::firstOrCreate(['name' => 'superadmin', 'guard_name' => 'web']);
 
-        $email    = env('SUPERADMIN_EMAIL', 'admin@smportal.com');
+        $email = env('SUPERADMIN_EMAIL', 'admin@smportal.com');
         $password = env('SUPERADMIN_PASSWORD', 'password');
 
         $user = User::updateOrCreate(
             ['email' => $email],
             [
-                'name'     => 'Super Admin',
+                'name' => 'Super Admin',
                 'password' => Hash::make($password),
             ]
         );

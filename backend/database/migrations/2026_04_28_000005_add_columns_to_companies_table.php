@@ -22,31 +22,31 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('companies', function (Blueprint $table) {
-            if (!Schema::hasColumn('companies', 'tax_id')) {
+            if (! Schema::hasColumn('companies', 'tax_id')) {
                 $table->string('tax_id', 50)->nullable()->after('name');
             }
 
-            if (!Schema::hasColumn('companies', 'zip_code')) {
+            if (! Schema::hasColumn('companies', 'zip_code')) {
                 $table->string('zip_code', 20)->nullable()->after('city');
             }
 
-            if (!Schema::hasColumn('companies', 'logo_url')) {
+            if (! Schema::hasColumn('companies', 'logo_url')) {
                 $table->string('logo_url', 500)->nullable()->after('logo_path');
             }
 
-            if (!Schema::hasColumn('companies', 'primary_color')) {
+            if (! Schema::hasColumn('companies', 'primary_color')) {
                 $table->char('primary_color', 7)->nullable()->after('logo_url');
             }
 
-            if (!Schema::hasColumn('companies', 'secondary_color')) {
+            if (! Schema::hasColumn('companies', 'secondary_color')) {
                 $table->char('secondary_color', 7)->nullable()->after('primary_color');
             }
 
-            if (!Schema::hasColumn('companies', 'status')) {
+            if (! Schema::hasColumn('companies', 'status')) {
                 $table->string('status', 30)->default('active')->after('secondary_color');
             }
 
-            if (!Schema::hasColumn('companies', 'converted_from_assessment_id')) {
+            if (! Schema::hasColumn('companies', 'converted_from_assessment_id')) {
                 // No constrained() here — assessments table is created in 000002,
                 // but we add the FK as a plain unsignedBigInteger to avoid
                 // circular dependency issues. A proper FK can be added separately if needed.

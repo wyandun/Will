@@ -19,19 +19,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            if (!Schema::hasColumn('users', 'birth_date')) {
+            if (! Schema::hasColumn('users', 'birth_date')) {
                 $table->date('birth_date')->nullable()->after('bio');
             }
 
-            if (!Schema::hasColumn('users', 'invitation_token')) {
+            if (! Schema::hasColumn('users', 'invitation_token')) {
                 $table->string('invitation_token', 100)->unique()->nullable()->after('birth_date');
             }
 
-            if (!Schema::hasColumn('users', 'invitation_accepted_at')) {
+            if (! Schema::hasColumn('users', 'invitation_accepted_at')) {
                 $table->timestamp('invitation_accepted_at')->nullable()->after('invitation_token');
             }
 
-            if (!Schema::hasColumn('users', 'deleted_at')) {
+            if (! Schema::hasColumn('users', 'deleted_at')) {
                 $table->softDeletes()->after('invitation_accepted_at');
             }
         });

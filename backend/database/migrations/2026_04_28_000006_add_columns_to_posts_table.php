@@ -18,15 +18,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('posts', function (Blueprint $table) {
-            if (!Schema::hasColumn('posts', 'image_url')) {
+            if (! Schema::hasColumn('posts', 'image_url')) {
                 $table->string('image_url', 500)->nullable()->after('body');
             }
 
-            if (!Schema::hasColumn('posts', 'file_url')) {
+            if (! Schema::hasColumn('posts', 'file_url')) {
                 $table->string('file_url', 500)->nullable()->after('file_path');
             }
 
-            if (!Schema::hasColumn('posts', 'published_at')) {
+            if (! Schema::hasColumn('posts', 'published_at')) {
                 $table->timestamp('published_at')->nullable()->after('scheduled_at');
             }
         });

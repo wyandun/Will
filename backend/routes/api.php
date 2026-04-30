@@ -7,7 +7,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FranchiseController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/ping', fn() => response()->json(['status' => 'ok']));
+Route::get('/ping', fn () => response()->json(['status' => 'ok']));
 
 /*
 |--------------------------------------------------------------------------
@@ -21,7 +21,7 @@ Route::get('/ping', fn() => response()->json(['status' => 'ok']));
 Route::get('/health', function () {
     return response()->json([
         'success' => true,
-        'data'    => null,
+        'data' => null,
         'message' => 'SM Portal API is running',
     ]);
 });

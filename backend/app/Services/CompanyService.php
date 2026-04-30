@@ -59,16 +59,16 @@ class CompanyService
 
             ProcessMap::create([
                 'company_id' => $company->id,
-                'type'       => 'franquiciadora',
-                'name_es'    => 'Mapa Franquiciadora',
-                'name_en'    => 'Franchisor Map',
+                'type' => 'franquiciadora',
+                'name_es' => 'Mapa Franquiciadora',
+                'name_en' => 'Franchisor Map',
             ]);
 
             ProcessMap::create([
                 'company_id' => $company->id,
-                'type'       => 'franquiciada',
-                'name_es'    => 'Mapa Franquiciada',
-                'name_en'    => 'Franchisee Map',
+                'type' => 'franquiciada',
+                'name_es' => 'Mapa Franquiciada',
+                'name_en' => 'Franchisee Map',
             ]);
 
             return $company;
@@ -76,7 +76,7 @@ class CompanyService
 
         Log::info('Company created', [
             'company_id' => $company->id,
-            'name'       => $company->name,
+            'name' => $company->name,
         ]);
 
         // Load franchise relationship so CompanyResource can serialize franchise_name,
@@ -95,7 +95,7 @@ class CompanyService
 
         Log::info('Company updated', [
             'company_id' => $company->id,
-            'changes'    => array_keys($data),
+            'changes' => array_keys($data),
         ]);
 
         return $company->fresh(['franchise']);
@@ -106,14 +106,14 @@ class CompanyService
      */
     public function delete(Company $company): void
     {
-        $companyId   = $company->id;
+        $companyId = $company->id;
         $companyName = $company->name;
 
         $company->delete();
 
         Log::info('Company deleted', [
             'company_id' => $companyId,
-            'name'       => $companyName,
+            'name' => $companyName,
         ]);
     }
 
@@ -138,17 +138,17 @@ class CompanyService
             // Step 2 — create the franquiciadora process map.
             ProcessMap::create([
                 'company_id' => $company->id,
-                'type'       => 'franquiciadora',
-                'name_es'    => 'Mapa Franquiciadora',
-                'name_en'    => 'Franchisor Map',
+                'type' => 'franquiciadora',
+                'name_es' => 'Mapa Franquiciadora',
+                'name_en' => 'Franchisor Map',
             ]);
 
             // Step 3 — create the franquiciada process map.
             ProcessMap::create([
                 'company_id' => $company->id,
-                'type'       => 'franquiciada',
-                'name_es'    => 'Mapa Franquiciada',
-                'name_en'    => 'Franchisee Map',
+                'type' => 'franquiciada',
+                'name_es' => 'Mapa Franquiciada',
+                'name_en' => 'Franchisee Map',
             ]);
 
             return $company;
@@ -156,7 +156,7 @@ class CompanyService
 
         Log::info('Close deal completed — company and process maps created', [
             'company_id' => $company->id,
-            'name'       => $company->name,
+            'name' => $company->name,
         ]);
 
         return $company->load('franchise');

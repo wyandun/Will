@@ -18,6 +18,7 @@ class BbAssignmentService
      * since the unique constraint on company_id allows only one assignment.
      *
      * @param  array<string, mixed>  $data  Must contain 'bb_user_id' and 'company_id'.
+     *
      * @throws ValidationException
      */
     public function assign(array $data, User $assignedBy): BbAssignment
@@ -37,8 +38,8 @@ class BbAssignmentService
                 }
 
                 return BbAssignment::create([
-                    'bb_user_id'  => $data['bb_user_id'],
-                    'company_id'  => $data['company_id'],
+                    'bb_user_id' => $data['bb_user_id'],
+                    'company_id' => $data['company_id'],
                     'assigned_at' => now(),
                     'assigned_by' => $assignedBy->id,
                 ]);
@@ -52,9 +53,9 @@ class BbAssignmentService
 
         Log::info('BB assigned to company', [
             'assignment_id' => $assignment->id,
-            'bb_user_id'    => $assignment->bb_user_id,
-            'company_id'    => $assignment->company_id,
-            'assigned_by'   => $assignedBy->id,
+            'bb_user_id' => $assignment->bb_user_id,
+            'company_id' => $assignment->company_id,
+            'assigned_by' => $assignedBy->id,
         ]);
 
         return $assignment->load(['bbUser', 'company', 'assignedByUser']);
@@ -67,8 +68,8 @@ class BbAssignmentService
     {
         $context = [
             'assignment_id' => $assignment->id,
-            'bb_user_id'    => $assignment->bb_user_id,
-            'company_id'    => $assignment->company_id,
+            'bb_user_id' => $assignment->bb_user_id,
+            'company_id' => $assignment->company_id,
         ];
 
         $assignment->delete();

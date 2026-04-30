@@ -22,14 +22,14 @@ return new class extends Migration
     public function up(): void
     {
         // franchises.deleted_at
-        if (!$this->indexExists('franchises', 'franchises_deleted_at_index')) {
+        if (! $this->indexExists('franchises', 'franchises_deleted_at_index')) {
             Schema::table('franchises', function (Blueprint $table) {
                 $table->index('deleted_at');
             });
         }
 
         // companies.deleted_at
-        if (!$this->indexExists('companies', 'companies_deleted_at_index')) {
+        if (! $this->indexExists('companies', 'companies_deleted_at_index')) {
             Schema::table('companies', function (Blueprint $table) {
                 $table->index('deleted_at');
             });
@@ -54,7 +54,7 @@ return new class extends Migration
     private function indexExists(string $table, string $indexName): bool
     {
         return (bool) DB::selectOne(
-            "SELECT 1 FROM pg_indexes WHERE tablename = ? AND indexname = ?",
+            'SELECT 1 FROM pg_indexes WHERE tablename = ? AND indexname = ?',
             [$table, $indexName]
         );
     }

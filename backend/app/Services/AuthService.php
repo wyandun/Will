@@ -40,8 +40,8 @@ class AuthService
         $permissions = $user->userPermissions()
             ->get(['module', 'can_read', 'can_write'])
             ->map(fn ($p) => [
-                'module'    => $p->module,
-                'can_read'  => (bool) $p->can_read,
+                'module' => $p->module,
+                'can_read' => (bool) $p->can_read,
                 'can_write' => (bool) $p->can_write,
             ])
             ->values()
@@ -54,15 +54,15 @@ class AuthService
 
         return [
             'user' => [
-                'id'              => $user->id,
-                'name'            => $user->name,
-                'email'           => $user->email,
-                'avatar_path'     => $user->avatar_path ?? null,
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'avatar_path' => $user->avatar_path ?? null,
                 // Needed by the frontend to pre-fill the franchise dropdown for admin_sm.
                 'sm_franchise_id' => $user->sm_franchise_id ?? null,
             ],
-            'token'       => $token,
-            'role'        => $role,
+            'token' => $token,
+            'role' => $role,
             'permissions' => $permissions,
         ];
     }
@@ -78,8 +78,8 @@ class AuthService
         $permissions = $user->userPermissions()
             ->get(['module', 'can_read', 'can_write'])
             ->map(fn ($p) => [
-                'module'    => $p->module,
-                'can_read'  => (bool) $p->can_read,
+                'module' => $p->module,
+                'can_read' => (bool) $p->can_read,
                 'can_write' => (bool) $p->can_write,
             ])
             ->values()
@@ -90,15 +90,15 @@ class AuthService
 
         return [
             'user' => [
-                'id'              => $user->id,
-                'name'            => $user->name,
-                'email'           => $user->email,
-                'avatar_path'     => $user->avatar_path ?? null,
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'avatar_path' => $user->avatar_path ?? null,
                 // Needed by the frontend to pre-fill the franchise dropdown for admin_sm.
                 'sm_franchise_id' => $user->sm_franchise_id ?? null,
             ],
-            'token'       => null,
-            'role'        => $role,
+            'token' => null,
+            'role' => $role,
             'permissions' => $permissions,
         ];
     }

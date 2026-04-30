@@ -2,6 +2,9 @@
 
 namespace App\Http\Requests\BbAssignment;
 
+use App\Models\Company;
+use App\Models\User;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -28,7 +31,7 @@ class StoreBbAssignmentRequest extends FormRequest
                             ->from('model_has_roles')
                             ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
                             ->whereColumn('model_has_roles.model_id', 'users.id')
-                            ->where('model_has_roles.model_type', \App\Models\User::class)
+                            ->where('model_has_roles.model_type', User::class)
                             ->where('roles.name', 'bb');
                     });
                 }),
@@ -45,7 +48,7 @@ class StoreBbAssignmentRequest extends FormRequest
      * Enforce franchise scope: admin_sm cannot assign a BB to a company
      * that belongs to a different SM franchise.
      */
-    public function withValidator(\Illuminate\Contracts\Validation\Validator $validator): void
+    public function withValidator(Validator $validator): void
     {
         $validator->after(function ($validator): void {
             $user = $this->user();
@@ -54,7 +57,7 @@ class StoreBbAssignmentRequest extends FormRequest
                 return;
             }
 
-            $company = \App\Models\Company::find($this->input('company_id'));
+            $company = Company::find($this->input('company_id'));
 
             if ($company && (int) $user->sm_franchise_id !== (int) $company->sm_franchise_id) {
                 $validator->errors()->add(
@@ -69,9 +72,9 @@ class StoreBbAssignmentRequest extends FormRequest
     {
         return [
             'bb_user_id.required' => 'El usuario BB es obligatorio.',
-            'bb_user_id.exists'   => 'El usuario seleccionado no existe o no tiene el rol BB.',
+            'bb_user_id.exists' => 'El usuario seleccionado no existe o no tiene el rol BB.',
             'company_id.required' => 'La empresa es obligatoria.',
-            'company_id.exists'   => 'La empresa seleccionada no existe.',
+            'company_id.exists' => 'La empresa seleccionada no existe.',
         ];
     }
 }

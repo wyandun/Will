@@ -42,8 +42,8 @@ class FranchiseService
 
         Log::info('Franchise created', [
             'franchise_id' => $franchise->id,
-            'name'         => $franchise->name,
-            'type'         => $franchise->type,
+            'name' => $franchise->name,
+            'type' => $franchise->type,
         ]);
 
         return $franchise;
@@ -60,7 +60,7 @@ class FranchiseService
 
         Log::info('Franchise updated', [
             'franchise_id' => $franchise->id,
-            'changes'      => array_keys($data),
+            'changes' => array_keys($data),
         ]);
 
         return $franchise->fresh();
@@ -78,7 +78,7 @@ class FranchiseService
 
         Log::info('Franchise deleted', [
             'franchise_id' => $franchiseId,
-            'name'         => $franchiseName,
+            'name' => $franchiseName,
         ]);
     }
 }

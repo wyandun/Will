@@ -19,7 +19,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('events', function (Blueprint $table) {
-            if (!Schema::hasColumn('events', 'type')) {
+            if (! Schema::hasColumn('events', 'type')) {
                 $table->string('type', 20)->default('casual')->after('color');
             }
         });
