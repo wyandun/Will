@@ -6,7 +6,7 @@ const EMPTY_FORM = {
   email: '',      // NUEVO
   phone: '',
   country: '',    // NUEVO
-  timezone: '',   // NUEVO
+  timezone: '',   //
   address: '',
 };
 
