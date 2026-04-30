@@ -1,8 +1,17 @@
+# railway-worker.toml — SM Portal queue worker service
+# This file is assigned to the "worker" Railway service in the dashboard.
+# It is NOT the primary web service config — that is railway.toml.
+# Docs: https://docs.railway.com/reference/config-as-code
+
 [build]
-builder = "DOCKERFILE"
+# Use the same Dockerfile as the web service, targeting the railway stage.
 dockerfilePath = "Dockerfile"
+dockerBuildTarget = "railway"
 
 [deploy]
+# Override the CMD from the railway stage: run the queue worker instead of the web server.
 startCommand = "php artisan queue:work --sleep=3 --tries=3 --max-time=3600"
+# Workers have no HTTP interface — disable the healthcheck entirely.
+healthcheckPath = ""
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
