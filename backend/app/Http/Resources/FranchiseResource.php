@@ -22,6 +22,7 @@ class FranchiseResource extends JsonResource
             'type' => $this->type,
             'parent_company_id' => $this->parent_company_id,
             'owner_user_id' => $this->owner_user_id,
+            'region' => $this->region,
             'email' => $this->email,
             'country' => $this->country,
             'timezone' => $this->timezone,

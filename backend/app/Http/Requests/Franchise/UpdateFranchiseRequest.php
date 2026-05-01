@@ -17,7 +17,7 @@ class UpdateFranchiseRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'name' => ['sometimes', 'string', 'min:1', 'max:255'],
             'type' => ['sometimes', 'string', 'in:sm,sub'],
             'parent_company_id' => ['sometimes', 'nullable', 'integer', 'exists:companies,id'],
             'owner_user_id' => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
@@ -33,12 +33,13 @@ class UpdateFranchiseRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.required' => 'El nombre de la franquicia es obligatorio.',
+            'name.min' => 'El nombre no puede estar vacío.',
             'name.max' => 'El nombre no puede superar los 255 caracteres.',
             'type.in' => 'El tipo debe ser "sm" o "sub".',
             'parent_company_id.exists' => 'La empresa padre no existe.',
             'owner_user_id.exists' => 'El usuario propietario no existe.',
             'phone.max' => 'El teléfono no puede superar los 30 caracteres.',
+            'email.email' => 'El correo electrónico debe ser válido.',
         ];
     }
 }

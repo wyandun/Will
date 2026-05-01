@@ -22,6 +22,8 @@ class Franchise extends Model
     protected $fillable = [
         'name',
         'type',
+        'parent_company_id',
+        'owner_user_id',
         'region',
         'address',
         'phone',
@@ -53,7 +55,6 @@ class Franchise extends Model
 
     /**
      * Companies that belong to this SM franchise.
-     * The Company model will be created in a later sprint.
      */
     public function companies(): HasMany
     {

@@ -2,14 +2,8 @@ import PropTypes from 'prop-types';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const EMPTY_FORM = {
-  name: '',
-  email: '',
-  phone: '',
-  country: '',
-  timezone: '',
-  address: '',
-};
+const FRANCHISE_FIELDS = ['name', 'email', 'phone', 'country', 'timezone', 'address'];
+const EMPTY_FORM = Object.fromEntries(FRANCHISE_FIELDS.map(f => [f, '']));
 
 export default function FranchiseFormModal({ franchise, onClose, onSave }) {
   const { t } = useTranslation('common');
@@ -23,14 +17,11 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
   // Sincronizar el formulario cuando se abre para editar o crear
   useEffect(() => {
     if (franchise) {
-      setForm({
-        name: franchise.name ?? '',
-        email: franchise.email ?? '',
-        phone: franchise.phone ?? '',
-        country: franchise.country ?? '',
-        timezone: franchise.timezone ?? '',
-        address: franchise.address ?? '',
-      });
+      setForm(
+        Object.fromEntries(
+          FRANCHISE_FIELDS.map(f => [f, franchise[f] ?? ''])
+        )
+      );
     } else {
       setForm(EMPTY_FORM);
     }
@@ -50,9 +41,7 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
     const next = {};
     if (!form.name.trim()) next.name = t('franchises.form.name_required');
     if (form.phone.length > 30) next.phone = t('franchises.form.phone_max');
-    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-      next.email = t('franchises.form.email_invalid');
-    }
+    // Email validation is handled by type="email" + backend 'email' rule
     return next;
   }
 
@@ -66,30 +55,22 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
       return;
     }
 
-    // Construir payload con todos los campos (en edición se envían todos para permitir blanquear)
-    const payload = {
-      name: form.name.trim(),
-    };
+    // Construir payload
+    const payload = { name: form.name.trim() };
 
     if (!isEditing) {
       payload.type = 'sm';
     }
 
-    // Siempre incluir campos opcionales (vacíos o no) en edición para permitir limpiarlos
-    if (isEditing) {
-      payload.email = form.email.trim();
-      payload.phone = form.phone.trim();
-      payload.country = form.country.trim();
-      payload.timezone = form.timezone.trim();
-      payload.address = form.address.trim();
-    } else {
-      // En creación solo enviar si tienen contenido
-      if (form.email.trim()) payload.email = form.email.trim();
-      if (form.phone.trim()) payload.phone = form.phone.trim();
-      if (form.country.trim()) payload.country = form.country.trim();
-      if (form.timezone.trim()) payload.timezone = form.timezone.trim();
-      if (form.address.trim()) payload.address = form.address.trim();
-    }
+    // En edición siempre enviar todos los campos (permite blanquear valores)
+    // En creación solo enviar si tienen contenido
+    FRANCHISE_FIELDS.filter(f => f !== 'name').forEach(field => {
+      if (isEditing) {
+        payload[field] = form[field].trim();
+      } else if (form[field].trim()) {
+        payload[field] = form[field].trim();
+      }
+    });
 
     setIsSubmitting(true);
     try {
@@ -168,9 +149,8 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
                 onChange={handleChange}
                 disabled={isSubmitting}
                 placeholder={t('franchises.form.email_placeholder')}
-                className={`w-full rounded-lg border px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 transition ${errors.email ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 transition"
               />
-              {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
             </div>
 
             {/* Country & Timezone Fields */}
