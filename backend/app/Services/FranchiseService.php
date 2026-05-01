@@ -19,7 +19,7 @@ class FranchiseService
     {
         // Only select the columns that FranchiseResource serializes — avoids
         // loading large text fields (address, etc.) on listing queries.
-        $columns = ['id', 'name', 'type', 'parent_company_id', 'owner_user_id', 'region', 'address', 'phone', 'created_at', 'updated_at'];
+        $columns = ['id', 'name', 'type', 'parent_company_id', 'owner_user_id', 'address', 'phone', 'created_at', 'updated_at', 'email', 'country', 'timezone'];
 
         if ($authUser->hasRole('superadmin')) {
             return Franchise::select($columns)->paginate(25);

@@ -121,6 +121,9 @@
     "col_actions": "Acciones",
     "count_one": "franquicia",
     "count_other": "franquicias",
+    "col_email": "Correo",
+    "col_country": "País",
+    "col_timezone": "Zona Horaria",
     "form": {
       "name": "Nombre",
       "region": "Región",
@@ -131,7 +134,14 @@
       "phone_placeholder": "ej. 5551234567",
       "address_placeholder": "ej. 123 Main St, Miami, FL",
       "name_required": "El nombre es obligatorio.",
-      "phone_max": "El teléfono no puede superar los 30 caracteres."
+      "phone_max": "El teléfono no puede superar los 30 caracteres.",
+      "email": "Correo electrónico",
+      "email_placeholder": "ej. contacto@franquicia.com",
+      "email_invalid": "Por favor ingresá un correo electrónico válido.",
+      "country": "País",
+      "country_placeholder": "ej. USA",
+      "timezone": "Zona horaria",
+      "timezone_placeholder": "ej. UTC-5"
     }
   },
   "companies": {

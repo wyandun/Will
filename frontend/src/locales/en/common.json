@@ -121,6 +121,9 @@
     "col_actions": "Actions",
     "count_one": "franchise",
     "count_other": "franchises",
+    "col_email": "Email",
+    "col_country": "Country",
+    "col_timezone": "Time Zone",
     "form": {
       "name": "Name",
       "region": "Region",
@@ -131,7 +134,14 @@
       "phone_placeholder": "e.g. 5551234567",
       "address_placeholder": "e.g. 123 Main St, Miami, FL",
       "name_required": "Name is required.",
-      "phone_max": "Phone must be 30 characters or fewer."
+      "phone_max": "Phone must be 30 characters or fewer.",
+      "email": "Email",
+      "email_placeholder": "e.g. contact@franchise.com",
+      "email_invalid": "Please enter a valid email address.",
+      "country": "Country",
+      "country_placeholder": "e.g. USA",
+      "timezone": "Time Zone",
+      "timezone_placeholder": "e.g. UTC-5"
     }
   },
   "companies": {

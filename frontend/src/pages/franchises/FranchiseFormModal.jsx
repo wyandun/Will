@@ -50,6 +50,9 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
     const next = {};
     if (!form.name.trim()) next.name = t('franchises.form.name_required');
     if (form.phone.length > 30) next.phone = t('franchises.form.phone_max');
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      next.email = t('franchises.form.email_invalid');
+    }
     return next;
   }
 
@@ -63,15 +66,30 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
       return;
     }
 
-    const payload = { name: form.name.trim() };
-    if (!isEditing) payload.type = 'sm';
-    
-    // Solo enviamos los campos si tienen contenido
-    if (form.email.trim()) payload.email = form.email.trim();
-    if (form.phone.trim()) payload.phone = form.phone.trim();
-    if (form.country.trim()) payload.country = form.country.trim();
-    if (form.timezone.trim()) payload.timezone = form.timezone.trim();
-    if (form.address.trim()) payload.address = form.address.trim();
+    // Construir payload con todos los campos (en edición se envían todos para permitir blanquear)
+    const payload = {
+      name: form.name.trim(),
+    };
+
+    if (!isEditing) {
+      payload.type = 'sm';
+    }
+
+    // Siempre incluir campos opcionales (vacíos o no) en edición para permitir limpiarlos
+    if (isEditing) {
+      payload.email = form.email.trim();
+      payload.phone = form.phone.trim();
+      payload.country = form.country.trim();
+      payload.timezone = form.timezone.trim();
+      payload.address = form.address.trim();
+    } else {
+      // En creación solo enviar si tienen contenido
+      if (form.email.trim()) payload.email = form.email.trim();
+      if (form.phone.trim()) payload.phone = form.phone.trim();
+      if (form.country.trim()) payload.country = form.country.trim();
+      if (form.timezone.trim()) payload.timezone = form.timezone.trim();
+      if (form.address.trim()) payload.address = form.address.trim();
+    }
 
     setIsSubmitting(true);
     try {
@@ -140,7 +158,7 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
             {/* Email Field */}
             <div>
               <label htmlFor="fm-email" className="block text-sm font-medium text-slate-700 mb-1">
-                Email
+                {t('franchises.form.email')}
               </label>
               <input
                 id="fm-email"
@@ -149,16 +167,17 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
                 value={form.email}
                 onChange={handleChange}
                 disabled={isSubmitting}
-                placeholder="ejemplo@correo.com"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 transition"
+                placeholder={t('franchises.form.email_placeholder')}
+                className={`w-full rounded-lg border px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 transition ${errors.email ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
               />
+              {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
             </div>
 
             {/* Country & Timezone Fields */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="fm-country" className="block text-sm font-medium text-slate-700 mb-1">
-                  Country
+                  {t('franchises.form.country')}
                 </label>
                 <input
                   id="fm-country"
@@ -167,13 +186,13 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
                   value={form.country}
                   onChange={handleChange}
                   disabled={isSubmitting}
-                  placeholder="Ej. Ecuador"
+                  placeholder={t('franchises.form.country_placeholder')}
                   className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 transition"
                 />
               </div>
               <div>
                 <label htmlFor="fm-timezone" className="block text-sm font-medium text-slate-700 mb-1">
-                  Time Zone
+                  {t('franchises.form.timezone')}
                 </label>
                 <input
                   id="fm-timezone"
@@ -182,7 +201,7 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
                   value={form.timezone}
                   onChange={handleChange}
                   disabled={isSubmitting}
-                  placeholder="Ej. UTC-5"
+                  placeholder={t('franchises.form.timezone_placeholder')}
                   className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 transition"
                 />
               </div>

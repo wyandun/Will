@@ -24,6 +24,9 @@ class StoreFranchiseRequest extends FormRequest
             'region' => ['nullable', 'string', 'max:255'],
             'address' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'country' => ['nullable', 'string', 'max:255'],
+            'timezone' => ['nullable', 'string', 'max:100'],
         ];
     }
 
