@@ -9,8 +9,6 @@ use App\Http\Requests\Profile\UploadAvatarRequest;
 use App\Http\Resources\UserProfileResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 
 class ProfileController extends Controller
@@ -33,7 +31,13 @@ class ProfileController extends Controller
     public function update(UpdateProfileRequest $request): UserProfileResource
     {
         $user = $request->user();
-        $user->update($request->validated());
+        $data = $request->validated();
+
+        if (isset($data['email']) && $data['email'] !== $user->email) {
+            $data['email_verified_at'] = null;
+        }
+
+        $user->update($data);
 
         return new UserProfileResource($user->fresh());
     }
@@ -47,20 +51,7 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
-        if (! Hash::check($request->current_password, $user->password)) {
-            return response()->json([
-                'success' => false,
-                'data' => null,
-                'message' => 'Current password is incorrect.',
-                'errors' => ['current_password' => ['The provided password does not match our records.']],
-            ], 422);
-        }
-
-        DB::transaction(function () use ($user, $request): void {
-            // Assign directly to bypass the 'hashed' cast, which would double-hash.
-            $user->password = Hash::make($request->new_password);
-            $user->save();
-        });
+        $user->update(['password' => $request->new_password]);
 
         return response()->json([
             'success' => true,
@@ -76,20 +67,11 @@ class ProfileController extends Controller
      */
     public function uploadAvatar(UploadAvatarRequest $request): JsonResponse
     {
+        $user = $request->user();
         $file = $request->file('avatar');
         $extension = strtolower($file->getClientOriginalExtension());
-        $validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-
-        if (! in_array($extension, $validExtensions, true)) {
-            abort(422, 'Invalid image type.');
-        }
-
-        $user = $request->user();
-        $path = $file->storeAs(
-            'avatars',
-            "{$user->id}.{$extension}",
-            'public'
-        );
+        $filename = $user->id.'_'.bin2hex(random_bytes(8)).'.'.$extension;
+        $path = $file->storeAs('avatars', $filename, 'public');
 
         // Remove the old avatar file if it differs from the new one.
         if ($user->avatar_path && $user->avatar_path !== $path) {
