@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Profile\UpdatePasswordRequest;
 use App\Http\Requests\Profile\UpdateProfileRequest;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -23,7 +24,7 @@ class ProfileController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $this->formatUser($user),
+            'data' => $this->formatUser($user),
             'message' => 'OK.',
         ]);
     }
@@ -40,7 +41,7 @@ class ProfileController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $this->formatUser($user->fresh()),
+            'data' => $this->formatUser($user->fresh()),
             'message' => 'Profile updated successfully.',
         ]);
     }
@@ -57,9 +58,9 @@ class ProfileController extends Controller
         if (! Hash::check($request->current_password, $user->password)) {
             return response()->json([
                 'success' => false,
-                'data'    => null,
+                'data' => null,
                 'message' => 'Current password is incorrect.',
-                'errors'  => ['current_password' => ['The provided password does not match our records.']],
+                'errors' => ['current_password' => ['The provided password does not match our records.']],
             ], 422);
         }
 
@@ -69,7 +70,7 @@ class ProfileController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => null,
+            'data' => null,
             'message' => 'Password updated successfully.',
         ]);
     }
@@ -85,9 +86,9 @@ class ProfileController extends Controller
             'avatar' => ['required', 'image', 'max:2048'],
         ]);
 
-        $user      = $request->user();
+        $user = $request->user();
         $extension = $request->file('avatar')->getClientOriginalExtension();
-        $path      = $request->file('avatar')->storeAs(
+        $path = $request->file('avatar')->storeAs(
             'avatars',
             "{$user->id}.{$extension}",
             'public'
@@ -102,7 +103,7 @@ class ProfileController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => ['avatar_url' => Storage::disk('public')->url($path)],
+            'data' => ['avatar_url' => Storage::disk('public')->url($path)],
             'message' => 'Avatar uploaded successfully.',
         ]);
     }
@@ -114,20 +115,20 @@ class ProfileController extends Controller
     /**
      * Serialize a user into the profile payload.
      */
-    private function formatUser(\App\Models\User $user): array
+    private function formatUser(User $user): array
     {
         return [
-            'id'         => $user->id,
-            'name'       => $user->name,
-            'email'      => $user->email,
-            'phone'      => $user->phone,
-            'job_title'  => $user->job_title,
-            'bio'        => $user->bio,
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'job_title' => $user->job_title,
+            'bio' => $user->bio,
             'birth_date' => $user->birth_date?->toDateString(),
             'avatar_url' => $user->avatar_path
                 ? Storage::disk('public')->url($user->avatar_path)
                 : null,
-            'role'       => $user->getRoleNames()->first(),
+            'role' => $user->getRoleNames()->first(),
         ];
     }
 }
