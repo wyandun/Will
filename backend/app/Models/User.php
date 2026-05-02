@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -17,6 +18,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property int|null $sub_franchise_id
  * @property string|null $avatar_path
  * @property Carbon|null $birth_date
+ * @property-read string|null $avatar_url
  */
 class User extends Authenticatable
 {
@@ -64,6 +66,20 @@ class User extends Authenticatable
             'company_id' => 'integer',
             'sub_franchise_id' => 'integer',
         ];
+    }
+
+    // ---------------------------------------------------------------------------
+    // Accessors
+    // ---------------------------------------------------------------------------
+
+    /**
+     * Return the public URL for the user's avatar, or null if none is set.
+     */
+    public function getAvatarUrlAttribute(): ?string
+    {
+        return $this->avatar_path
+            ? Storage::disk('public')->url($this->avatar_path)
+            : null;
     }
 
     // ---------------------------------------------------------------------------

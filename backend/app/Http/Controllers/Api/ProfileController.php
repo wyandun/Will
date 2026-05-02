@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Profile\UpdatePasswordRequest;
 use App\Http\Requests\Profile\UpdateProfileRequest;
-use App\Models\User;
+use App\Http\Requests\Profile\UploadAvatarRequest;
+use App\Http\Resources\UserProfileResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 
@@ -18,15 +20,9 @@ class ProfileController extends Controller
      *
      * GET /api/v1/profile
      */
-    public function show(Request $request): JsonResponse
+    public function show(Request $request): UserProfileResource
     {
-        $user = $request->user();
-
-        return response()->json([
-            'success' => true,
-            'data' => $this->formatUser($user),
-            'message' => 'OK.',
-        ]);
+        return new UserProfileResource($request->user());
     }
 
     /**
@@ -34,16 +30,12 @@ class ProfileController extends Controller
      *
      * PATCH /api/v1/profile
      */
-    public function update(UpdateProfileRequest $request): JsonResponse
+    public function update(UpdateProfileRequest $request): UserProfileResource
     {
         $user = $request->user();
         $user->update($request->validated());
 
-        return response()->json([
-            'success' => true,
-            'data' => $this->formatUser($user->fresh()),
-            'message' => 'Profile updated successfully.',
-        ]);
+        return new UserProfileResource($user->fresh());
     }
 
     /**
@@ -64,9 +56,11 @@ class ProfileController extends Controller
             ], 422);
         }
 
-        // Assign directly to bypass the 'hashed' cast, which would double-hash.
-        $user->password = Hash::make($request->new_password);
-        $user->save();
+        DB::transaction(function () use ($user, $request): void {
+            // Assign directly to bypass the 'hashed' cast, which would double-hash.
+            $user->password = Hash::make($request->new_password);
+            $user->save();
+        });
 
         return response()->json([
             'success' => true,
@@ -80,15 +74,18 @@ class ProfileController extends Controller
      *
      * POST /api/v1/profile/avatar
      */
-    public function uploadAvatar(Request $request): JsonResponse
+    public function uploadAvatar(UploadAvatarRequest $request): JsonResponse
     {
-        $request->validate([
-            'avatar' => ['required', 'image', 'max:2048'],
-        ]);
+        $file = $request->file('avatar');
+        $extension = strtolower($file->getClientOriginalExtension());
+        $validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+        if (! in_array($extension, $validExtensions, true)) {
+            abort(422, 'Invalid image type.');
+        }
 
         $user = $request->user();
-        $extension = $request->file('avatar')->getClientOriginalExtension();
-        $path = $request->file('avatar')->storeAs(
+        $path = $file->storeAs(
             'avatars',
             "{$user->id}.{$extension}",
             'public'
@@ -103,32 +100,8 @@ class ProfileController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => ['avatar_url' => Storage::disk('public')->url($path)],
+            'data' => ['avatar_url' => $user->fresh()->avatar_url],
             'message' => 'Avatar uploaded successfully.',
         ]);
-    }
-
-    // ---------------------------------------------------------------------------
-    // Helpers
-    // ---------------------------------------------------------------------------
-
-    /**
-     * Serialize a user into the profile payload.
-     */
-    private function formatUser(User $user): array
-    {
-        return [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'phone' => $user->phone,
-            'job_title' => $user->job_title,
-            'bio' => $user->bio,
-            'birth_date' => $user->birth_date?->toDateString(),
-            'avatar_url' => $user->avatar_path
-                ? Storage::disk('public')->url($user->avatar_path)
-                : null,
-            'role' => $user->getRoleNames()->first(),
-        ];
     }
 }
