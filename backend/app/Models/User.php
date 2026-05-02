@@ -15,6 +15,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property int|null $company_id
  * @property int|null $sub_franchise_id
  * @property string|null $avatar_path
+ * @property \Carbon\Carbon|null $birth_date
  */
 class User extends Authenticatable
 {
