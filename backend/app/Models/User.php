@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -15,7 +16,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property int|null $company_id
  * @property int|null $sub_franchise_id
  * @property string|null $avatar_path
- * @property \Carbon\Carbon|null $birth_date
+ * @property Carbon|null $birth_date
  */
 class User extends Authenticatable
 {
