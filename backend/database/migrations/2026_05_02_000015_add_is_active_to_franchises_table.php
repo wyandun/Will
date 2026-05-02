@@ -1,4 +1,5 @@
 <?php
+
 // backend/database/migrations/2026_05_01_000001_add_is_active_to_franchises_table.php
 
 use Illuminate\Database\Migrations\Migration;

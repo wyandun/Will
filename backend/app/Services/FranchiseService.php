@@ -20,7 +20,7 @@ class FranchiseService
         $columns = [
             'id', 'name', 'type', 'parent_company_id', 'owner_user_id',
             'address', 'phone', 'email', 'country', 'timezone',
-            'is_active', 'created_at', 'updated_at'
+            'is_active', 'created_at', 'updated_at',
         ];
 
         $query = Franchise::select($columns)
@@ -30,7 +30,7 @@ class FranchiseService
                         $r->where('name', 'admin_sm');
                     });
                 },
-                'companies as clients_count'
+                'companies as clients_count',
             ]);
 
         if ($authUser->hasRole('superadmin')) {
@@ -81,7 +81,7 @@ class FranchiseService
      */
     public function toggleStatus(Franchise $franchise): Franchise
     {
-        $franchise->is_active = !$franchise->is_active;
+        $franchise->is_active = ! $franchise->is_active;
         $franchise->save();
 
         Log::info('Franchise status toggled', [
