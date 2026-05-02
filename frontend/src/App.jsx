@@ -7,6 +7,7 @@ import AuthenticatedLayout from './components/AuthenticatedLayout';
 import FranchisesPage from './pages/franchises/FranchisesPage';
 import CompaniesPage from './pages/companies/CompaniesPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
+import ProfilePage from './pages/profile/ProfilePage';
 import { useAuthStore } from './store/authStore';
 
 /**
@@ -121,7 +122,7 @@ export default function App() {
             }
           />
           <Route path="/calendar"    element={<StubPage title={t('nav.calendar')} />} />
-          <Route path="/profile"     element={<StubPage title={t('nav.profile')} />} />
+          <Route path="/profile"     element={<ProfilePage />} />
         </Route>
 
         {/* Catch-all: redirect unknown paths to root */}

@@ -30,6 +30,10 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'phone',
+        'job_title',
+        'bio',
+        'birth_date',
         'avatar_path',
     ];
 
@@ -53,6 +57,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'birth_date' => 'date',
             'sm_franchise_id' => 'integer',
             'company_id' => 'integer',
             'sub_franchise_id' => 'integer',
