@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import PropTypes from 'prop-types';
 import { useAuthStore } from '../../store/authStore';
 import { profileApi } from '../../api/profile';
 
@@ -85,6 +86,13 @@ function Avatar({ name, avatarUrl, onFileSelect, uploading }) {
   );
 }
 
+Avatar.propTypes = {
+  name: PropTypes.string,
+  avatarUrl: PropTypes.string,
+  onFileSelect: PropTypes.func.isRequired,
+  uploading: PropTypes.bool,
+};
+
 // ─── Field ────────────────────────────────────────────────────────────────────
 
 function Field({ label, children, fullWidth }) {
@@ -97,6 +105,12 @@ function Field({ label, children, fullWidth }) {
     </div>
   );
 }
+
+Field.propTypes = {
+  label: PropTypes.string.isRequired,
+  children: PropTypes.node.isRequired,
+  fullWidth: PropTypes.bool,
+};
 
 const inputClass =
   'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition';
@@ -240,6 +254,18 @@ function PersonalInfoTab({ profile, onProfileSaved }) {
     </form>
   );
 }
+
+PersonalInfoTab.propTypes = {
+  profile: PropTypes.shape({
+    name: PropTypes.string,
+    email: PropTypes.string,
+    phone: PropTypes.string,
+    job_title: PropTypes.string,
+    birth_date: PropTypes.string,
+    bio: PropTypes.string,
+  }),
+  onProfileSaved: PropTypes.func.isRequired,
+};
 
 // ─── Security Tab ─────────────────────────────────────────────────────────────
 
