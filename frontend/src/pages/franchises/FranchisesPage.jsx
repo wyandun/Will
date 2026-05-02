@@ -147,6 +147,15 @@ function FranchiseCard({ franchise, onEdit, onToggleStatus, onDelete, isSuperadm
   );
 }
 
+// ─── PROP TYPES PARA FRANCHISE CARD ───
+FranchiseCard.propTypes = {
+  franchise: PropTypes.object.isRequired,
+  onEdit: PropTypes.func.isRequired,
+  onToggleStatus: PropTypes.func.isRequired,
+  onDelete: PropTypes.func.isRequired,
+  isSuperadmin: PropTypes.bool
+};
+
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
 function EmptyState({ onAdd, isSuperadmin }) {
@@ -176,6 +185,12 @@ function EmptyState({ onAdd, isSuperadmin }) {
     </div>
   );
 }
+
+// ─── PROP TYPES PARA EMPTY STATE ───
+EmptyState.propTypes = {
+  onAdd: PropTypes.func.isRequired,
+  isSuperadmin: PropTypes.bool
+};
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -295,7 +310,6 @@ export default function FranchisesPage() {
   const filteredCount = filteredFranchises.length;
   const isFiltered = searchTerm.trim().length > 0;
   const displayCount = isFiltered ? filteredCount : totalCount;
-  const countLabel = displayCount === 1 ? t('franchises.count_one') : t('franchises.count_other');
 
   return (
     <>
