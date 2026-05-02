@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property string $name
+ * @property bool $is_active
  */
 class Franchise extends Model
 {
@@ -30,7 +31,20 @@ class Franchise extends Model
         'email',
         'country',
         'timezone',
+        'is_active',
     ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'is_active' => 'boolean',
+        ];
+    }
 
     // ---------------------------------------------------------------------------
     // Relationships
@@ -59,5 +73,25 @@ class Franchise extends Model
     public function companies(): HasMany
     {
         return $this->hasMany(Company::class, 'sm_franchise_id');
+    }
+
+    // ---------------------------------------------------------------------------
+    // Scopes
+    // ---------------------------------------------------------------------------
+
+    /**
+     * Scope a query to only include active franchises.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    /**
+     * Scope a query to only include inactive franchises.
+     */
+    public function scopeInactive($query)
+    {
+        return $query->where('is_active', false);
     }
 }

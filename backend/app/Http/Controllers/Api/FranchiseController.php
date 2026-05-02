@@ -83,6 +83,26 @@ class FranchiseController extends Controller
     }
 
     /**
+     * Toggle franchise active/inactive status.
+     *
+     * PATCH /api/v1/franchises/{franchise}/toggle-status
+     */
+    public function toggleStatus(Franchise $franchise): JsonResponse
+    {
+        $this->authorize('update', $franchise);
+
+        $franchise = $this->franchiseService->toggleStatus($franchise);
+
+        return response()->json([
+            'success' => true,
+            'data' => new FranchiseResource($franchise),
+            'message' => $franchise->is_active
+                ? 'Franquicia activada correctamente.'
+                : 'Franquicia desactivada correctamente.',
+        ]);
+    }
+
+    /**
      * Delete a franchise.
      *
      * DELETE /api/v1/franchises/{franchise}

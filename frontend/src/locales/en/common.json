@@ -49,7 +49,8 @@
     "required": "*",
     "total": "total",
     "coming_soon": "This module is coming soon.",
-    "unexpected_error": "An unexpected error occurred. Please try again."
+    "unexpected_error": "An unexpected error occurred. Please try again.",
+    "back": "← Back" 
   },
   "roles": {
     "superadmin": "Super Admin",
@@ -124,6 +125,21 @@
     "col_email": "Email",
     "col_country": "Country",
     "col_timezone": "Time Zone",
+    "active": "Active",
+    "inactive": "Inactive",
+    "admins": "Admins",
+    "clients": "Clients",
+    "deactivate": "Deactivate",
+    "activate": "Activate",
+    "deactivate_confirm": "Deactivate \"{{name}}\"? It will be hidden from operations.",
+    "activate_confirm": "Activate \"{{name}}\"? It will be visible again.",
+    "toggle_error": "Failed to update status. Please try again.",
+    "search_placeholder": "Search franchises by name…",
+    "no_results": "No franchises match your search.",
+    "registered": "registered franchise",
+    "registered_plural": "registered franchises",
+    "results": "result",
+    "results_plural": "results",
     "form": {
       "name": "Name",
       "region": "Region",

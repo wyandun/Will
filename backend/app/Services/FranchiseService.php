@@ -17,18 +17,28 @@ class FranchiseService
      */
     public function list(User $authUser): LengthAwarePaginator
     {
-        // Only select the columns that FranchiseResource serializes — avoids
-        // loading large text fields (address, etc.) on listing queries.
-        $columns = ['id', 'name', 'type', 'parent_company_id', 'owner_user_id', 'address', 'phone', 'created_at', 'updated_at', 'email', 'country', 'timezone'];
+        $columns = [
+            'id', 'name', 'type', 'parent_company_id', 'owner_user_id',
+            'address', 'phone', 'email', 'country', 'timezone',
+            'is_active', 'created_at', 'updated_at'
+        ];
+
+        $query = Franchise::select($columns)
+            ->withCount([
+                'users as admins_count' => function ($q) {
+                    $q->whereHas('roles', function ($r) {
+                        $r->where('name', 'admin_sm');
+                    });
+                },
+                'companies as clients_count'
+            ]);
 
         if ($authUser->hasRole('superadmin')) {
-            return Franchise::select($columns)->paginate(25);
+            return $query->paginate(25);
         }
 
         // admin_sm sees only their own franchise.
-        return Franchise::select($columns)
-            ->where('id', $authUser->sm_franchise_id)
-            ->paginate(25);
+        return $query->where('id', $authUser->sm_franchise_id)->paginate(25);
     }
 
     /**
@@ -61,6 +71,23 @@ class FranchiseService
         Log::info('Franchise updated', [
             'franchise_id' => $franchise->id,
             'changes' => array_keys($data),
+        ]);
+
+        return $franchise->fresh();
+    }
+
+    /**
+     * Toggle the is_active status of a franchise.
+     */
+    public function toggleStatus(Franchise $franchise): Franchise
+    {
+        $franchise->is_active = !$franchise->is_active;
+        $franchise->save();
+
+        Log::info('Franchise status toggled', [
+            'franchise_id' => $franchise->id,
+            'name' => $franchise->name,
+            'is_active' => $franchise->is_active,
         ]);
 
         return $franchise->fresh();

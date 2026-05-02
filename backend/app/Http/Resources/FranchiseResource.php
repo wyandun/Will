@@ -28,6 +28,9 @@ class FranchiseResource extends JsonResource
             'timezone' => $this->timezone,
             'address' => $this->address,
             'phone' => $this->phone,
+            'is_active' => $this->is_active,
+            'admins_count' => $this->whenHas('admins_count'),
+            'clients_count' => $this->whenHas('clients_count'),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

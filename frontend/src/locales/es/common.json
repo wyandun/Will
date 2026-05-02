@@ -49,7 +49,8 @@
     "required": "*",
     "total": "total",
     "coming_soon": "Este módulo estará disponible próximamente.",
-    "unexpected_error": "Ocurrió un error inesperado. Por favor intentá de nuevo."
+    "unexpected_error": "Ocurrió un error inesperado. Por favor intentá de nuevo.",
+    "back": "← Volver"  
   },
   "roles": {
     "superadmin": "Super Admin",
@@ -124,6 +125,21 @@
     "col_email": "Correo",
     "col_country": "País",
     "col_timezone": "Zona Horaria",
+    "active": "Activa",
+    "inactive": "Inactiva",
+    "admins": "Admins",
+    "clients": "Clientes",
+    "deactivate": "Desactivar",
+    "activate": "Activar",
+    "deactivate_confirm": "¿Desactivar \"{{name}}\"? Quedará oculta de las operaciones.",
+    "activate_confirm": "¿Activar \"{{name}}\"? Volverá a estar visible.",
+    "toggle_error": "Error al cambiar el estado. Por favor intentá de nuevo.",
+    "search_placeholder": "Buscar franquicias por nombre…",
+    "no_results": "Ninguna franquicia coincide con tu búsqueda.",
+    "registered": "franquicia registrada",
+    "registered_plural": "franquicias registradas",
+    "results": "resultado",
+    "results_plural": "resultados",
     "form": {
       "name": "Nombre",
       "region": "Región",

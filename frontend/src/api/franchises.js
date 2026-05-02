@@ -13,7 +13,7 @@ export const franchisesApi = {
 
   /**
    * Create a new franchise.
-   * @param {Object} data - { name, type, region?, address?, phone? }
+   * @param {Object} data - franchise fields
    */
   createFranchise: (data) =>
     apiClient.post('/franchises', data).then((res) => res.data.data),
@@ -25,6 +25,13 @@ export const franchisesApi = {
    */
   updateFranchise: (id, data) =>
     apiClient.put(`/franchises/${id}`, data).then((res) => res.data.data),
+
+  /**
+   * Toggle franchise active/inactive status.
+   * @param {number} id
+   */
+  toggleFranchiseStatus: (id) =>
+    apiClient.patch(`/franchises/${id}/toggle-status`).then((res) => res.data.data),
 
   /**
    * Permanently delete a franchise by ID.
