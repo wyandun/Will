@@ -93,8 +93,8 @@ jobs:
             --arg title "$TITLE" \
             --arg diff "$DIFF" \
             '{
-              model: "claude-haiku-4-5-20251001",
-              max_tokens: 1500,
+              model: "claude-sonnet-4-6",
+              max_tokens: 4000,
               messages: [{
                 role: "user",
                 content: (
@@ -149,7 +149,7 @@ jobs:
               review,
               '',
               '---',
-              '*SM Portal CI · Powered by Claude Haiku*',
+              '*SM Portal CI · Powered by Claude Sonnet*',
             ].join('\n');
 
             await github.rest.issues.createComment({
