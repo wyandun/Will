@@ -14,6 +14,20 @@ jobs:
   static-analysis:
     name: Static Analysis
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: sm_portal_test
+          POSTGRES_USER: sm_user
+          POSTGRES_PASSWORD: sm_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
 
@@ -37,15 +51,16 @@ jobs:
 
       - name: PHPUnit — feature tests
         working-directory: backend
-        env:
-          APP_KEY: base64:dGVzdGtleWZvcnBocHVuaXR0ZXN0aW5nMTIzNDU2Nzg=
         run: |
-          cp .env.example .env.testing 2>/dev/null || true
           cat > .env.testing << 'EOF'
           APP_ENV=testing
           APP_KEY=base64:dGVzdGtleWZvcnBocHVuaXR0ZXN0aW5nMTIzNDU2Nzg=
-          DB_CONNECTION=sqlite
-          DB_DATABASE=:memory:
+          DB_CONNECTION=pgsql
+          DB_HOST=127.0.0.1
+          DB_PORT=5432
+          DB_DATABASE=sm_portal_test
+          DB_USERNAME=sm_user
+          DB_PASSWORD=sm_password
           CACHE_STORE=array
           SESSION_DRIVER=array
           QUEUE_CONNECTION=sync
