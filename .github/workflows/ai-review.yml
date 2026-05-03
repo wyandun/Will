@@ -35,6 +35,24 @@ jobs:
         working-directory: backend
         run: ./vendor/bin/phpstan analyse --memory-limit=512M --no-progress
 
+      - name: PHPUnit — feature tests
+        working-directory: backend
+        env:
+          APP_KEY: base64:dGVzdGtleWZvcnBocHVuaXR0ZXN0aW5nMTIzNDU2Nzg=
+        run: |
+          cp .env.example .env.testing 2>/dev/null || true
+          cat > .env.testing << 'EOF'
+          APP_ENV=testing
+          APP_KEY=base64:dGVzdGtleWZvcnBocHVuaXR0ZXN0aW5nMTIzNDU2Nzg=
+          DB_CONNECTION=sqlite
+          DB_DATABASE=:memory:
+          CACHE_STORE=array
+          SESSION_DRIVER=array
+          QUEUE_CONNECTION=sync
+          MAIL_MAILER=array
+          EOF
+          php artisan test --env=testing --testsuite=Feature
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
