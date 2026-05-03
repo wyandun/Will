@@ -9,6 +9,7 @@ use App\Http\Requests\Profile\UploadAvatarRequest;
 use App\Http\Resources\UserProfileResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class ProfileController extends Controller
@@ -35,6 +36,7 @@ class ProfileController extends Controller
 
         if (isset($data['email']) && $data['email'] !== $user->email) {
             $data['email_verified_at'] = null;
+            // TODO: send email verification notification once email verification flow is implemented
         }
 
         $user->update($data);
@@ -69,16 +71,17 @@ class ProfileController extends Controller
     {
         $user = $request->user();
         $file = $request->file('avatar');
-        $extension = strtolower($file->getClientOriginalExtension());
+        $extension = $file->extension();
         $filename = $user->id.'_'.bin2hex(random_bytes(8)).'.'.$extension;
         $path = $file->storeAs('avatars', $filename, 'public');
 
-        // Remove the old avatar file if it differs from the new one.
-        if ($user->avatar_path && $user->avatar_path !== $path) {
-            Storage::disk('public')->delete($user->avatar_path);
-        }
-
-        $user->update(['avatar_path' => $path]);
+        DB::transaction(function () use ($user, $path): void {
+            $oldPath = $user->avatar_path;
+            $user->update(['avatar_path' => $path]);
+            if ($oldPath && $oldPath !== $path) {
+                Storage::disk('public')->delete($oldPath);
+            }
+        });
 
         return response()->json([
             'success' => true,
