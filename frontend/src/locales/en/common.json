@@ -205,7 +205,8 @@
       "address_placeholder": "e.g. 123 Main St",
       "notes_placeholder": "Any additional notes about this company…",
       "name_required": "Name is required.",
-      "franchise_required": "Franchise is required."
+      "franchise_required": "Franchise is required.",
+      "email_invalid": "Please enter a valid email address."
     }
   }
 }

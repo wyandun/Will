@@ -41,7 +41,9 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
     const next = {};
     if (!form.name.trim()) next.name = t('franchises.form.name_required');
     if (form.phone.length > 30) next.phone = t('franchises.form.phone_max');
-    // Email validation is handled by type="email" + backend 'email' rule
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      next.email = t('franchises.form.email_invalid');
+    }
     return next;
   }
 
@@ -149,8 +151,9 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
                 onChange={handleChange}
                 disabled={isSubmitting}
                 placeholder={t('franchises.form.email_placeholder')}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 transition"
+                className={`w-full rounded-lg border px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 transition ${errors.email ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
               />
+              {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
             </div>
 
             {/* Country & Timezone Fields */}

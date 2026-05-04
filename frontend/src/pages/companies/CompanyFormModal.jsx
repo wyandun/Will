@@ -114,6 +114,9 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
     const next = {};
     if (!form.name.trim()) next.name = t('companies.form.name_required');
     if (!form.sm_franchise_id) next.sm_franchise_id = t('companies.form.franchise_required');
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      next.email = t('companies.form.email_invalid');
+    }
     return next;
   }
 
@@ -304,8 +307,11 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
                 onChange={handleChange}
                 disabled={isSubmitting}
                 placeholder={t('companies.form.email_placeholder')}
-                className={`${inputBase} border-slate-300`}
+                className={`${inputBase} ${errors.email ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
               />
+              {errors.email && (
+                <p className="mt-1 text-xs text-red-600">{errors.email}</p>
+              )}
             </div>
 
             {/* City + State — 2 columns */}

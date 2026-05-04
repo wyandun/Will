@@ -205,7 +205,8 @@
       "address_placeholder": "ej. 123 Main St",
       "notes_placeholder": "Notas adicionales sobre esta empresa…",
       "name_required": "El nombre es obligatorio.",
-      "franchise_required": "La franquicia es obligatoria."
+      "franchise_required": "La franquicia es obligatoria.",
+      "email_invalid": "Por favor ingresá un correo electrónico válido."
     }
   }
 }
