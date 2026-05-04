@@ -108,10 +108,6 @@ CMD ["php-fpm"]
 # ---------------------------------------------------------------------------
 FROM production AS railway
 
-# Copy Laravel's built-in dev-server router to the workdir so it is
-# reachable as ./server.php at runtime.
-RUN cp vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php server.php
-
 # Drop the production entrypoint — Railway does not need the permission fix
 # and running chown as a potentially non-root user would abort the container.
 ENTRYPOINT []
@@ -120,6 +116,7 @@ EXPOSE 8080
 
 # Startup sequence:
 #   1. Run pending migrations (--force skips the production confirmation prompt)
-#   2. Cache config and routes for faster boot
-#   3. Start the built-in PHP server rooted at public/ using the Laravel router
-CMD ["sh", "-c", "php artisan migrate --force && php -S 0.0.0.0:${PORT:-8080} -t public"]
+#   2. Start the built-in PHP server rooted at public/ using index.php as router
+CMD ["sh", "-c", "php artisan migrate --force && php -S 0.0.0.0:${PORT:-8080} -t public public/index.php"]
+
+
