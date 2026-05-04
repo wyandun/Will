@@ -34,12 +34,15 @@ class ProfileController extends Controller
         $user = $request->user();
         $data = $request->validated();
 
-        if (isset($data['email']) && $data['email'] !== $user->email) {
-            $data['email_verified_at'] = null;
-            // TODO: send email verification notification once email verification flow is implemented
-        }
+        $emailChanged = isset($data['email']) && $data['email'] !== $user->email;
 
         $user->update($data);
+
+        if ($emailChanged) {
+            $user->email_verified_at = null;
+            $user->save();
+            // TODO: send email verification notification once email verification flow is implemented
+        }
 
         return new UserProfileResource($user->fresh());
     }
@@ -75,17 +78,24 @@ class ProfileController extends Controller
         $filename = $user->id.'_'.bin2hex(random_bytes(8)).'.'.$extension;
         $path = $file->storeAs('avatars', $filename, 'public');
 
-        DB::transaction(function () use ($user, $path): void {
-            $oldPath = $user->avatar_path;
-            $user->update(['avatar_path' => $path]);
-            if ($oldPath && $oldPath !== $path) {
-                Storage::disk('public')->delete($oldPath);
-            }
-        });
+        try {
+            DB::transaction(function () use ($user, $path): void {
+                $oldPath = $user->avatar_path;
+                $user->update(['avatar_path' => $path]);
+                if ($oldPath && $oldPath !== $path) {
+                    Storage::disk('public')->delete($oldPath);
+                }
+            });
+        } catch (\Throwable $e) {
+            Storage::disk('public')->delete($path);
+            throw $e;
+        }
+
+        $user->refresh();
 
         return response()->json([
             'success' => true,
-            'data' => ['avatar_url' => $user->fresh()->avatar_url],
+            'data' => ['avatar_url' => $user->avatar_url],
             'message' => 'Avatar uploaded successfully.',
         ]);
     }
