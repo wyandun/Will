@@ -38,68 +38,65 @@ function FranchiseCard({ franchise, onEdit, onToggleStatus, onDelete, isSuperadm
   const isActive = franchise.is_active !== false;
 
   return (
-    <div
-      className={`bg-white rounded-xl border shadow-sm hover:shadow-md transition-all ${
-        isActive ? 'border-slate-200' : 'border-slate-200 saturate-[0.25] opacity-80'
-      }`}
-    >
-      {/* Header de la card: avatar + nombre + badge */}
-      <div className="p-5 pb-3">
-        <div className="flex items-start gap-3">
-          <div
-            className={`w-12 h-12 rounded-xl ${getAvatarColor(franchise.name)} flex items-center justify-center shrink-0`}
-          >
-            <span className="text-white text-base font-bold">
-              {getInitials(franchise.name)}
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
+      <div className={!isActive ? 'saturate-[0.25] opacity-80' : ''}>
+        {/* Header de la card: avatar + nombre + badge */}
+        <div className="p-5 pb-3">
+          <div className="flex items-start gap-3">
+            <div
+              className={`w-12 h-12 rounded-xl ${getAvatarColor(franchise.name)} flex items-center justify-center shrink-0`}
+            >
+              <span className="text-white text-base font-bold">
+                {getInitials(franchise.name)}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-base font-semibold text-slate-800 truncate">
+                {franchise.name}
+              </h3>
+              <p className="text-sm text-slate-500 mt-0.5">
+                {franchise.country ?? <span className="text-slate-400">—</span>}
+              </p>
+            </div>
+            <span
+              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isActive
+                  ? 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/20'
+                  : 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20'
+                }`}
+            >
+              {isActive ? t('franchises.active') : t('franchises.inactive')}
             </span>
           </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-base font-semibold text-slate-800 truncate">
-              {franchise.name}
-            </h3>
-            <p className="text-sm text-slate-500 mt-0.5">
-              {franchise.country ?? <span className="text-slate-400">—</span>}
+        </div>
+
+        {/* Datos de contacto */}
+        <div className="px-5 pb-3">
+          {franchise.email && (
+            <p className="text-sm text-slate-500 flex items-center gap-1.5">
+              <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+              </svg>
+              {franchise.email}
             </p>
-          </div>
-          <span
-            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-              isActive
-                ? 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/20'
-                : 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20'
-            }`}
-          >
-            {isActive ? t('franchises.active') : t('franchises.inactive')}
-          </span>
+          )}
         </div>
-      </div>
 
-      {/* Datos de contacto */}
-      <div className="px-5 pb-3">
-        {franchise.email && (
-          <p className="text-sm text-slate-500 flex items-center gap-1.5">
+        {/* Contadores de Admins y Clients */}
+        <div className="px-5 pb-3 flex gap-4">
+          <div className="flex items-center gap-1.5 text-sm text-slate-500">
             <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
             </svg>
-            {franchise.email}
-          </p>
-        )}
-      </div>
-
-      {/* Contadores de Admins y Clients */}
-      <div className="px-5 pb-3 flex gap-4">
-        <div className="flex items-center gap-1.5 text-sm text-slate-500">
-          <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-          </svg>
-          <span className="font-medium text-slate-700">{franchise.admins_count ?? 0}</span>
-          <span>{t('franchises.admins')}</span>
-        </div>
-        <div className="flex items-center gap-1.5 text-sm text-slate-500">
-          <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 0h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" />
-          </svg>
-          <span className="font-medium text-slate-700">{franchise.clients_count ?? 0}</span>
-          <span>{t('franchises.clients')}</span>
+            <span className="font-medium text-slate-700">{franchise.admins_count ?? 0}</span>
+            <span>{t('franchises.admins')}</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-sm text-slate-500">
+            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 0h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" />
+            </svg>
+            <span className="font-medium text-slate-700">{franchise.clients_count ?? 0}</span>
+            <span>{t('franchises.clients')}</span>
+          </div>
         </div>
       </div>
 
@@ -117,11 +114,10 @@ function FranchiseCard({ franchise, onEdit, onToggleStatus, onDelete, isSuperadm
           </button>
           <button
             onClick={() => onToggleStatus(franchise)}
-            className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-              isActive
+            className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${isActive
                 ? 'text-amber-700 bg-amber-50 hover:bg-amber-100'
                 : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
-            }`}
+              }`}
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
               {isActive ? (
@@ -236,8 +232,8 @@ export default function FranchisesPage() {
 
   const filteredFranchises = searchTerm.trim()
     ? franchises.filter((f) =>
-        f.name.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+      f.name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
     : franchises;
 
   // ── Modal helpers ──────────────────────────────────────────────────────────

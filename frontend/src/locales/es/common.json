@@ -50,7 +50,7 @@
     "total": "total",
     "coming_soon": "Este módulo estará disponible próximamente.",
     "unexpected_error": "Ocurrió un error inesperado. Por favor intentá de nuevo.",
-    "back": "← Volver"  
+    "back": "Volver"  
   },
   "roles": {
     "superadmin": "Super Admin",

@@ -50,7 +50,7 @@
     "total": "total",
     "coming_soon": "This module is coming soon.",
     "unexpected_error": "An unexpected error occurred. Please try again.",
-    "back": "← Back" 
+    "back": "Back"
   },
   "roles": {
     "superadmin": "Super Admin",

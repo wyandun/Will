@@ -51,17 +51,17 @@ RUN apt-get update && apt-get install -y \
 
 # Configure and install PHP extensions
 RUN docker-php-ext-configure gd \
-        --with-freetype \
-        --with-jpeg \
+    --with-freetype \
+    --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
-        pdo_pgsql \
-        pgsql \
-        zip \
-        bcmath \
-        gd \
-        intl \
-        opcache \
-        pcntl
+    pdo_pgsql \
+    pgsql \
+    zip \
+    bcmath \
+    gd \
+    intl \
+    opcache \
+    pcntl
 
 # Install the Redis extension via PECL (not bundled with PHP source)
 RUN pecl install redis \
