@@ -1,0 +1,5 @@
+{
+    "exclude": [
+        "config/l5-swagger.php"
+    ]
+}
