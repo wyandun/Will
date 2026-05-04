@@ -26,6 +26,7 @@ class UserProfileResource extends JsonResource
             'birth_date' => $this->birth_date?->toDateString(),
             'avatar_url' => $this->avatar_url,
             'role' => $this->getRoleNames()->first(),
+            'email_verified' => $this->email_verified_at !== null,
         ];
     }
 }
