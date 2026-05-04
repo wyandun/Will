@@ -197,10 +197,10 @@ return [
                 */
 
                 'sanctum' => [
-                    'type' => 'apiKey',
-                    'description' => 'Enter token in format: Bearer {token}',
-                    'name' => 'Authorization',
-                    'in' => 'header',
+                    'type' => 'http',
+                    'scheme' => 'bearer',
+                    'bearerFormat' => 'JWT',
+                    'description' => 'Pegá el token que devuelve /auth/login',
                 ],
             ],
             'security' => [
