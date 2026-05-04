@@ -21,6 +21,8 @@ const useAuthStore = create(
         }));
       },
 
+      updateUser: (updates) => set((state) => ({ user: { ...state.user, ...updates } })),
+
       clearAuth: () => {
         set({ user: null, token: null, role: null, permissions: [], isAuthenticated: false });
       },

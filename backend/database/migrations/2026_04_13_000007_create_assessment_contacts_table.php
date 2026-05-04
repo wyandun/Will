@@ -73,8 +73,6 @@ return new class extends Migration
 
         });
 
-        // GIN indexes — must use DB::statement because rawIndex() wraps in parens
-        // which produces invalid syntax for USING GIN
         DB::statement('CREATE INDEX assessment_contacts_stage_1_data_gin ON assessment_contacts USING GIN (stage_1_data)');
         DB::statement('CREATE INDEX assessment_contacts_stage_2_data_gin ON assessment_contacts USING GIN (stage_2_data)');
         DB::statement('CREATE INDEX assessment_contacts_stage_3_data_gin ON assessment_contacts USING GIN (stage_3_data)');
