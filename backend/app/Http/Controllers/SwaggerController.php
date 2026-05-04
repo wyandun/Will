@@ -11,7 +11,7 @@ use OpenApi\Attributes as OA;
 )]
 #[OA\Server(
     url: '/api/v1',
-    description: 'Local / Railway'
+    description: 'API Server'
 )]
 #[OA\SecurityScheme(
     securityScheme: 'sanctum',
