@@ -196,7 +196,6 @@ return [
                 'sanctum' => [
                     'type' => 'http',
                     'scheme' => 'bearer',
-                    'bearerFormat' => 'JWT',
                     'description' => 'Pegá el token que devuelve /auth/login',
                 ],
             ],

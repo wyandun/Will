@@ -17,7 +17,6 @@ use OpenApi\Attributes as OA;
     securityScheme: 'sanctum',
     type: 'http',
     scheme: 'bearer',
-    bearerFormat: 'JWT',
     description: 'Pegá el token que devuelve /auth/login'
 )]
 class SwaggerController {}
