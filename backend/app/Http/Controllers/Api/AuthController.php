@@ -22,8 +22,8 @@ class AuthController extends Controller
             content: new OA\JsonContent(
                 required: ['email', 'password'],
                 properties: [
-                    new OA\Property(property: 'email', type: 'string', format: 'email', example: 'admin@smportal.com'),
-                    new OA\Property(property: 'password', type: 'string', example: 'password'),
+                    new OA\Property(property: 'email', type: 'string', format: 'email', example: 'user@example.com'),
+                    new OA\Property(property: 'password', type: 'string', example: 'secret'),
                 ]
             )
         ),
@@ -47,7 +47,7 @@ class AuthController extends Controller
                                     properties: [
                                         new OA\Property(property: 'id', type: 'integer', example: 1),
                                         new OA\Property(property: 'name', type: 'string', example: 'Super Admin'),
-                                        new OA\Property(property: 'email', type: 'string', example: 'admin@smportal.com'),
+                                        new OA\Property(property: 'email', type: 'string', example: 'user@example.com'),
                                     ]
                                 ),
                             ]
@@ -93,7 +93,7 @@ class AuthController extends Controller
                                     properties: [
                                         new OA\Property(property: 'id', type: 'integer', example: 1),
                                         new OA\Property(property: 'name', type: 'string', example: 'Super Admin'),
-                                        new OA\Property(property: 'email', type: 'string', example: 'admin@smportal.com'),
+                                        new OA\Property(property: 'email', type: 'string', example: 'user@example.com'),
                                     ]
                                 ),
                             ]
