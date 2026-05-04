@@ -36,7 +36,7 @@ class ProfileController extends Controller
 
         $emailChanged = isset($data['email']) && $data['email'] !== $user->email;
 
-        $user->forceFill($data);
+        $user->fill($data);
 
         if ($emailChanged) {
             $user->email_verified_at = null;
@@ -57,7 +57,7 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
-        $user->update(['password' => $request->new_password]);
+        $user->update(['password' => $request->validated('new_password')]);
 
         return response()->json([
             'success' => true,
@@ -79,17 +79,19 @@ class ProfileController extends Controller
         $filename = $user->id.'_'.bin2hex(random_bytes(8)).'.'.$extension;
         $path = $file->storeAs('avatars', $filename, 'public');
 
+        $oldPath = $user->avatar_path;
+
         try {
             DB::transaction(function () use ($user, $path): void {
-                $oldPath = $user->avatar_path;
                 $user->update(['avatar_path' => $path]);
-                if ($oldPath && $oldPath !== $path) {
-                    Storage::disk('public')->delete($oldPath);
-                }
             });
         } catch (\Throwable $e) {
             Storage::disk('public')->delete($path);
             throw $e;
+        }
+
+        if ($oldPath && $oldPath !== $path) {
+            Storage::disk('public')->delete($oldPath);
         }
 
         $user->refresh();
