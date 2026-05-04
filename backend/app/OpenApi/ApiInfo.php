@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\OpenApi;
 
 use OpenApi\Attributes as OA;
 
@@ -19,4 +19,4 @@ use OpenApi\Attributes as OA;
     scheme: 'bearer',
     description: 'Pegá el token que devuelve /auth/login'
 )]
-class SwaggerController {}
+class ApiInfo {}
