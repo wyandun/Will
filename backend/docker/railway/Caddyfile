@@ -4,8 +4,16 @@
 #
 # PHP-FPM listens on a unix socket to avoid loopback overhead.
 # The root is set to Laravel's public/ directory.
+#
+# NOTE: trusted_proxies is a site-level directive in Caddy v2, NOT a
+# subdirective of php_fastcgi. Placing it inside php_fastcgi causes a
+# parse error. It belongs at the top of the site block.
 
 :{$PORT:8080} {
+    # Trust Railway's TLS-terminating proxy so HTTPS headers are set correctly.
+    # This must be a site-level directive — NOT inside php_fastcgi.
+    trusted_proxies private_ranges
+
     # Laravel's document root
     root * /var/www/html/public
 
@@ -13,10 +21,7 @@
     file_server
 
     # Forward all non-file requests to PHP-FPM via FastCGI
-    php_fastcgi unix//run/php-fpm.sock {
-        # Needed so $_SERVER['HTTPS'] is set correctly behind Railway's TLS proxy
-        trusted_proxies private_ranges
-    }
+    php_fastcgi unix//run/php-fpm.sock
 
     # Log to stdout so Railway captures it
     log {

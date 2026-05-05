@@ -28,7 +28,7 @@ mkdir -p \
     "${WORKDIR}/storage/api-docs" \
     "${WORKDIR}/bootstrap/cache"
 
-chmod -R 775 \
+chmod -R 777 \
     "${WORKDIR}/storage" \
     "${WORKDIR}/bootstrap/cache"
 
@@ -57,10 +57,22 @@ listen.mode = 0666
 FPMCONF
 
 echo "[railway-start] Starting PHP-FPM..."
-php-fpm --daemonize
+# -D = daemonize (short form; --daemonize is not recognized in all builds)
+php-fpm -D
 
-# Give FPM a moment to create the socket before Caddy tries to connect
-sleep 1
+# Wait for PHP-FPM to create the unix socket before Caddy tries to connect.
+# A plain sleep is fragile — loop with a short poll instead.
+echo "[railway-start] Waiting for PHP-FPM socket..."
+i=0
+while [ ! -S /run/php-fpm.sock ]; do
+    i=$((i + 1))
+    if [ "$i" -ge 30 ]; then
+        echo "[railway-start] ERROR: PHP-FPM socket did not appear after 15 s" >&2
+        exit 1
+    fi
+    sleep 0.5
+done
+echo "[railway-start] PHP-FPM socket ready."
 
 # ---------------------------------------------------------------------------
 # 5. Start Caddy in the foreground.
