@@ -39,9 +39,23 @@ class FranchisePolicy
     }
 
     /**
-     * Update a franchise: superadmin only.
+     * Update franchise data (name, type, email, etc.): superadmin only.
      */
     public function update(User $user, Franchise $franchise): bool
+    {
+        return $user->hasRole(Role::SUPERADMIN);
+    }
+
+    /**
+     * Toggle franchise active/inactive status: superadmin only.
+     *
+     * This is intentionally separated from `update` because toggling status
+     * is a distinct operational action that may gain different permissions
+     * in the future (e.g., allowing admin_sm to toggle their own franchise).
+     * Currently restricted to superadmin only — admin_sm cannot toggle status
+     * on any franchise, including their own.
+     */
+    public function toggleStatus(User $user, Franchise $franchise): bool
     {
         return $user->hasRole(Role::SUPERADMIN);
     }

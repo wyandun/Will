@@ -29,8 +29,16 @@ class FranchiseResource extends JsonResource
             'address' => $this->address,
             'phone' => $this->phone,
             'is_active' => $this->is_active,
-            'admins_count' => $this->whenHas('admins_count'),
-            'clients_count' => $this->whenHas('clients_count'),
+            // withCount appends virtual attributes; use array_key_exists
+            // instead of whenHas (which is for actual model attributes).
+            'admins_count' => $this->when(
+                array_key_exists('admins_count', $this->resource->getAttributes()),
+                fn () => $this->admins_count,
+            ),
+            'clients_count' => $this->when(
+                array_key_exists('clients_count', $this->resource->getAttributes()),
+                fn () => $this->clients_count,
+            ),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

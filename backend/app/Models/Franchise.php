@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -79,14 +80,16 @@ class Franchise extends Model
     // ---------------------------------------------------------------------------
     // Scopes
     // ---------------------------------------------------------------------------
-    // TODO: These scopes are ready for use when the backend accepts an
-    //       ?active= query parameter for filtered listing. Currently the
-    //       frontend filters client-side by name only.
+    // TODO: Client-side filtering on a paginated dataset is broken by design:
+    //       the user can only search within the current page and results on
+    //       subsequent pages are invisible. Before production, add backend
+    //       ?search= and ?active= query parameters in FranchiseService::list()
+    //       using these scopes.
 
     /**
      * Scope a query to only include active franchises.
      */
-    public function scopeActive($query)
+    public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
     }
@@ -94,7 +97,7 @@ class Franchise extends Model
     /**
      * Scope a query to only include inactive franchises.
      */
-    public function scopeInactive($query)
+    public function scopeInactive(Builder $query): Builder
     {
         return $query->where('is_active', false);
     }

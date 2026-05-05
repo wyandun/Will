@@ -28,6 +28,10 @@ class FranchiseService
 
         $perPage = (int) config('pagination.franchise_per_page', 25);
 
+        // The withCount sub-queries are scoped through the users() HasMany
+        // relationship (FK = sm_franchise_id), so the join path is:
+        //   franchise → users (via sm_franchise_id) → model_has_roles → roles
+        // This guarantees counts are never cross-franchise.
         $query = Franchise::select($columns)
             ->withCount([
                 'users as admins_count' => function ($q) {
@@ -57,6 +61,8 @@ class FranchiseService
 
         Log::info('Franchise created', [
             'franchise_id' => $franchise->id,
+            // Name is intentionally logged for audit trail; ensure log
+            // pipeline is access-restricted if names are considered sensitive.
             'name' => $franchise->name,
             'type' => $franchise->type,
         ]);
@@ -84,26 +90,30 @@ class FranchiseService
     /**
      * Toggle the is_active status of a franchise.
      *
-     * Uses a pessimistic lock to prevent race conditions when two concurrent
-     * PATCH requests try to toggle the same franchise simultaneously.
+     * Uses a pessimistic lock (SELECT ... FOR UPDATE) inside a transaction
+     * to prevent race conditions when two concurrent PATCH requests try
+     * to toggle the same franchise simultaneously.
      */
     public function toggleStatus(Franchise $franchise): Franchise
     {
         DB::transaction(function () use ($franchise) {
-            // Refresh inside the transaction to get the latest state.
-            $franchise->refresh();
-            $franchise->update(['is_active' => ! $franchise->is_active]);
+            // Acquire a row-level lock and read the latest state from the DB.
+            $locked = Franchise::lockForUpdate()->find($franchise->id);
+            $locked->update(['is_active' => ! $locked->is_active]);
+
+            // Sync the caller's model instance with the locked row's state.
+            $franchise->setRawAttributes($locked->getAttributes());
         });
 
-        // Refresh to ensure in-memory state matches the DB after the transaction.
         $franchise->refresh();
 
         Log::info('Franchise status toggled', [
             'franchise_id' => $franchise->id,
-            'name' => $franchise->name,
             'is_active' => $franchise->is_active,
         ]);
 
+        // Dispatch after the transaction has been committed so listeners
+        // can safely read the new is_active value from the DB.
         FranchiseStatusChanged::dispatch($franchise);
 
         return $franchise;
@@ -115,13 +125,11 @@ class FranchiseService
     public function delete(Franchise $franchise): void
     {
         $franchiseId = $franchise->id;
-        $franchiseName = $franchise->name;
 
         $franchise->delete();
 
         Log::info('Franchise deleted', [
             'franchise_id' => $franchiseId,
-            'name' => $franchiseName,
         ]);
     }
 }

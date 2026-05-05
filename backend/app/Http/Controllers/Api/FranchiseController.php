@@ -89,7 +89,7 @@ class FranchiseController extends Controller
      */
     public function toggleStatus(Franchise $franchise): JsonResponse
     {
-        $this->authorize('update', $franchise);
+        $this->authorize('toggleStatus', $franchise);
 
         $franchise = $this->franchiseService->toggleStatus($franchise);
 
