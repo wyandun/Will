@@ -96,27 +96,34 @@ CMD ["php-fpm"]
 
 # ---------------------------------------------------------------------------
 # Stage 3: railway
-# HTTP server for Railway deployment.
-# Uses PHP built-in server — suitable for shared dev environment.
+# Production HTTP server for Railway deployment.
+# Uses Nginx as a reverse proxy in front of PHP-FPM — same as local Docker.
 #
-# Notes:
-#   - ENTRYPOINT is reset to avoid inheriting the permission-fix script from
-#     the production stage (Railway may run as non-root and chown would fail).
-#   - The Laravel router file is copied to the workdir so the built-in server
-#     can emulate mod_rewrite (serves public/index.php for every route).
-#   - PORT is injected by Railway at runtime; default 8080 is the fallback.
+# Start sequence (railway-start.sh):
+#   1. Ensure all storage subdirectories exist and are writable
+#   2. Run php artisan storage:link (idempotent, safe to repeat)
+#   3. Generate Swagger docs (ephemeral filesystem — must run every deploy)
+#   4. Start PHP-FPM as a background daemon
+#   5. Start Nginx in the foreground (PID 1 signal target)
 # ---------------------------------------------------------------------------
 FROM production AS railway
 
-# Drop the production entrypoint — Railway does not need the permission fix
-# and running chown as a potentially non-root user would abort the container.
+# Install Nginx and gettext-base (provides envsubst for $PORT substitution)
+RUN apt-get update && apt-get install -y nginx gettext-base \
+    && rm -rf /var/lib/apt/lists/*
+
+# Nginx config — proxies to PHP-FPM on 127.0.0.1:9000
+COPY docker/railway/nginx.conf /etc/nginx/sites-enabled/default
+
+# Start script that wires up the filesystem and launches both processes
+COPY docker/railway/start.sh /usr/local/bin/railway-start.sh
+RUN chmod +x /usr/local/bin/railway-start.sh
+
+# Drop the production entrypoint — permissions are handled in start.sh
 ENTRYPOINT []
 
 EXPOSE 8080
 
-# Startup sequence:
-#   1. Run pending migrations (--force skips the production confirmation prompt)
-#   2. Start the built-in PHP server rooted at public/ using index.php as router
-CMD ["sh", "-c", "php artisan migrate --force && php -S 0.0.0.0:${PORT:-8080} -t public public/index.php"]
+CMD ["/usr/local/bin/railway-start.sh"]
 
 

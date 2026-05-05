@@ -15,6 +15,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Trust all proxies so Railway's X-Forwarded-Proto header is respected.
+        // This ensures the request scheme is detected as HTTPS instead of HTTP,
+        // fixing mixed-content errors in L5-Swagger and scheme-dependent URLs.
+        $middleware->trustProxies(at: '*');
         $middleware->prepend(HandleCors::class);
         $middleware->alias([
             'module.permission' => EnsureModulePermission::class,

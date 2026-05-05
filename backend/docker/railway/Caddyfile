@@ -1,0 +1,27 @@
+# Caddyfile — SM Portal Railway deployment
+# Caddy acts as the HTTP server and FastCGI reverse proxy to PHP-FPM.
+# Railway injects $PORT at runtime; Caddy binds to it.
+#
+# PHP-FPM listens on a unix socket to avoid loopback overhead.
+# The root is set to Laravel's public/ directory.
+#
+# NOTE: trusted_proxies is a site-level directive in Caddy v2, NOT a
+# subdirective of php_fastcgi. Placing it inside php_fastcgi causes a
+# parse error. It belongs at the top of the site block.
+
+:{$PORT:8080} {
+    # Laravel's document root
+    root * /var/www/html/public
+
+    # Serve real files and directories first, then fall through to PHP
+    file_server
+
+    # Forward all non-file requests to PHP-FPM via FastCGI
+    php_fastcgi unix//run/php-fpm.sock
+
+    # Log to stdout so Railway captures it
+    log {
+        output stdout
+        format json
+    }
+}

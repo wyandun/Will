@@ -4,11 +4,20 @@
 
 [build]
 # Use the Dockerfile in this directory.
-# The "railway" stage is a PHP built-in server — suitable for shared dev.
+# The "railway" stage runs Caddy + PHP-FPM — suitable for production.
 dockerfilePath = "Dockerfile"
 dockerBuildTarget = "railway"
 
 [deploy]
+# Pre-deploy runs ONCE before the new container goes live, while the old one
+# still serves traffic. Migrations are safe here because Laravel migrations
+# are designed to be forward-compatible (no destructive column drops in the
+# same migration that adds a new one).
+#
+# optimize:clear is intentionally omitted — Railway's ephemeral filesystem
+# never has stale compiled caches from a previous deploy.
+preDeployCommand = "php artisan migrate --force"
+
 # Railway injects $PORT at runtime. The CMD in the railway stage reads it.
 # Do NOT define PORT manually in Railway variables — let Railway inject it.
 healthcheckPath = "/api/v1/ping"
