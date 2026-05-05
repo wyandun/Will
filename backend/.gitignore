@@ -18,6 +18,8 @@
 /public/storage
 /storage/*.key
 /storage/pail
+# Swagger-generated artifact — regenerated on every Railway deploy
+/storage/api-docs/
 /vendor
 Homestead.json
 Homestead.yaml
