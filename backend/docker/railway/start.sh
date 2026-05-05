@@ -47,37 +47,13 @@ echo "[railway-start] Generating Swagger docs..."
 php "${WORKDIR}/artisan" l5-swagger:generate
 
 # ---------------------------------------------------------------------------
-# 4. Configure PHP-FPM to use a unix socket instead of the default TCP port.
-#    This avoids a loopback round-trip for every request.
+# 4. Start PHP-FPM as a background daemon (TCP on 127.0.0.1:9000).
 # ---------------------------------------------------------------------------
-cat > /usr/local/etc/php-fpm.d/zz-railway.conf <<'FPMCONF'
-[www]
-listen = /run/php-fpm.sock
-listen.mode = 0666
-FPMCONF
-
 echo "[railway-start] Starting PHP-FPM..."
-# -D = daemonize (short form; --daemonize is not recognized in all builds)
 php-fpm -D
 
-# Wait for PHP-FPM to create the unix socket before Caddy tries to connect.
-# A plain sleep is fragile — loop with a short poll instead.
-echo "[railway-start] Waiting for PHP-FPM socket..."
-i=0
-while [ ! -S /run/php-fpm.sock ]; do
-    i=$((i + 1))
-    if [ "$i" -ge 30 ]; then
-        echo "[railway-start] ERROR: PHP-FPM socket did not appear after 15 s" >&2
-        exit 1
-    fi
-    sleep 0.5
-done
-echo "[railway-start] PHP-FPM socket ready."
-
 # ---------------------------------------------------------------------------
-# 5. Start Caddy in the foreground.
-#    Caddy becomes PID 1's effective signal target — Railway's SIGTERM reaches
-#    it cleanly and it drains in-flight requests before exiting.
+# 5. Start Nginx in the foreground so Railway's SIGTERM reaches it cleanly.
 # ---------------------------------------------------------------------------
-echo "[railway-start] Starting Caddy on port ${PORT:-8080}..."
-exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
+echo "[railway-start] Starting Nginx on port ${PORT:-8080}..."
+exec nginx -g "daemon off;"

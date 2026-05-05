@@ -97,31 +97,23 @@ CMD ["php-fpm"]
 # ---------------------------------------------------------------------------
 # Stage 3: railway
 # Production HTTP server for Railway deployment.
-# Uses Caddy as a reverse proxy in front of PHP-FPM.
-#
-# Caddy is downloaded as a static binary — no extra apt packages needed.
-# Railway injects $PORT at runtime; Caddy binds to it and forwards FastCGI
-# requests to PHP-FPM on the unix socket /run/php-fpm.sock.
+# Uses Nginx as a reverse proxy in front of PHP-FPM — same as local Docker.
 #
 # Start sequence (railway-start.sh):
 #   1. Ensure all storage subdirectories exist and are writable
 #   2. Run php artisan storage:link (idempotent, safe to repeat)
 #   3. Generate Swagger docs (ephemeral filesystem — must run every deploy)
 #   4. Start PHP-FPM as a background daemon
-#   5. Start Caddy in the foreground (PID 1 signal target)
+#   5. Start Nginx in the foreground (PID 1 signal target)
 # ---------------------------------------------------------------------------
 FROM production AS railway
 
-# Install Caddy as a static binary (no Nginx/Apache needed)
-RUN apt-get update && apt-get install -y curl \
-    && curl -sSfL "https://caddyserver.com/api/download?os=linux&arch=amd64&idempotency=1" \
-       -o /usr/local/bin/caddy \
-    && chmod +x /usr/local/bin/caddy \
+# Install Nginx
+RUN apt-get update && apt-get install -y nginx \
     && rm -rf /var/lib/apt/lists/*
 
-# Caddyfile: listen on $PORT, serve Laravel via PHP-FPM unix socket.
-# The try_files directive emulates Nginx's try_files $uri $uri/ /index.php.
-COPY docker/railway/Caddyfile /etc/caddy/Caddyfile
+# Nginx config — proxies to PHP-FPM on 127.0.0.1:9000
+COPY docker/railway/nginx.conf /etc/nginx/sites-enabled/default
 
 # Start script that wires up the filesystem and launches both processes
 COPY docker/railway/start.sh /usr/local/bin/railway-start.sh
