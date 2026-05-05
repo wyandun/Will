@@ -63,7 +63,7 @@ vi.mock('react-i18next', () => ({
 
 // Mock FranchiseFormModal — simple stub
 vi.mock('./FranchiseFormModal', () => ({
-  default: ({ franchise, onClose, onSave }) => (
+  default: ({ franchise, onClose }) => (
     <div data-testid="franchise-form-modal">
       <span>{franchise ? 'Edit' : 'Create'}</span>
       <button onClick={onClose}>Close</button>
@@ -407,7 +407,7 @@ describe('FranchisesPage', () => {
   describe('Loading & error states', () => {
     it('shows loading indicator while fetching', async () => {
       // Never resolve the promise
-      mockGetFranchises.mockReturnValue(new Promise(() => {}));
+      mockGetFranchises.mockReturnValue(new Promise(() => { }));
       render(<FranchisesPage />);
       expect(screen.getByText('franchises.loading')).toBeInTheDocument();
     });
