@@ -12,6 +12,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -32,6 +33,10 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(BbAssignment::class, BbAssignmentPolicy::class);
         Gate::policy(Franchise::class, FranchisePolicy::class);
         Gate::policy(Company::class, CompanyPolicy::class);
+
+        if ($this->app->environment('production')) {
+            URL::forceScheme('https');
+        }
 
         // 5 attempts per minute keyed by email + IP to slow brute-force attacks.
         RateLimiter::for('login', function (Request $request): Limit {
