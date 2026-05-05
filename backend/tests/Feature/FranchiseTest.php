@@ -1,0 +1,645 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Franchise;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
+use Tests\TestCase;
+
+class FranchiseTest extends TestCase
+{
+    use RefreshDatabase;
+
+    // ---------------------------------------------------------------------------
+    // Helpers
+    // ---------------------------------------------------------------------------
+
+    /**
+     * Create a user with the superadmin Spatie role.
+     */
+    private function createSuperadmin(array $attributes = []): User
+    {
+        Role::firstOrCreate(['name' => 'superadmin', 'guard_name' => 'web']);
+
+        $user = User::factory()->create($attributes);
+        $user->assignRole('superadmin');
+
+        return $user;
+    }
+
+    /**
+     * Create a user with the admin_sm Spatie role and link them to a franchise.
+     */
+    private function createAdminSm(Franchise $franchise, array $attributes = []): User
+    {
+        Role::firstOrCreate(['name' => 'admin_sm', 'guard_name' => 'web']);
+
+        $user = User::factory()->create(array_merge([
+            'sm_franchise_id' => $franchise->id,
+        ], $attributes));
+        $user->assignRole('admin_sm');
+
+        return $user;
+    }
+
+    /**
+     * Create a user with no specific franchise role.
+     */
+    private function createRegularUser(array $attributes = []): User
+    {
+        return User::factory()->create($attributes);
+    }
+
+    // ===========================================================================
+    // GET /api/v1/franchises  (index)
+    // ===========================================================================
+
+    public function test_unauthenticated_user_gets_401_on_franchise_index(): void
+    {
+        $response = $this->getJson('/api/v1/franchises');
+
+        $response->assertStatus(401);
+    }
+
+    public function test_superadmin_can_list_all_franchises(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        Franchise::factory()->count(3)->create();
+
+        $response = $this->actingAs($superadmin)->getJson('/api/v1/franchises');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(3, 'data');
+    }
+
+    public function test_franchise_index_returns_correct_json_structure(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        Franchise::factory()->create([
+            'name' => 'Test Franchise',
+            'email' => 'test@franchise.com',
+            'country' => 'USA',
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($superadmin)->getJson('/api/v1/franchises');
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'data' => [
+                '*' => [
+                    'id',
+                    'name',
+                    'type',
+                    'email',
+                    'country',
+                    'is_active',
+                    'admins_count',
+                    'clients_count',
+                    'created_at',
+                    'updated_at',
+                ],
+            ],
+        ]);
+    }
+
+    public function test_franchise_index_returns_admins_and_clients_counts(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = Franchise::factory()->create();
+
+        $response = $this->actingAs($superadmin)->getJson('/api/v1/franchises');
+
+        $response->assertStatus(200);
+        $data = $response->json('data.0');
+        $this->assertArrayHasKey('admins_count', $data);
+        $this->assertArrayHasKey('clients_count', $data);
+    }
+
+    public function test_admin_sm_sees_only_their_franchise(): void
+    {
+        $franchise = Franchise::factory()->create(['name' => 'My Franchise']);
+        Franchise::factory()->create(['name' => 'Other Franchise']);
+
+        $admin = $this->createAdminSm($franchise);
+
+        $response = $this->actingAs($admin)->getJson('/api/v1/franchises');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(1, 'data');
+        $response->assertJsonPath('data.0.name', 'My Franchise');
+    }
+
+    public function test_user_without_role_is_forbidden_from_franchise_index(): void
+    {
+        $user = $this->createRegularUser();
+
+        $response = $this->actingAs($user)->getJson('/api/v1/franchises');
+
+        $response->assertStatus(403);
+    }
+
+    // ===========================================================================
+    // POST /api/v1/franchises  (store)
+    // ===========================================================================
+
+    public function test_unauthenticated_user_gets_401_on_franchise_store(): void
+    {
+        $response = $this->postJson('/api/v1/franchises', [
+            'name' => 'New Franchise',
+            'type' => 'sm',
+        ]);
+
+        $response->assertStatus(401);
+    }
+
+    public function test_superadmin_can_create_franchise(): void
+    {
+        $superadmin = $this->createSuperadmin();
+
+        $payload = [
+            'name' => 'New Franchise',
+            'type' => 'sm',
+            'email' => 'contact@newfranchise.com',
+            'country' => 'Canada',
+        ];
+
+        $response = $this->actingAs($superadmin)->postJson('/api/v1/franchises', $payload);
+
+        $response->assertStatus(201);
+        $response->assertJsonPath('success', true);
+        $response->assertJsonPath('data.name', 'New Franchise');
+        $response->assertJsonPath('data.email', 'contact@newfranchise.com');
+        $response->assertJsonPath('data.country', 'Canada');
+
+        $this->assertDatabaseHas('franchises', [
+            'name' => 'New Franchise',
+            'type' => 'sm',
+            'email' => 'contact@newfranchise.com',
+        ]);
+    }
+
+    public function test_franchise_is_active_by_default_when_created(): void
+    {
+        $superadmin = $this->createSuperadmin();
+
+        $payload = [
+            'name' => 'Active By Default',
+            'type' => 'sm',
+        ];
+
+        $response = $this->actingAs($superadmin)->postJson('/api/v1/franchises', $payload);
+
+        $response->assertStatus(201);
+
+        // The DB default sets is_active = true even if not sent in the payload
+        $this->assertDatabaseHas('franchises', [
+            'name' => 'Active By Default',
+            'is_active' => true,
+        ]);
+    }
+
+    public function test_store_franchise_validates_required_name(): void
+    {
+        $superadmin = $this->createSuperadmin();
+
+        $response = $this->actingAs($superadmin)->postJson('/api/v1/franchises', [
+            'type' => 'sm',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['name']);
+    }
+
+    public function test_store_franchise_validates_required_type(): void
+    {
+        $superadmin = $this->createSuperadmin();
+
+        $response = $this->actingAs($superadmin)->postJson('/api/v1/franchises', [
+            'name' => 'Some Franchise',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['type']);
+    }
+
+    public function test_store_franchise_validates_type_must_be_sm_or_sub(): void
+    {
+        $superadmin = $this->createSuperadmin();
+
+        $response = $this->actingAs($superadmin)->postJson('/api/v1/franchises', [
+            'name' => 'Some Franchise',
+            'type' => 'invalid',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['type']);
+    }
+
+    public function test_store_franchise_validates_email_format(): void
+    {
+        $superadmin = $this->createSuperadmin();
+
+        $response = $this->actingAs($superadmin)->postJson('/api/v1/franchises', [
+            'name' => 'Some Franchise',
+            'type' => 'sm',
+            'email' => 'not-an-email',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['email']);
+    }
+
+    public function test_admin_sm_cannot_create_franchise(): void
+    {
+        $franchise = Franchise::factory()->create();
+        $admin = $this->createAdminSm($franchise);
+
+        $response = $this->actingAs($admin)->postJson('/api/v1/franchises', [
+            'name' => 'Unauthorized',
+            'type' => 'sm',
+        ]);
+
+        $response->assertStatus(403);
+    }
+
+    // ===========================================================================
+    // GET /api/v1/franchises/{franchise}  (show)
+    // ===========================================================================
+
+    public function test_unauthenticated_user_gets_401_on_franchise_show(): void
+    {
+        $franchise = Franchise::factory()->create();
+
+        $response = $this->getJson("/api/v1/franchises/{$franchise->id}");
+
+        $response->assertStatus(401);
+    }
+
+    public function test_superadmin_can_view_any_franchise(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = Franchise::factory()->create([
+            'name' => 'Detail Franchise',
+            'email' => 'detail@franchise.com',
+            'country' => 'Mexico',
+        ]);
+
+        $response = $this->actingAs($superadmin)->getJson("/api/v1/franchises/{$franchise->id}");
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('success', true);
+        $response->assertJsonPath('data.name', 'Detail Franchise');
+        $response->assertJsonPath('data.email', 'detail@franchise.com');
+        $response->assertJsonPath('data.country', 'Mexico');
+    }
+
+    public function test_admin_sm_can_view_their_own_franchise(): void
+    {
+        $franchise = Franchise::factory()->create(['name' => 'My Franchise']);
+        $admin = $this->createAdminSm($franchise);
+
+        $response = $this->actingAs($admin)->getJson("/api/v1/franchises/{$franchise->id}");
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.name', 'My Franchise');
+    }
+
+    public function test_admin_sm_cannot_view_another_franchise(): void
+    {
+        $myFranchise = Franchise::factory()->create();
+        $otherFranchise = Franchise::factory()->create();
+        $admin = $this->createAdminSm($myFranchise);
+
+        $response = $this->actingAs($admin)->getJson("/api/v1/franchises/{$otherFranchise->id}");
+
+        $response->assertStatus(403);
+    }
+
+    // ===========================================================================
+    // PUT/PATCH /api/v1/franchises/{franchise}  (update)
+    // ===========================================================================
+
+    public function test_unauthenticated_user_gets_401_on_franchise_update(): void
+    {
+        $franchise = Franchise::factory()->create();
+
+        $response = $this->putJson("/api/v1/franchises/{$franchise->id}", [
+            'name' => 'Updated',
+        ]);
+
+        $response->assertStatus(401);
+    }
+
+    public function test_superadmin_can_update_franchise(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = Franchise::factory()->create(['name' => 'Original Name']);
+
+        $payload = [
+            'name' => 'Updated Name',
+            'email' => 'updated@franchise.com',
+        ];
+
+        $response = $this->actingAs($superadmin)
+            ->putJson("/api/v1/franchises/{$franchise->id}", $payload);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('success', true);
+        $response->assertJsonPath('data.name', 'Updated Name');
+        $response->assertJsonPath('data.email', 'updated@franchise.com');
+
+        $this->assertDatabaseHas('franchises', [
+            'id' => $franchise->id,
+            'name' => 'Updated Name',
+            'email' => 'updated@franchise.com',
+        ]);
+    }
+
+    public function test_update_franchise_validates_email_format(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = Franchise::factory()->create();
+
+        $response = $this->actingAs($superadmin)
+            ->putJson("/api/v1/franchises/{$franchise->id}", [
+                'email' => 'invalid-email',
+            ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['email']);
+    }
+
+    public function test_update_franchise_validates_type_must_be_sm_or_sub(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = Franchise::factory()->create();
+
+        $response = $this->actingAs($superadmin)
+            ->putJson("/api/v1/franchises/{$franchise->id}", [
+                'type' => 'invalid',
+            ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['type']);
+    }
+
+    public function test_admin_sm_cannot_update_franchise(): void
+    {
+        $franchise = Franchise::factory()->create();
+        $admin = $this->createAdminSm($franchise);
+
+        $response = $this->actingAs($admin)
+            ->putJson("/api/v1/franchises/{$franchise->id}", [
+                'name' => 'Hacked',
+            ]);
+
+        $response->assertStatus(403);
+    }
+
+    // ===========================================================================
+    // PATCH /api/v1/franchises/{franchise}/toggle-status
+    // ===========================================================================
+
+    public function test_unauthenticated_user_gets_401_on_toggle_status(): void
+    {
+        $franchise = Franchise::factory()->create();
+
+        $response = $this->patchJson("/api/v1/franchises/{$franchise->id}/toggle-status");
+
+        $response->assertStatus(401);
+    }
+
+    public function test_superadmin_can_deactivate_active_franchise(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = Franchise::factory()->create(['is_active' => true]);
+
+        $response = $this->actingAs($superadmin)
+            ->patchJson("/api/v1/franchises/{$franchise->id}/toggle-status");
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('success', true);
+        $response->assertJsonPath('data.is_active', false);
+
+        $this->assertDatabaseHas('franchises', [
+            'id' => $franchise->id,
+            'is_active' => false,
+        ]);
+    }
+
+    public function test_superadmin_can_activate_inactive_franchise(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = Franchise::factory()->inactive()->create();
+
+        $response = $this->actingAs($superadmin)
+            ->patchJson("/api/v1/franchises/{$franchise->id}/toggle-status");
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('success', true);
+        $response->assertJsonPath('data.is_active', true);
+
+        $this->assertDatabaseHas('franchises', [
+            'id' => $franchise->id,
+            'is_active' => true,
+        ]);
+    }
+
+    public function test_toggle_status_returns_correct_message_on_deactivation(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = Franchise::factory()->create(['is_active' => true]);
+
+        $response = $this->actingAs($superadmin)
+            ->patchJson("/api/v1/franchises/{$franchise->id}/toggle-status");
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('message', 'Franquicia desactivada correctamente.');
+    }
+
+    public function test_toggle_status_returns_correct_message_on_activation(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = Franchise::factory()->inactive()->create();
+
+        $response = $this->actingAs($superadmin)
+            ->patchJson("/api/v1/franchises/{$franchise->id}/toggle-status");
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('message', 'Franquicia activada correctamente.');
+    }
+
+    public function test_admin_sm_cannot_toggle_franchise_status(): void
+    {
+        $franchise = Franchise::factory()->create();
+        $admin = $this->createAdminSm($franchise);
+
+        $response = $this->actingAs($admin)
+            ->patchJson("/api/v1/franchises/{$franchise->id}/toggle-status");
+
+        $response->assertStatus(403);
+    }
+
+    // ===========================================================================
+    // DELETE /api/v1/franchises/{franchise}  (destroy)
+    // ===========================================================================
+
+    public function test_unauthenticated_user_gets_401_on_franchise_delete(): void
+    {
+        $franchise = Franchise::factory()->create();
+
+        $response = $this->deleteJson("/api/v1/franchises/{$franchise->id}");
+
+        $response->assertStatus(401);
+    }
+
+    public function test_superadmin_can_delete_franchise(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = Franchise::factory()->create();
+        $franchiseId = $franchise->id;
+
+        $response = $this->actingAs($superadmin)
+            ->deleteJson("/api/v1/franchises/{$franchiseId}");
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('success', true);
+        $response->assertJsonPath('message', 'Franquicia eliminada correctamente.');
+
+        // Soft-deleted — still in DB but with deleted_at set
+        $this->assertSoftDeleted('franchises', ['id' => $franchiseId]);
+    }
+
+    public function test_admin_sm_cannot_delete_franchise(): void
+    {
+        $franchise = Franchise::factory()->create();
+        $admin = $this->createAdminSm($franchise);
+
+        $response = $this->actingAs($admin)
+            ->deleteJson("/api/v1/franchises/{$franchise->id}");
+
+        $response->assertStatus(403);
+    }
+
+    public function test_regular_user_cannot_delete_franchise(): void
+    {
+        $user = $this->createRegularUser();
+        $franchise = Franchise::factory()->create();
+
+        $response = $this->actingAs($user)
+            ->deleteJson("/api/v1/franchises/{$franchise->id}");
+
+        $response->assertStatus(403);
+    }
+
+    // ===========================================================================
+    // Active/Inactive status — card badge and visual state
+    // ===========================================================================
+
+    public function test_active_franchise_returns_is_active_true(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = Franchise::factory()->create(['is_active' => true]);
+
+        $response = $this->actingAs($superadmin)
+            ->getJson("/api/v1/franchises/{$franchise->id}");
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.is_active', true);
+    }
+
+    public function test_inactive_franchise_returns_is_active_false(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = Franchise::factory()->inactive()->create();
+
+        $response = $this->actingAs($superadmin)
+            ->getJson("/api/v1/franchises/{$franchise->id}");
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.is_active', false);
+    }
+
+    public function test_franchise_index_includes_both_active_and_inactive(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        Franchise::factory()->count(2)->create(['is_active' => true]);
+        Franchise::factory()->count(1)->inactive()->create();
+
+        $response = $this->actingAs($superadmin)->getJson('/api/v1/franchises');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(3, 'data');
+
+        $statuses = collect($response->json('data'))->pluck('is_active');
+        $this->assertContains(true, $statuses->all());
+        $this->assertContains(false, $statuses->all());
+    }
+
+    // ===========================================================================
+    // Card data completeness — all fields needed for the UI card
+    // ===========================================================================
+
+    public function test_franchise_resource_returns_all_card_fields(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = Franchise::factory()->create([
+            'name' => 'Card Test Franchise',
+            'type' => 'sm',
+            'email' => 'card@test.com',
+            'country' => 'Argentina',
+            'is_active' => true,
+            'phone' => '+54-11-4444-5555',
+            'region' => 'Buenos Aires',
+            'address' => '123 Main St',
+            'timezone' => 'America/Argentina/Buenos_Aires',
+        ]);
+
+        $response = $this->actingAs($superadmin)
+            ->getJson("/api/v1/franchises/{$franchise->id}");
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.name', 'Card Test Franchise');
+        $response->assertJsonPath('data.type', 'sm');
+        $response->assertJsonPath('data.email', 'card@test.com');
+        $response->assertJsonPath('data.country', 'Argentina');
+        $response->assertJsonPath('data.is_active', true);
+        $response->assertJsonPath('data.phone', '+54-11-4444-5555');
+    }
+
+    // ===========================================================================
+    // Pagination (superadmin sees all paginated)
+    // ===========================================================================
+
+    public function test_franchise_index_is_paginated(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        Franchise::factory()->count(30)->create();
+
+        $response = $this->actingAs($superadmin)->getJson('/api/v1/franchises');
+
+        $response->assertStatus(200);
+        // Paginated at 25 per page
+        $response->assertJsonCount(25, 'data');
+        $response->assertJsonStructure([
+            'data',
+            'meta' => ['current_page', 'last_page', 'per_page', 'total'],
+        ]);
+        $response->assertJsonPath('meta.total', 30);
+    }
+
+    public function test_franchise_index_second_page(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        Franchise::factory()->count(30)->create();
+
+        $response = $this->actingAs($superadmin)->getJson('/api/v1/franchises?page=2');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(5, 'data');
+        $response->assertJsonPath('meta.current_page', 2);
+    }
+}

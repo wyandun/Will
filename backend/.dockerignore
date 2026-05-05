@@ -1,0 +1,28 @@
+# PowerShell: crea el archivo
+@"
+# Git
+.git
+.gitignore
+.gitattributes
+.env
+.env.example
+
+# Tests
+tests/
+phpunit.xml
+phpstan.neon
+
+# Dependencies (se instalan dentro del contenedor)
+node_modules/
+vendor/
+
+# Enlaces simbólicos que no deben copiarse
+public/storage
+public/hot
+
+# Archivos de build y cache locales
+bootstrap/cache/*
+storage/framework/cache/*
+storage/framework/views/*
+storage/logs/*
+"@ | Out-File -FilePath backend\.dockerignore -Encoding UTF8
