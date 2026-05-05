@@ -10,10 +10,6 @@
 # parse error. It belongs at the top of the site block.
 
 :{$PORT:8080} {
-    # Trust Railway's TLS-terminating proxy so HTTPS headers are set correctly.
-    # This must be a site-level directive — NOT inside php_fastcgi.
-    trusted_proxies private_ranges
-
     # Laravel's document root
     root * /var/www/html/public
 
