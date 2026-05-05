@@ -18,9 +18,6 @@
         trusted_proxies private_ranges
     }
 
-    # Disable the Caddy admin API endpoint (not needed in Railway)
-    admin off
-
     # Log to stdout so Railway captures it
     log {
         output stdout
