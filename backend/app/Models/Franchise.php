@@ -10,8 +10,20 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
+ * @property int $id
  * @property string $name
+ * @property string $type
+ * @property int|null $parent_company_id
+ * @property int|null $owner_user_id
+ * @property string|null $region
+ * @property string|null $email
+ * @property string|null $country
+ * @property string|null $timezone
+ * @property string|null $address
+ * @property string|null $phone
  * @property bool $is_active
+ * @property int $admins_count
+ * @property int $clients_count
  */
 class Franchise extends Model
 {
