@@ -4,9 +4,10 @@
 # Responsibilities:
 #   1. Ensure all required Laravel storage subdirectories exist
 #   2. Create the public/storage symlink (idempotent)
-#   3. Generate the Swagger/OpenAPI docs (storage is ephemeral on Railway)
-#   4. Launch PHP-FPM as a background daemon
-#   5. Launch Caddy in the foreground so it receives Railway's SIGTERM
+#   3. Clear stale Laravel framework caches
+#   4. Generate the Swagger/OpenAPI docs (storage is ephemeral on Railway)
+#   5. Launch PHP-FPM as a background daemon
+#   6. Substitute $PORT into the Nginx config and launch Nginx in the foreground
 
 set -e
 
@@ -39,22 +40,38 @@ chmod -R 777 \
 php "${WORKDIR}/artisan" storage:link --force 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
-# 3. Generate Swagger/OpenAPI documentation.
-#    storage/api-docs/api-docs.json is NOT committed to the repo — it is an
-#    ephemeral artifact regenerated on every deploy from the source annotations.
+# 3. Clear stale Laravel framework caches.
+#    Route cache, config cache, and view cache from a previous build can cause
+#    routes (including l5-swagger's /api/documentation) to resolve incorrectly.
 # ---------------------------------------------------------------------------
-echo "[railway-start] Generating Swagger docs..."
-php "${WORKDIR}/artisan" l5-swagger:generate
+echo "[railway-start] Clearing framework caches..."
+php "${WORKDIR}/artisan" config:clear  2>/dev/null || true
+php "${WORKDIR}/artisan" route:clear   2>/dev/null || true
+php "${WORKDIR}/artisan" view:clear    2>/dev/null || true
+php "${WORKDIR}/artisan" cache:clear   2>/dev/null || true
 
 # ---------------------------------------------------------------------------
-# 4. Start PHP-FPM as a background daemon (TCP on 127.0.0.1:9000).
+# 4. Generate Swagger/OpenAPI documentation.
+#    storage/api-docs/api-docs.json is NOT committed to the repo — it is an
+#    ephemeral artifact regenerated on every deploy from the source annotations.
+#    Allow failure with || true: a broken annotation must not abort the deploy;
+#    the rest of the API remains reachable and the issue can be fixed separately.
+# ---------------------------------------------------------------------------
+echo "[railway-start] Generating Swagger docs..."
+php "${WORKDIR}/artisan" l5-swagger:generate || echo "[railway-start] WARNING: Swagger generation failed — /api/documentation may return 404 until fixed"
+
+# ---------------------------------------------------------------------------
+# 5. Start PHP-FPM as a background daemon (TCP on 127.0.0.1:9000).
 # ---------------------------------------------------------------------------
 echo "[railway-start] Starting PHP-FPM..."
 php-fpm -D
 
 # ---------------------------------------------------------------------------
-# 5. Inject $PORT into the Nginx config and start in the foreground.
+# 6. Inject $PORT into the Nginx config and start in the foreground.
 #    Nginx does not read env vars directly — envsubst replaces $PORT before launch.
+#    Single quotes around '$PORT' are intentional: they prevent the shell from
+#    expanding $PORT, passing the literal string to envsubst so it scopes
+#    substitution to PORT only — leaving $uri, $query_string, etc. untouched.
 # ---------------------------------------------------------------------------
 export PORT="${PORT:-8080}"
 envsubst '$PORT' < /etc/nginx/sites-enabled/default > /tmp/nginx-railway.conf
