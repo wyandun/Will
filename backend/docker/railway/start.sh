@@ -53,7 +53,12 @@ echo "[railway-start] Starting PHP-FPM..."
 php-fpm -D
 
 # ---------------------------------------------------------------------------
-# 5. Start Nginx in the foreground so Railway's SIGTERM reaches it cleanly.
+# 5. Inject $PORT into the Nginx config and start in the foreground.
+#    Nginx does not read env vars directly — envsubst replaces $PORT before launch.
 # ---------------------------------------------------------------------------
-echo "[railway-start] Starting Nginx on port ${PORT:-8080}..."
+export PORT="${PORT:-8080}"
+envsubst '$PORT' < /etc/nginx/sites-enabled/default > /tmp/nginx-railway.conf
+cp /tmp/nginx-railway.conf /etc/nginx/sites-enabled/default
+
+echo "[railway-start] Starting Nginx on port ${PORT}..."
 exec nginx -g "daemon off;"

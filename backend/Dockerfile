@@ -108,8 +108,8 @@ CMD ["php-fpm"]
 # ---------------------------------------------------------------------------
 FROM production AS railway
 
-# Install Nginx
-RUN apt-get update && apt-get install -y nginx \
+# Install Nginx and gettext-base (provides envsubst for $PORT substitution)
+RUN apt-get update && apt-get install -y nginx gettext-base \
     && rm -rf /var/lib/apt/lists/*
 
 # Nginx config — proxies to PHP-FPM on 127.0.0.1:9000
