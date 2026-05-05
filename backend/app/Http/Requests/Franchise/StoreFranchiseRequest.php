@@ -17,7 +17,7 @@ class StoreFranchiseRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'min:1', 'max:255'],
             'type' => ['required', 'string', 'in:sm,sub'],
             'parent_company_id' => ['nullable', 'integer', 'exists:companies,id'],
             'owner_user_id' => ['nullable', 'integer', 'exists:users,id'],
@@ -26,7 +26,7 @@ class StoreFranchiseRequest extends FormRequest
             'phone' => ['nullable', 'string', 'max:30'],
             'email' => ['nullable', 'email', 'max:255'],
             'country' => ['nullable', 'string', 'max:255'],
-            'timezone' => ['nullable', 'string', 'max:100'],
+            'timezone' => ['nullable', 'string', 'timezone'],
         ];
     }
 

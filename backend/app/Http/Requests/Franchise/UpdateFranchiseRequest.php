@@ -26,7 +26,7 @@ class UpdateFranchiseRequest extends FormRequest
             'phone' => ['sometimes', 'nullable', 'string', 'max:30'],
             'email' => ['sometimes', 'nullable', 'email', 'max:255'],
             'country' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'timezone' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'timezone' => ['sometimes', 'nullable', 'string', 'timezone'],
         ];
     }
 

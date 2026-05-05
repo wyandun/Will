@@ -79,6 +79,9 @@ class Franchise extends Model
     // ---------------------------------------------------------------------------
     // Scopes
     // ---------------------------------------------------------------------------
+    // TODO: These scopes are ready for use when the backend accepts an
+    //       ?active= query parameter for filtered listing. Currently the
+    //       frontend filters client-side by name only.
 
     /**
      * Scope a query to only include active franchises.

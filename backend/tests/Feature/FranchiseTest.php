@@ -2,10 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Enums\Role;
+use App\Events\FranchiseStatusChanged;
 use App\Models\Franchise;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\Event;
+use Spatie\Permission\Models\Role as SpatieRole;
 use Tests\TestCase;
 
 class FranchiseTest extends TestCase
@@ -21,10 +24,10 @@ class FranchiseTest extends TestCase
      */
     private function createSuperadmin(array $attributes = []): User
     {
-        Role::firstOrCreate(['name' => 'superadmin', 'guard_name' => 'web']);
+        SpatieRole::firstOrCreate(['name' => Role::SUPERADMIN, 'guard_name' => 'web']);
 
         $user = User::factory()->create($attributes);
-        $user->assignRole('superadmin');
+        $user->assignRole(Role::SUPERADMIN);
 
         return $user;
     }
@@ -34,12 +37,12 @@ class FranchiseTest extends TestCase
      */
     private function createAdminSm(Franchise $franchise, array $attributes = []): User
     {
-        Role::firstOrCreate(['name' => 'admin_sm', 'guard_name' => 'web']);
+        SpatieRole::firstOrCreate(['name' => Role::ADMIN_SM, 'guard_name' => 'web']);
 
         $user = User::factory()->create(array_merge([
             'sm_franchise_id' => $franchise->id,
         ], $attributes));
-        $user->assignRole('admin_sm');
+        $user->assignRole(Role::ADMIN_SM);
 
         return $user;
     }
@@ -252,6 +255,37 @@ class FranchiseTest extends TestCase
         $response->assertJsonValidationErrors(['email']);
     }
 
+    public function test_store_franchise_validates_timezone_format(): void
+    {
+        $superadmin = $this->createSuperadmin();
+
+        $response = $this->actingAs($superadmin)->postJson('/api/v1/franchises', [
+            'name' => 'Some Franchise',
+            'type' => 'sm',
+            'timezone' => 'Europe/Madriz',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['timezone']);
+    }
+
+    public function test_store_franchise_accepts_valid_timezone(): void
+    {
+        $superadmin = $this->createSuperadmin();
+
+        $response = $this->actingAs($superadmin)->postJson('/api/v1/franchises', [
+            'name' => 'Timezone Franchise',
+            'type' => 'sm',
+            'timezone' => 'America/New_York',
+        ]);
+
+        $response->assertStatus(201);
+        $this->assertDatabaseHas('franchises', [
+            'name' => 'Timezone Franchise',
+            'timezone' => 'America/New_York',
+        ]);
+    }
+
     public function test_admin_sm_cannot_create_franchise(): void
     {
         $franchise = Franchise::factory()->create();
@@ -386,6 +420,20 @@ class FranchiseTest extends TestCase
         $response->assertJsonValidationErrors(['type']);
     }
 
+    public function test_update_franchise_validates_timezone_format(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = Franchise::factory()->create();
+
+        $response = $this->actingAs($superadmin)
+            ->putJson("/api/v1/franchises/{$franchise->id}", [
+                'timezone' => 'UTC+5',
+            ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['timezone']);
+    }
+
     public function test_admin_sm_cannot_update_franchise(): void
     {
         $franchise = Franchise::factory()->create();
@@ -481,6 +529,21 @@ class FranchiseTest extends TestCase
             ->patchJson("/api/v1/franchises/{$franchise->id}/toggle-status");
 
         $response->assertStatus(403);
+    }
+
+    public function test_toggle_status_dispatches_franchise_status_changed_event(): void
+    {
+        Event::fake([FranchiseStatusChanged::class]);
+
+        $superadmin = $this->createSuperadmin();
+        $franchise = Franchise::factory()->create(['is_active' => true]);
+
+        $this->actingAs($superadmin)
+            ->patchJson("/api/v1/franchises/{$franchise->id}/toggle-status");
+
+        Event::assertDispatched(FranchiseStatusChanged::class, function ($event) use ($franchise) {
+            return $event->franchise->id === $franchise->id;
+        });
     }
 
     // ===========================================================================

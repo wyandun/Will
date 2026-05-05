@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\Role;
 use App\Models\Franchise;
 use App\Models\User;
 
@@ -12,7 +13,7 @@ class FranchisePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('superadmin') || $user->hasRole('admin_sm');
+        return $user->hasRole(Role::SUPERADMIN) || $user->hasRole(Role::ADMIN_SM);
     }
 
     /**
@@ -21,11 +22,11 @@ class FranchisePolicy
      */
     public function view(User $user, Franchise $franchise): bool
     {
-        if ($user->hasRole('superadmin')) {
+        if ($user->hasRole(Role::SUPERADMIN)) {
             return true;
         }
 
-        return $user->hasRole('admin_sm')
+        return $user->hasRole(Role::ADMIN_SM)
             && (int) $user->sm_franchise_id === (int) $franchise->id;
     }
 
@@ -34,7 +35,7 @@ class FranchisePolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasRole('superadmin');
+        return $user->hasRole(Role::SUPERADMIN);
     }
 
     /**
@@ -42,7 +43,7 @@ class FranchisePolicy
      */
     public function update(User $user, Franchise $franchise): bool
     {
-        return $user->hasRole('superadmin');
+        return $user->hasRole(Role::SUPERADMIN);
     }
 
     /**
@@ -50,6 +51,6 @@ class FranchisePolicy
      */
     public function delete(User $user, Franchise $franchise): bool
     {
-        return $user->hasRole('superadmin');
+        return $user->hasRole(Role::SUPERADMIN);
     }
 }

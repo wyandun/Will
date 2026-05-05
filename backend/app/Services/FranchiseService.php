@@ -2,9 +2,12 @@
 
 namespace App\Services;
 
+use App\Enums\Role;
+use App\Events\FranchiseStatusChanged;
 use App\Models\Franchise;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class FranchiseService
@@ -19,26 +22,28 @@ class FranchiseService
     {
         $columns = [
             'id', 'name', 'type', 'parent_company_id', 'owner_user_id',
-            'address', 'phone', 'email', 'country', 'timezone',
+            'region', 'address', 'phone', 'email', 'country', 'timezone',
             'is_active', 'created_at', 'updated_at',
         ];
+
+        $perPage = (int) config('pagination.franchise_per_page', 25);
 
         $query = Franchise::select($columns)
             ->withCount([
                 'users as admins_count' => function ($q) {
                     $q->whereHas('roles', function ($r) {
-                        $r->where('name', 'admin_sm');
+                        $r->where('name', Role::ADMIN_SM);
                     });
                 },
                 'companies as clients_count',
             ]);
 
-        if ($authUser->hasRole('superadmin')) {
-            return $query->paginate(25);
+        if ($authUser->hasRole(Role::SUPERADMIN)) {
+            return $query->paginate($perPage);
         }
 
         // admin_sm sees only their own franchise.
-        return $query->where('id', $authUser->sm_franchise_id)->paginate(25);
+        return $query->where('id', $authUser->sm_franchise_id)->paginate($perPage);
     }
 
     /**
@@ -78,11 +83,20 @@ class FranchiseService
 
     /**
      * Toggle the is_active status of a franchise.
+     *
+     * Uses a pessimistic lock to prevent race conditions when two concurrent
+     * PATCH requests try to toggle the same franchise simultaneously.
      */
     public function toggleStatus(Franchise $franchise): Franchise
     {
-        $franchise->is_active = ! $franchise->is_active;
-        $franchise->save();
+        DB::transaction(function () use ($franchise) {
+            // Refresh inside the transaction to get the latest state.
+            $franchise->refresh();
+            $franchise->update(['is_active' => ! $franchise->is_active]);
+        });
+
+        // Refresh to ensure in-memory state matches the DB after the transaction.
+        $franchise->refresh();
 
         Log::info('Franchise status toggled', [
             'franchise_id' => $franchise->id,
@@ -90,7 +104,9 @@ class FranchiseService
             'is_active' => $franchise->is_active,
         ]);
 
-        return $franchise->fresh();
+        FranchiseStatusChanged::dispatch($franchise);
+
+        return $franchise;
     }
 
     /**

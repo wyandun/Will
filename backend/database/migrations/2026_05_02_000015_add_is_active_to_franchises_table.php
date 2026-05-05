@@ -11,6 +11,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('franchises', function (Blueprint $table) {
+            // NOTE: default(true) will back-fill all existing rows as active.
+            // This means every franchise created before this migration is
+            // automatically opted-in as active.
             $table->boolean('is_active')->default(true)->after('timezone');
         });
     }
