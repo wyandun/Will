@@ -17,7 +17,7 @@ final class Role
 
     public const SB_EMPLOYEE = 'sb_employee';
 
-    public const BB = 'bb';
+    public const BB_EMPLOYEE = 'bb_employee';
 
     public const SUB_FRANCHISE_OWNER = 'sub_franchise_owner';
 

@@ -45,14 +45,14 @@ trait FranchiseRules
     protected function sharedMessages(): array
     {
         return [
-            'name.min' => 'El nombre no puede estar vacío.',
-            'name.max' => 'El nombre no puede superar los 255 caracteres.',
-            'type.in' => 'El tipo debe ser "sm" o "sub".',
-            'parent_company_id.exists' => 'La empresa padre no existe.',
-            'owner_user_id.exists' => 'El usuario propietario no existe.',
-            'phone.max' => 'El teléfono no puede superar los 30 caracteres.',
-            'email.email' => 'El correo electrónico debe ser válido.',
-            'timezone.timezone' => 'La zona horaria no es válida.',
+            'name.min' => 'franchises.form.name_required',
+            'name.max' => 'franchises.form.name_max',
+            'type.in' => 'franchises.form.type_invalid',
+            'parent_company_id.exists' => 'franchises.form.parent_invalid',
+            'owner_user_id.exists' => 'franchises.form.owner_invalid',
+            'phone.max' => 'franchises.form.phone_max',
+            'email.email' => 'franchises.form.email_invalid',
+            'timezone.timezone' => 'franchises.form.timezone_invalid',
         ];
     }
 }

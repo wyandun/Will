@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\BbAssignment;
 
+use App\Enums\Role;
 use App\Models\Company;
 use App\Models\User;
 use Illuminate\Contracts\Validation\Validator;
@@ -24,7 +25,7 @@ class StoreBbAssignmentRequest extends FormRequest
             'bb_user_id' => [
                 'required',
                 'integer',
-                // User must exist in the users table and have the 'bb' role.
+                // User must exist in the users table and have the 'bb_employee' role.
                 Rule::exists('users', 'id')->where(function ($query) {
                     $query->whereExists(function ($sub) {
                         $sub->select('model_id')
@@ -32,7 +33,7 @@ class StoreBbAssignmentRequest extends FormRequest
                             ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
                             ->whereColumn('model_has_roles.model_id', 'users.id')
                             ->where('model_has_roles.model_type', User::class)
-                            ->where('roles.name', 'bb');
+                            ->where('roles.name', Role::BB_EMPLOYEE);
                     });
                 }),
             ],
