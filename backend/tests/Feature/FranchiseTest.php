@@ -505,7 +505,7 @@ class FranchiseTest extends TestCase
             ->patchJson("/api/v1/franchises/{$franchise->id}/toggle-status");
 
         $response->assertStatus(200);
-        $response->assertJsonPath('message', 'Franquicia desactivada correctamente.');
+        $response->assertJsonPath('message', 'franchises.deactivated_success');
     }
 
     public function test_toggle_status_returns_correct_message_on_activation(): void
@@ -517,7 +517,7 @@ class FranchiseTest extends TestCase
             ->patchJson("/api/v1/franchises/{$franchise->id}/toggle-status");
 
         $response->assertStatus(200);
-        $response->assertJsonPath('message', 'Franquicia activada correctamente.');
+        $response->assertJsonPath('message', 'franchises.activated_success');
     }
 
     public function test_admin_sm_cannot_toggle_franchise_status(): void
@@ -570,7 +570,7 @@ class FranchiseTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertJsonPath('success', true);
-        $response->assertJsonPath('message', 'Franquicia eliminada correctamente.');
+        $response->assertJsonPath('message', 'franchises.deleted_success');
 
         // Soft-deleted — still in DB but with deleted_at set
         $this->assertSoftDeleted('franchises', ['id' => $franchiseId]);
