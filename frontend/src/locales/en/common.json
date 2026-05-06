@@ -157,7 +157,9 @@
       "country": "Country",
       "country_placeholder": "e.g. USA",
       "timezone": "Time Zone",
-      "timezone_placeholder": "e.g. UTC-5"
+      "timezone_placeholder": "Select a timezone",
+      "timezone_invalid": "invalid",
+      "timezone_legacy": "\"{{tz}}\" is not a valid timezone. Please select a new one."
     }
   },
   "companies": {

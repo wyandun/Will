@@ -2,6 +2,61 @@ import PropTypes from 'prop-types';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
+// ─── Common IANA timezones grouped by region ─────────────────────────────────
+const TIMEZONE_OPTIONS = [
+  { group: 'Americas', zones: [
+    { value: 'America/New_York',      label: 'Eastern Time (ET) — New York' },
+    { value: 'America/Chicago',       label: 'Central Time (CT) — Chicago' },
+    { value: 'America/Denver',        label: 'Mountain Time (MT) — Denver' },
+    { value: 'America/Los_Angeles',   label: 'Pacific Time (PT) — Los Angeles' },
+    { value: 'America/Anchorage',     label: 'Alaska Time — Anchorage' },
+    { value: 'Pacific/Honolulu',      label: 'Hawaii Time — Honolulu' },
+    { value: 'America/Toronto',       label: 'Eastern — Toronto' },
+    { value: 'America/Vancouver',     label: 'Pacific — Vancouver' },
+    { value: 'America/Mexico_City',   label: 'Mexico City' },
+    { value: 'America/Cancun',        label: 'Cancún' },
+    { value: 'America/Bogota',        label: 'Bogotá' },
+    { value: 'America/Lima',          label: 'Lima' },
+    { value: 'America/Santiago',      label: 'Santiago' },
+    { value: 'America/Buenos_Aires',  label: 'Buenos Aires' },
+    { value: 'America/Sao_Paulo',     label: 'São Paulo' },
+    { value: 'America/Caracas',       label: 'Caracas' },
+    { value: 'America/Panama',        label: 'Panama' },
+    { value: 'America/Guayaquil',     label: 'Guayaquil' },
+    { value: 'America/Santo_Domingo', label: 'Santo Domingo' },
+    { value: 'America/Havana',        label: 'Havana' },
+  ]},
+  { group: 'Europe', zones: [
+    { value: 'Europe/London',    label: 'London (GMT/BST)' },
+    { value: 'Europe/Paris',     label: 'Paris (CET)' },
+    { value: 'Europe/Berlin',    label: 'Berlin (CET)' },
+    { value: 'Europe/Madrid',    label: 'Madrid (CET)' },
+    { value: 'Europe/Rome',      label: 'Rome (CET)' },
+    { value: 'Europe/Amsterdam', label: 'Amsterdam (CET)' },
+    { value: 'Europe/Lisbon',    label: 'Lisbon (WET)' },
+    { value: 'Europe/Moscow',    label: 'Moscow (MSK)' },
+    { value: 'Europe/Istanbul',  label: 'Istanbul (TRT)' },
+  ]},
+  { group: 'Asia & Pacific', zones: [
+    { value: 'Asia/Dubai',       label: 'Dubai (GST)' },
+    { value: 'Asia/Kolkata',     label: 'India (IST)' },
+    { value: 'Asia/Shanghai',    label: 'Shanghai (CST)' },
+    { value: 'Asia/Tokyo',       label: 'Tokyo (JST)' },
+    { value: 'Asia/Seoul',       label: 'Seoul (KST)' },
+    { value: 'Asia/Singapore',   label: 'Singapore (SGT)' },
+    { value: 'Asia/Hong_Kong',   label: 'Hong Kong (HKT)' },
+    { value: 'Australia/Sydney', label: 'Sydney (AEST)' },
+    { value: 'Pacific/Auckland', label: 'Auckland (NZST)' },
+  ]},
+  { group: 'Africa', zones: [
+    { value: 'Africa/Cairo',        label: 'Cairo (EET)' },
+    { value: 'Africa/Lagos',        label: 'Lagos (WAT)' },
+    { value: 'Africa/Johannesburg', label: 'Johannesburg (SAST)' },
+    { value: 'Africa/Nairobi',      label: 'Nairobi (EAT)' },
+    { value: 'Africa/Casablanca',   label: 'Casablanca (WET)' },
+  ]},
+];
+
 const FRANCHISE_FIELDS = ['name', 'email', 'phone', 'country', 'timezone', 'address'];
 const EMPTY_FORM = Object.fromEntries(FRANCHISE_FIELDS.map(f => [f, '']));
 
@@ -74,6 +129,11 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
       }
     });
 
+    // Convert empty timezone to null so the backend doesn't reject an empty string
+    if (payload.timezone === '') {
+      payload.timezone = null;
+    }
+
     setIsSubmitting(true);
     try {
       await onSave(payload, isEditing ? franchise.id : undefined);
@@ -86,6 +146,11 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
   }
 
   const isSaveDisabled = isSubmitting || !form.name.trim();
+
+  // Check if the existing timezone value is in our list (it might be a legacy value like "UTC-5")
+  const isKnownTimezone = !form.timezone || TIMEZONE_OPTIONS.some(g =>
+    g.zones.some(z => z.value === form.timezone)
+  );
 
   return (
     <div
@@ -177,16 +242,34 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
                 <label htmlFor="fm-timezone" className="block text-sm font-medium text-slate-700 mb-1">
                   {t('franchises.form.timezone')}
                 </label>
-                <input
+                <select
                   id="fm-timezone"
                   name="timezone"
-                  type="text"
-                  value={form.timezone}
+                  value={isKnownTimezone ? form.timezone : ''}
                   onChange={handleChange}
                   disabled={isSubmitting}
-                  placeholder={t('franchises.form.timezone_placeholder')}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 transition"
-                />
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 transition appearance-none bg-white"
+                >
+                  <option value="">{t('franchises.form.timezone_placeholder')}</option>
+                  {/* Show legacy value if it doesn't match any known timezone */}
+                  {!isKnownTimezone && form.timezone && (
+                    <option value="" disabled>
+                      ⚠ {form.timezone} ({t('franchises.form.timezone_invalid')})
+                    </option>
+                  )}
+                  {TIMEZONE_OPTIONS.map(group => (
+                    <optgroup key={group.group} label={group.group}>
+                      {group.zones.map(tz => (
+                        <option key={tz.value} value={tz.value}>{tz.label}</option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+                {!isKnownTimezone && form.timezone && (
+                  <p className="mt-1 text-xs text-amber-600">
+                    {t('franchises.form.timezone_legacy', { tz: form.timezone })}
+                  </p>
+                )}
               </div>
             </div>
 
