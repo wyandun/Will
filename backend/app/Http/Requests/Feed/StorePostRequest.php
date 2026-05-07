@@ -6,12 +6,9 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class StorePostRequest extends FormRequest
 {
-    /**
-     * Authorization is handled in FeedController — always pass here.
-     */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()->hasAnyRole(['superadmin', 'admin_sm']);
     }
 
     /**
@@ -27,7 +24,7 @@ class StorePostRequest extends FormRequest
             'is_pinned' => ['nullable', 'boolean'],
             'published_at' => ['nullable', 'date'],
             'image' => ['nullable', 'file', 'image', 'max:5120'],
-            'attachment' => ['nullable', 'file', 'max:20480'],
+            'attachment' => ['nullable', 'file', 'mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,txt,zip,csv', 'max:20480'],
         ];
     }
 }

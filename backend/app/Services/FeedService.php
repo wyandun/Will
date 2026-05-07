@@ -244,44 +244,56 @@ class FeedService
     /**
      * Create a new post and optionally persist an image and/or attachment.
      *
+     * Files are uploaded before the DB insert. If the insert fails, any
+     * uploaded files are cleaned up so no orphans are left on disk.
+     *
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     public function createPost(User $user, array $data, ?UploadedFile $image = null, ?UploadedFile $attachment = null): array
     {
-        $imageUrl = null;
-        $fileUrl = null;
-        $fileName = null;
+        $imagePath = null;
+        $attachmentPath = null;
 
-        if ($image !== null) {
-            $path = $image->store('posts', 'public');
-            $imageUrl = Storage::disk('public')->url((string) $path);
+        try {
+            if ($image !== null) {
+                $imagePath = (string) $image->store('posts', 'public');
+            }
+
+            if ($attachment !== null) {
+                $attachmentPath = (string) $attachment->store('attachments', 'public');
+            }
+
+            $postId = DB::transaction(function () use ($user, $data, $image, $attachment, $imagePath, $attachmentPath) {
+                return DB::table('posts')->insertGetId([
+                    'author_id' => $user->id,
+                    'title' => $data['title'],
+                    'body' => $data['body'],
+                    'type' => $data['type'],
+                    'visibility' => $data['visibility'],
+                    'is_pinned' => isset($data['is_pinned']) ? (bool) $data['is_pinned'] : false,
+                    'published_at' => $data['published_at'] ?? null,
+                    'image_url' => $imagePath !== null ? Storage::disk('public')->url($imagePath) : null,
+                    'file_url' => $attachmentPath !== null ? Storage::disk('public')->url($attachmentPath) : null,
+                    'file_name' => $attachment !== null ? $attachment->getClientOriginalName() : null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            });
+
+            $post = DB::table('posts')->where('id', $postId)->first();
+
+            return (array) $post;
+        } catch (\Throwable $e) {
+            // Clean up uploaded files to avoid orphans if the DB insert failed
+            if ($imagePath !== null) {
+                Storage::disk('public')->delete($imagePath);
+            }
+            if ($attachmentPath !== null) {
+                Storage::disk('public')->delete($attachmentPath);
+            }
+            throw $e;
         }
-
-        if ($attachment !== null) {
-            $path = $attachment->store('attachments', 'public');
-            $fileUrl = Storage::disk('public')->url((string) $path);
-            $fileName = $attachment->getClientOriginalName();
-        }
-
-        $postId = DB::table('posts')->insertGetId([
-            'author_id' => $user->id,
-            'title' => $data['title'],
-            'body' => $data['body'],
-            'type' => $data['type'],
-            'visibility' => $data['visibility'],
-            'is_pinned' => isset($data['is_pinned']) ? (bool) $data['is_pinned'] : false,
-            'published_at' => $data['published_at'] ?? null,
-            'image_url' => $imageUrl,
-            'file_url' => $fileUrl,
-            'file_name' => $fileName,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $post = DB::table('posts')->where('id', $postId)->first();
-
-        return (array) $post;
     }
 
     /**

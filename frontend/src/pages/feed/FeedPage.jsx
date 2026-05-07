@@ -486,7 +486,7 @@ export default function FeedPage() {
         setToast(t('feed.post_deleted'));
         fetchPosts(search, meta?.current_page ?? 1);
       })
-      .catch(() => {});
+      .catch(() => setToast(t('common.unexpected_error')));
   }
 
   return (

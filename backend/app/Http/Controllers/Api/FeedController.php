@@ -211,10 +211,6 @@ class FeedController extends Controller
     {
         $user = $request->user();
 
-        if (! $user->hasAnyRole(['superadmin', 'admin_sm'])) {
-            throw new AccessDeniedHttpException('Only superadmin and admin_sm can create posts.');
-        }
-
         $post = $this->feedService->createPost(
             $user,
             $request->validated(),
@@ -228,7 +224,7 @@ class FeedController extends Controller
         ], 201);
     }
 
-    #[OA\Put(
+    #[OA\Patch(
         path: '/feed/posts/{id}',
         tags: ['Feed'],
         summary: 'Editar un post existente',

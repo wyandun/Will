@@ -252,6 +252,16 @@ class FeedControllerTest extends TestCase
         $response->assertJsonPath('success', true);
     }
 
+    public function test_update_nonexistent_post_returns_404(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('superadmin');
+
+        $response = $this->actingAs($user)->putJson('/api/v1/feed/posts/99999', ['title' => 'Updated']);
+
+        $response->assertStatus(404);
+    }
+
     public function test_other_user_cannot_update_post_and_gets_403(): void
     {
         $author = User::factory()->create();
