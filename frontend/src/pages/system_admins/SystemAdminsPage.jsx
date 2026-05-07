@@ -61,7 +61,7 @@ export default function SystemAdminsPage() {
       await systemAdminsApi.deleteSystemAdmin(admin.id);
       await loadAdmins();
     } catch (error) {
-      window.alert(error?.response?.data?.message ? t(error.response.data.message) : t('common.unexpected_error'));
+      window.alert(error?.response?.data?.message ?? t('common.unexpected_error'));
     }
   }
 

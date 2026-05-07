@@ -138,8 +138,8 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
     try {
       await onSave(payload, isEditing ? franchise.id : undefined);
     } catch (error) {
-      const messageKey = error?.response?.data?.message;
-      const message = messageKey ? t(messageKey, messageKey) : t('common.unexpected_error');
+      const msgKey = error?.response?.data?.message;
+      const message = msgKey ? t(msgKey, { defaultValue: msgKey }) : t('common.unexpected_error');
       setApiError(message);
     } finally {
       setIsSubmitting(false);

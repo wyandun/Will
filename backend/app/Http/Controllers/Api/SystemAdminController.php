@@ -10,7 +10,6 @@ use App\Models\User;
 use App\Models\UserPermission;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\Models\Role as SpatieRole;
 
 class SystemAdminController extends Controller
 {
@@ -30,10 +29,6 @@ class SystemAdminController extends Controller
     {
         $this->authorize('viewAnySystemAdmin', User::class);
 
-        // Ensure roles exist in DB to prevent Spatie exception on fresh installs
-        SpatieRole::firstOrCreate(['name' => Role::SYSTEM_ADMIN, 'guard_name' => 'web']);
-        SpatieRole::firstOrCreate(['name' => Role::SYSTEM_ADMIN_READONLY, 'guard_name' => 'web']);
-
         $users = User::role([Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY])
             ->with('roles')
             ->get();
@@ -51,9 +46,6 @@ class SystemAdminController extends Controller
         $validated = $request->validated();
         $roleName = $validated['role'];
 
-        // Ensure role exists in DB
-        SpatieRole::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
-
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
@@ -63,7 +55,7 @@ class SystemAdminController extends Controller
         $user->assignRole($roleName);
 
         // Assign module permissions based on role
-        $canWrite = $roleName === 'system_admin';
+        $canWrite = $roleName === Role::SYSTEM_ADMIN;
 
         foreach (self::ALL_MODULES as $module) {
             UserPermission::create([
@@ -83,12 +75,17 @@ class SystemAdminController extends Controller
 
     public function update(UpdateSystemAdminRequest $request, User $systemAdmin): JsonResponse
     {
-        $this->authorize('updateSystemAdmin', User::class);
+        $this->authorize('updateSystemAdmin', $systemAdmin);
 
         // Disallow modifying the superadmin via this endpoint
         if ($systemAdmin->hasRole(Role::SUPERADMIN)) {
             abort(403, 'system_admins.error_superadmin');
         }
+
+        abort_unless(
+            $systemAdmin->hasAnyRole([Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY]),
+            403
+        );
 
         $validated = $request->validated();
         $roleName = $validated['role'];
@@ -100,10 +97,9 @@ class SystemAdminController extends Controller
         }
         $systemAdmin->save();
 
-        SpatieRole::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
         $systemAdmin->syncRoles([$roleName]);
 
-        $canWrite = $roleName === 'system_admin';
+        $canWrite = $roleName === Role::SYSTEM_ADMIN;
         foreach (self::ALL_MODULES as $module) {
             UserPermission::updateOrCreate(
                 ['user_id' => $systemAdmin->id, 'module' => $module],
@@ -120,11 +116,16 @@ class SystemAdminController extends Controller
 
     public function destroy(User $systemAdmin): JsonResponse
     {
-        $this->authorize('deleteSystemAdmin', User::class);
+        $this->authorize('deleteSystemAdmin', $systemAdmin);
 
         if ($systemAdmin->hasRole(Role::SUPERADMIN)) {
             abort(403, 'system_admins.error_superadmin');
         }
+
+        abort_unless(
+            $systemAdmin->hasAnyRole([Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY]),
+            403
+        );
 
         // Prevent deleting oneself
         if (auth()->id() === $systemAdmin->id) {

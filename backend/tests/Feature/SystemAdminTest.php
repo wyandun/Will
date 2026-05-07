@@ -14,6 +14,15 @@ class SystemAdminTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        SpatieRole::firstOrCreate(['name' => Role::SUPERADMIN, 'guard_name' => 'web']);
+        SpatieRole::firstOrCreate(['name' => Role::SYSTEM_ADMIN, 'guard_name' => 'web']);
+        SpatieRole::firstOrCreate(['name' => Role::SYSTEM_ADMIN_READONLY, 'guard_name' => 'web']);
+    }
+
     // ---------------------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------------------
@@ -23,8 +32,6 @@ class SystemAdminTest extends TestCase
      */
     private function createSuperadmin(array $attributes = []): User
     {
-        SpatieRole::firstOrCreate(['name' => Role::SUPERADMIN, 'guard_name' => 'web']);
-
         $user = User::factory()->create($attributes);
         $user->assignRole(Role::SUPERADMIN);
 
@@ -36,8 +43,6 @@ class SystemAdminTest extends TestCase
      */
     private function createSystemAdmin(array $attributes = []): User
     {
-        SpatieRole::firstOrCreate(['name' => Role::SYSTEM_ADMIN, 'guard_name' => 'web']);
-
         $user = User::factory()->create($attributes);
         $user->assignRole(Role::SYSTEM_ADMIN);
 
@@ -49,8 +54,6 @@ class SystemAdminTest extends TestCase
      */
     private function createSystemAdminReadonly(array $attributes = []): User
     {
-        SpatieRole::firstOrCreate(['name' => Role::SYSTEM_ADMIN_READONLY, 'guard_name' => 'web']);
-
         $user = User::factory()->create($attributes);
         $user->assignRole(Role::SYSTEM_ADMIN_READONLY);
 

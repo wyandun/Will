@@ -17,12 +17,12 @@ class UserPolicy
         return $user->hasRole(Role::SUPERADMIN);
     }
 
-    public function updateSystemAdmin(User $user): bool
+    public function updateSystemAdmin(User $user, User $model): bool
     {
         return $user->hasRole(Role::SUPERADMIN);
     }
 
-    public function deleteSystemAdmin(User $user): bool
+    public function deleteSystemAdmin(User $user, User $model): bool
     {
         return $user->hasRole(Role::SUPERADMIN);
     }
