@@ -34,7 +34,9 @@ class SystemAdminController extends Controller
         SpatieRole::firstOrCreate(['name' => Role::SYSTEM_ADMIN, 'guard_name' => 'web']);
         SpatieRole::firstOrCreate(['name' => Role::SYSTEM_ADMIN_READONLY, 'guard_name' => 'web']);
 
-        $users = User::role([Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY])->get();
+        $users = User::role([Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY])
+            ->with('roles')
+            ->get();
 
         return response()->json([
             'success' => true,
@@ -74,7 +76,7 @@ class SystemAdminController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $user,
+            'data' => $user->load('roles'),
             'message' => 'system_admin.created_success',
         ], 201);
     }
@@ -111,7 +113,7 @@ class SystemAdminController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $systemAdmin,
+            'data' => $systemAdmin->load('roles'),
             'message' => 'system_admin.updated_success',
         ]);
     }
