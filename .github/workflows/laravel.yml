@@ -11,6 +11,21 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: laravel
+          POSTGRES_PASSWORD: secret
+          POSTGRES_DB: laravel_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U laravel"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     steps:
     - uses: shivammathur/setup-php@15c43e89cdef867065b0213be354c2841860869e
       with:
@@ -28,14 +43,13 @@ jobs:
     - name: Directory Permissions
       working-directory: backend
       run: chmod -R 777 storage bootstrap/cache
-    - name: Create Database
-      working-directory: backend
-      run: |
-        mkdir -p database
-        touch database/database.sqlite
     - name: Execute tests (Unit and Feature tests) via PHPUnit/Pest
       working-directory: backend
       env:
-        DB_CONNECTION: sqlite
-        DB_DATABASE: database/database.sqlite
+        DB_CONNECTION: pgsql
+        DB_HOST: 127.0.0.1
+        DB_PORT: 5432
+        DB_DATABASE: laravel_test
+        DB_USERNAME: laravel
+        DB_PASSWORD: secret
       run: php artisan test
