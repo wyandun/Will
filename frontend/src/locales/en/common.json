@@ -107,7 +107,6 @@
     "online_now": "Online Now",
     "recently_active": "Recently Active",
     "you": "You",
-    "view_more": "View more posts",
     "no_posts": "No posts found.",
     "no_posts_search": "No posts match your search.",
     "no_online": "No one online right now.",
@@ -118,7 +117,11 @@
     "type_alert": "Alert",
     "pinned": "Pinned",
     "load_error": "Failed to load feed. Please try again.",
-    "presence_error": "Failed to load presence data."
+    "presence_error": "Failed to load presence data.",
+    "page_info": "Page {{current}} of {{total}}",
+    "posts_total": "{{count}} posts",
+    "prev": "Previous",
+    "next": "Next"
   },
   "franchises": {
     "title": "Franchises",

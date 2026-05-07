@@ -32,6 +32,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->createSuperAdmin();
+        $this->call(FeedSeeder::class);
     }
 
     /**

@@ -14,7 +14,7 @@ class FeedService
     // -------------------------------------------------------------------------
 
     /**
-     * Return the latest 10 posts visible to the given user.
+     * Return a paginated list of posts visible to the given user.
      *
      * Visibility rules:
      *   superadmin → all posts
@@ -23,9 +23,9 @@ class FeedService
      *
      * If $search is provided, filters by title, body, or author name (ILIKE).
      *
-     * @return array<int, array<string, mixed>>
+     * @return array{items: array<int, array<string, mixed>>, meta: array{current_page: int, last_page: int, per_page: int, total: int}}
      */
-    public function getPosts(User $user, ?string $search = null): array
+    public function getPosts(User $user, ?string $search = null, int $page = 1, int $perPage = 10): array
     {
         $query = DB::table('posts')
             ->join('users as authors', 'authors.id', '=', 'posts.author_id')
@@ -71,16 +71,24 @@ class FeedService
             'authors.avatar_path as author_avatar',
         ])
             ->orderByDesc('posts.is_pinned')
-            ->orderByDesc('posts.created_at')
-            ->limit(10);
+            ->orderByDesc('posts.created_at');
 
-        $posts = $query->get();
+        $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+        $rows = collect($paginator->items());
 
-        if ($posts->isEmpty()) {
-            return [];
+        if ($rows->isEmpty()) {
+            return [
+                'items' => [],
+                'meta' => [
+                    'current_page' => $paginator->currentPage(),
+                    'last_page' => $paginator->lastPage(),
+                    'per_page' => $paginator->perPage(),
+                    'total' => $paginator->total(),
+                ],
+            ];
         }
 
-        $postIds = $posts->pluck('id')->all();
+        $postIds = $rows->pluck('id')->all();
 
         $likes = DB::table('post_interactions')
             ->whereIn('post_id', $postIds)
@@ -96,7 +104,7 @@ class FeedService
             ->groupBy('post_id')
             ->pluck('total', 'post_id');
 
-        return $posts->map(function ($post) use ($likes, $comments) {
+        $items = $rows->map(function ($post) use ($likes, $comments) {
             return [
                 'id' => $post->id,
                 'title' => $post->title,
@@ -115,6 +123,16 @@ class FeedService
                 'created_at' => $post->created_at,
             ];
         })->all();
+
+        return [
+            'items' => $items,
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+            ],
+        ];
     }
 
     // -------------------------------------------------------------------------

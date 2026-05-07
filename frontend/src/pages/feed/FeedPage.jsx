@@ -256,6 +256,42 @@ function RecentlyActivePanel({ users, loading }) {
   );
 }
 
+// ─── Pagination ───────────────────────────────────────────────────────────────
+
+function Pagination({ meta, onPageChange, loading }) {
+  const { t } = useTranslation('common');
+  if (!meta || meta.last_page <= 1) return null;
+
+  return (
+    <div className="flex items-center justify-between pt-1">
+      <button
+        onClick={() => onPageChange(meta.current_page - 1)}
+        disabled={meta.current_page <= 1 || loading}
+        className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+      >
+        ‹ {t('feed.prev')}
+      </button>
+
+      <div className="flex flex-col items-center gap-0.5">
+        <span className="text-sm font-medium text-slate-700">
+          {t('feed.page_info', { current: meta.current_page, total: meta.last_page })}
+        </span>
+        <span className="text-xs text-slate-400">
+          {t('feed.posts_total', { count: meta.total })}
+        </span>
+      </div>
+
+      <button
+        onClick={() => onPageChange(meta.current_page + 1)}
+        disabled={meta.current_page >= meta.last_page || loading}
+        className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+      >
+        {t('feed.next')} ›
+      </button>
+    </div>
+  );
+}
+
 // ─── FeedPage ─────────────────────────────────────────────────────────────────
 
 export default function FeedPage() {
@@ -263,6 +299,7 @@ export default function FeedPage() {
   const currentUserId = useAuthStore((s) => s.user?.id);
 
   const [posts, setPosts] = useState([]);
+  const [meta, setMeta] = useState(null);
   const [postsLoading, setPostsLoading] = useState(true);
   const [postsError, setPostsError] = useState(null);
 
@@ -270,20 +307,23 @@ export default function FeedPage() {
   const [presenceLoading, setPresenceLoading] = useState(true);
 
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
   const debounceRef = useRef(null);
 
-  // Fetch posts — re-runs whenever searchTerm changes
-  const fetchPosts = (term) => {
+  const fetchPosts = (term, pageNum) => {
     setPostsLoading(true);
     setPostsError(null);
-    const params = term ? { search: term } : {};
+    const params = { page: pageNum, per_page: 10, ...(term ? { search: term } : {}) };
     feedApi.getPosts(params)
-      .then((res) => setPosts(res.data.data ?? []))
+      .then((res) => {
+        const payload = res.data.data ?? {};
+        setPosts(payload.items ?? []);
+        setMeta(payload.meta ?? null);
+      })
       .catch(() => setPostsError(t('feed.load_error')))
       .finally(() => setPostsLoading(false));
   };
 
-  // Fetch presence data once on mount
   const fetchPresence = () => {
     setPresenceLoading(true);
     feedApi.getPresence()
@@ -293,18 +333,24 @@ export default function FeedPage() {
   };
 
   useEffect(() => {
-    fetchPosts('');
+    fetchPosts('', 1);
     fetchPresence();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Debounced search handler
   function handleSearchChange(e) {
     const value = e.target.value;
     setSearch(value);
+    setPage(1);
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      fetchPosts(value);
+      fetchPosts(value, 1);
     }, 300);
+  }
+
+  function handlePageChange(newPage) {
+    setPage(newPage);
+    fetchPosts(search, newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   return (
@@ -350,16 +396,7 @@ export default function FeedPage() {
               ))}
             </div>
 
-            {/* View more link */}
-            <div className="flex justify-center">
-              <a
-                href="#"
-                className="text-sm text-amber-600 hover:text-amber-700 font-medium transition-colors"
-                onClick={(e) => e.preventDefault()}
-              >
-                {t('feed.view_more')} ›
-              </a>
-            </div>
+            <Pagination meta={meta} onPageChange={handlePageChange} loading={postsLoading} />
           </>
         )}
       </div>
@@ -383,6 +420,17 @@ IconComment.propTypes = classNameProp;
 
 Skeleton.propTypes = {
   className: PropTypes.string,
+};
+
+Pagination.propTypes = {
+  meta: PropTypes.shape({
+    current_page: PropTypes.number.isRequired,
+    last_page: PropTypes.number.isRequired,
+    per_page: PropTypes.number.isRequired,
+    total: PropTypes.number.isRequired,
+  }),
+  onPageChange: PropTypes.func.isRequired,
+  loading: PropTypes.bool.isRequired,
 };
 
 const userShape = PropTypes.shape({

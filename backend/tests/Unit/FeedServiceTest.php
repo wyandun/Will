@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit;
 
 use App\Models\Post;
@@ -26,9 +28,6 @@ class FeedServiceTest extends TestCase
     // Helpers
     // -------------------------------------------------------------------------
 
-    /**
-     * Create a franchise row directly via DB to avoid needing a Franchise factory.
-     */
     private function createFranchise(string $name = 'Test Franchise'): int
     {
         return DB::table('franchises')->insertGetId([
@@ -39,10 +38,6 @@ class FeedServiceTest extends TestCase
         ]);
     }
 
-    /**
-     * Create a company row so that users.company_id FK constraints are satisfied.
-     * Companies require a franchise (sm_franchise_id FK).
-     */
     private function createCompany(int $franchiseId, string $name = 'Test Company'): int
     {
         return DB::table('companies')->insertGetId([
@@ -51,6 +46,53 @@ class FeedServiceTest extends TestCase
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+    }
+
+    // -------------------------------------------------------------------------
+    // getPosts — response structure (items + meta)
+    // -------------------------------------------------------------------------
+
+    public function test_get_posts_returns_items_and_meta_keys(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('superadmin');
+
+        Post::factory()->create(['author_id' => $user->id]);
+
+        $result = $this->service->getPosts($user);
+
+        $this->assertArrayHasKey('items', $result);
+        $this->assertArrayHasKey('meta', $result);
+        $this->assertArrayHasKey('current_page', $result['meta']);
+        $this->assertArrayHasKey('last_page', $result['meta']);
+        $this->assertArrayHasKey('per_page', $result['meta']);
+        $this->assertArrayHasKey('total', $result['meta']);
+    }
+
+    public function test_get_posts_returns_expected_keys_per_item(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('superadmin');
+
+        Post::factory()->create([
+            'author_id' => $user->id,
+            'title' => 'Test Post',
+            'body' => 'Body text.',
+        ]);
+
+        $result = $this->service->getPosts($user);
+        $item = $result['items'][0];
+
+        $expectedKeys = [
+            'id', 'title', 'body', 'type', 'is_pinned',
+            'image_url', 'file_url', 'file_name',
+            'author_name', 'author_avatar',
+            'likes_count', 'comments_count', 'created_at',
+        ];
+
+        foreach ($expectedKeys as $key) {
+            $this->assertArrayHasKey($key, $item, "Missing key: $key");
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -70,7 +112,8 @@ class FeedServiceTest extends TestCase
 
         $result = $this->service->getPosts($superadmin);
 
-        $this->assertCount(3, $result);
+        $this->assertCount(3, $result['items']);
+        $this->assertEquals(3, $result['meta']['total']);
     }
 
     public function test_admin_sm_sees_global_posts_and_own_franchise_posts(): void
@@ -89,7 +132,7 @@ class FeedServiceTest extends TestCase
 
         $result = $this->service->getPosts($admin);
 
-        $this->assertCount(2, $result);
+        $this->assertCount(2, $result['items']);
     }
 
     public function test_sb_owner_sees_global_and_own_franchise_posts_only(): void
@@ -108,7 +151,7 @@ class FeedServiceTest extends TestCase
 
         $result = $this->service->getPosts($owner);
 
-        $this->assertCount(2, $result);
+        $this->assertCount(2, $result['items']);
     }
 
     // -------------------------------------------------------------------------
@@ -125,7 +168,7 @@ class FeedServiceTest extends TestCase
 
         $result = $this->service->getPosts($user);
 
-        $this->assertCount(1, $result);
+        $this->assertCount(1, $result['items']);
     }
 
     public function test_post_with_past_published_at_appears_in_feed(): void
@@ -137,7 +180,7 @@ class FeedServiceTest extends TestCase
 
         $result = $this->service->getPosts($user);
 
-        $this->assertCount(1, $result);
+        $this->assertCount(1, $result['items']);
     }
 
     public function test_post_with_null_published_at_appears_immediately(): void
@@ -149,7 +192,7 @@ class FeedServiceTest extends TestCase
 
         $result = $this->service->getPosts($user);
 
-        $this->assertCount(1, $result);
+        $this->assertCount(1, $result['items']);
     }
 
     // -------------------------------------------------------------------------
@@ -166,7 +209,8 @@ class FeedServiceTest extends TestCase
 
         $result = $this->service->getPosts($user);
 
-        $this->assertCount(0, $result);
+        $this->assertCount(0, $result['items']);
+        $this->assertEquals(0, $result['meta']['total']);
     }
 
     // -------------------------------------------------------------------------
@@ -184,41 +228,14 @@ class FeedServiceTest extends TestCase
 
         $result = $this->service->getPosts($user);
 
-        $this->assertTrue((bool) $result[0]['is_pinned']);
-        $this->assertFalse((bool) $result[1]['is_pinned']);
-        $this->assertFalse((bool) $result[2]['is_pinned']);
+        $this->assertTrue((bool) $result['items'][0]['is_pinned']);
+        $this->assertFalse((bool) $result['items'][1]['is_pinned']);
+        $this->assertFalse((bool) $result['items'][2]['is_pinned']);
     }
 
     // -------------------------------------------------------------------------
-    // getPosts — response shape
+    // getPosts — interaction counts
     // -------------------------------------------------------------------------
-
-    public function test_get_posts_returns_expected_keys(): void
-    {
-        $user = User::factory()->create();
-        $user->assignRole('superadmin');
-
-        Post::factory()->create([
-            'author_id' => $user->id,
-            'title' => 'Test Post',
-            'body' => 'Body text.',
-        ]);
-
-        $result = $this->service->getPosts($user);
-
-        $this->assertCount(1, $result);
-
-        $expectedKeys = [
-            'id', 'title', 'body', 'type', 'is_pinned',
-            'image_url', 'file_url', 'file_name',
-            'author_name', 'author_avatar',
-            'likes_count', 'comments_count', 'created_at',
-        ];
-
-        foreach ($expectedKeys as $key) {
-            $this->assertArrayHasKey($key, $result[0], "Missing key: $key");
-        }
-    }
 
     public function test_get_posts_returns_correct_likes_and_comments_counts(): void
     {
@@ -232,8 +249,8 @@ class FeedServiceTest extends TestCase
 
         $result = $this->service->getPosts($user);
 
-        $this->assertEquals(3, $result[0]['likes_count']);
-        $this->assertEquals(2, $result[0]['comments_count']);
+        $this->assertEquals(3, $result['items'][0]['likes_count']);
+        $this->assertEquals(2, $result['items'][0]['comments_count']);
     }
 
     public function test_get_posts_returns_zero_counts_when_no_interactions(): void
@@ -245,11 +262,15 @@ class FeedServiceTest extends TestCase
 
         $result = $this->service->getPosts($user);
 
-        $this->assertEquals(0, $result[0]['likes_count']);
-        $this->assertEquals(0, $result[0]['comments_count']);
+        $this->assertEquals(0, $result['items'][0]['likes_count']);
+        $this->assertEquals(0, $result['items'][0]['comments_count']);
     }
 
-    public function test_get_posts_returns_at_most_10_results(): void
+    // -------------------------------------------------------------------------
+    // getPosts — pagination
+    // -------------------------------------------------------------------------
+
+    public function test_default_page_returns_10_results_when_more_than_10_exist(): void
     {
         $user = User::factory()->create();
         $user->assignRole('superadmin');
@@ -258,18 +279,64 @@ class FeedServiceTest extends TestCase
 
         $result = $this->service->getPosts($user);
 
-        $this->assertCount(10, $result);
+        $this->assertCount(10, $result['items']);
+        $this->assertEquals(10, $result['meta']['per_page']);
+        $this->assertEquals(15, $result['meta']['total']);
+        $this->assertEquals(2, $result['meta']['last_page']);
     }
 
-    public function test_get_posts_returns_empty_array_when_no_posts(): void
+    public function test_page_2_returns_remaining_results(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('superadmin');
+
+        Post::factory()->count(15)->create(['author_id' => $user->id]);
+
+        $result = $this->service->getPosts($user, null, 2, 10);
+
+        $this->assertCount(5, $result['items']);
+        $this->assertEquals(2, $result['meta']['current_page']);
+        $this->assertEquals(2, $result['meta']['last_page']);
+    }
+
+    public function test_custom_per_page_is_respected(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('superadmin');
+
+        Post::factory()->count(12)->create(['author_id' => $user->id]);
+
+        $result = $this->service->getPosts($user, null, 1, 5);
+
+        $this->assertCount(5, $result['items']);
+        $this->assertEquals(5, $result['meta']['per_page']);
+        $this->assertEquals(3, $result['meta']['last_page']);
+        $this->assertEquals(12, $result['meta']['total']);
+    }
+
+    public function test_get_posts_returns_empty_items_when_no_posts(): void
     {
         $user = User::factory()->create();
         $user->assignRole('superadmin');
 
         $result = $this->service->getPosts($user);
 
-        $this->assertIsArray($result);
-        $this->assertCount(0, $result);
+        $this->assertIsArray($result['items']);
+        $this->assertCount(0, $result['items']);
+        $this->assertEquals(0, $result['meta']['total']);
+        $this->assertEquals(1, $result['meta']['last_page']);
+    }
+
+    public function test_meta_current_page_reflects_requested_page(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('superadmin');
+
+        Post::factory()->count(25)->create(['author_id' => $user->id]);
+
+        $result = $this->service->getPosts($user, null, 3, 10);
+
+        $this->assertEquals(3, $result['meta']['current_page']);
     }
 
     // -------------------------------------------------------------------------
@@ -290,8 +357,8 @@ class FeedServiceTest extends TestCase
 
         $result = $this->service->getPosts($user, 'quarterly');
 
-        $this->assertCount(1, $result);
-        $this->assertStringContainsStringIgnoringCase('quarterly', $result[0]['title']);
+        $this->assertCount(1, $result['items']);
+        $this->assertStringContainsStringIgnoringCase('quarterly', $result['items'][0]['title']);
     }
 
     public function test_search_filters_by_body(): void
@@ -316,7 +383,7 @@ class FeedServiceTest extends TestCase
 
         $result = $this->service->getPosts($user, 'franchise expansion');
 
-        $this->assertCount(1, $result);
+        $this->assertCount(1, $result['items']);
     }
 
     public function test_search_filters_by_author_name(): void
@@ -336,8 +403,8 @@ class FeedServiceTest extends TestCase
 
         $result = $this->service->getPosts($user, 'Rodriguez');
 
-        $this->assertCount(1, $result);
-        $this->assertEquals('Maria Rodriguez', $result[0]['author_name']);
+        $this->assertCount(1, $result['items']);
+        $this->assertEquals('Maria Rodriguez', $result['items'][0]['author_name']);
     }
 
     public function test_null_search_returns_all_visible_posts(): void
@@ -349,7 +416,7 @@ class FeedServiceTest extends TestCase
 
         $result = $this->service->getPosts($user, null);
 
-        $this->assertCount(3, $result);
+        $this->assertCount(3, $result['items']);
     }
 
     // -------------------------------------------------------------------------
@@ -450,7 +517,6 @@ class FeedServiceTest extends TestCase
         $viewer = User::factory()->create(['company_id' => $companyId]);
         $viewer->assignRole('sb_owner');
 
-        // Create 15 peers all in the same company, all recently active (> 5 min ago)
         $peers = User::factory()->count(15)->create(['company_id' => $companyId]);
         $peers->each(fn ($u) => $u->assignRole('sb_employee'));
 
@@ -474,7 +540,6 @@ class FeedServiceTest extends TestCase
         $peer = User::factory()->create(['company_id' => $companyId]);
         $peer->assignRole('sb_employee');
 
-        // recently active — older than 5 minutes
         DB::table('users')->where('id', $peer->id)->update([
             'last_seen_at' => now()->subMinutes(10),
         ]);

@@ -15,7 +15,7 @@ class FeedController extends Controller
     #[OA\Get(
         path: '/feed/posts',
         tags: ['Feed'],
-        summary: 'Listar posts del Feed',
+        summary: 'Listar posts del Feed (paginado)',
         security: [['sanctum' => []]],
         parameters: [
             new OA\Parameter(
@@ -25,32 +25,62 @@ class FeedController extends Controller
                 description: 'Filtrar por título, contenido o autor',
                 schema: new OA\Schema(type: 'string', example: 'franquicia')
             ),
+            new OA\Parameter(
+                name: 'page',
+                in: 'query',
+                required: false,
+                description: 'Número de página (empieza en 1)',
+                schema: new OA\Schema(type: 'integer', example: 1, minimum: 1)
+            ),
+            new OA\Parameter(
+                name: 'per_page',
+                in: 'query',
+                required: false,
+                description: 'Resultados por página (5–50, default 10)',
+                schema: new OA\Schema(type: 'integer', example: 10, minimum: 5, maximum: 50)
+            ),
         ],
         responses: [
             new OA\Response(
                 response: 200,
-                description: 'Lista de posts visibles para el usuario',
+                description: 'Lista paginada de posts visibles para el usuario',
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'success', type: 'boolean', example: true),
                         new OA\Property(
                             property: 'data',
-                            type: 'array',
-                            items: new OA\Items(
-                                properties: [
-                                    new OA\Property(property: 'id', type: 'integer', example: 1),
-                                    new OA\Property(property: 'title', type: 'string', example: 'Nuevo programa de capacitación'),
-                                    new OA\Property(property: 'body', type: 'string', example: 'Contenido del post...'),
-                                    new OA\Property(property: 'type', type: 'string', enum: ['announcement', 'news', 'training', 'alert'], example: 'news'),
-                                    new OA\Property(property: 'is_pinned', type: 'boolean', example: false),
-                                    new OA\Property(property: 'image_url', type: 'string', nullable: true, example: 'http://localhost/storage/posts/img.jpg'),
-                                    new OA\Property(property: 'author_name', type: 'string', example: 'Super Admin'),
-                                    new OA\Property(property: 'author_avatar', type: 'string', nullable: true, example: 'http://localhost/storage/avatars/1_abc.jpg'),
-                                    new OA\Property(property: 'likes_count', type: 'integer', example: 5),
-                                    new OA\Property(property: 'comments_count', type: 'integer', example: 2),
-                                    new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
-                                ]
-                            )
+                            type: 'object',
+                            properties: [
+                                new OA\Property(
+                                    property: 'items',
+                                    type: 'array',
+                                    items: new OA\Items(
+                                        properties: [
+                                            new OA\Property(property: 'id', type: 'integer', example: 1),
+                                            new OA\Property(property: 'title', type: 'string', example: 'Nuevo programa de capacitación'),
+                                            new OA\Property(property: 'body', type: 'string', example: 'Contenido del post...'),
+                                            new OA\Property(property: 'type', type: 'string', enum: ['announcement', 'news', 'training', 'alert'], example: 'news'),
+                                            new OA\Property(property: 'is_pinned', type: 'boolean', example: false),
+                                            new OA\Property(property: 'image_url', type: 'string', nullable: true, example: 'http://localhost/storage/posts/img.jpg'),
+                                            new OA\Property(property: 'author_name', type: 'string', example: 'Super Admin'),
+                                            new OA\Property(property: 'author_avatar', type: 'string', nullable: true, example: 'http://localhost/storage/avatars/1_abc.jpg'),
+                                            new OA\Property(property: 'likes_count', type: 'integer', example: 5),
+                                            new OA\Property(property: 'comments_count', type: 'integer', example: 2),
+                                            new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
+                                        ]
+                                    )
+                                ),
+                                new OA\Property(
+                                    property: 'meta',
+                                    type: 'object',
+                                    properties: [
+                                        new OA\Property(property: 'current_page', type: 'integer', example: 1),
+                                        new OA\Property(property: 'last_page', type: 'integer', example: 3),
+                                        new OA\Property(property: 'per_page', type: 'integer', example: 10),
+                                        new OA\Property(property: 'total', type: 'integer', example: 25),
+                                    ]
+                                ),
+                            ]
                         ),
                     ]
                 )
@@ -61,7 +91,10 @@ class FeedController extends Controller
     public function posts(Request $request): JsonResponse
     {
         $search = $request->query('search');
-        $data = $this->feedService->getPosts($request->user(), $search ?: null);
+        $page = max(1, (int) $request->query('page', 1));
+        $perPage = min(50, max(5, (int) $request->query('per_page', 10)));
+
+        $data = $this->feedService->getPosts($request->user(), $search ?: null, $page, $perPage);
 
         return response()->json([
             'success' => true,
