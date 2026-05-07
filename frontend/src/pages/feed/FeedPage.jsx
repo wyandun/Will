@@ -71,7 +71,7 @@ function Skeleton({ className }) {
 
 // ─── PostCard ─────────────────────────────────────────────────────────────────
 
-function PostCard({ post, currentUser, onEdit, onDelete }) {
+function PostCard({ post, currentUser, role, onEdit, onDelete }) {
   const { t } = useTranslation('common');
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -82,8 +82,8 @@ function PostCard({ post, currentUser, onEdit, onDelete }) {
   const canManage =
     currentUser &&
     (currentUser.id === post.author_id ||
-      currentUser.role === 'superadmin' ||
-      currentUser.role === 'admin_sm');
+      role === 'superadmin' ||
+      role === 'admin_sm');
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -208,11 +208,10 @@ function UserAvatar({ user }) {
 
 // ─── ComposeBar ───────────────────────────────────────────────────────────────
 
-function ComposeBar({ currentUser, onOpenCreate }) {
+function ComposeBar({ currentUser, role, onOpenCreate }) {
   const { t } = useTranslation('common');
 
-  const canCompose =
-    currentUser?.role === 'superadmin' || currentUser?.role === 'admin_sm';
+  const canCompose = role === 'superadmin' || role === 'admin_sm';
 
   if (!canCompose) return null;
 
@@ -416,6 +415,7 @@ function Toast({ message, onDismiss }) {
 export default function FeedPage() {
   const { t } = useTranslation('common');
   const authUser = useAuthStore((s) => s.user);
+  const role = useAuthStore((s) => s.role);
 
   const [posts, setPosts] = useState([]);
   const [meta, setMeta] = useState(null);
@@ -494,7 +494,7 @@ export default function FeedPage() {
       {/* Left column — compose + search + posts */}
       <div className="flex-1 min-w-0 flex flex-col gap-5">
         {/* Compose bar */}
-        <ComposeBar currentUser={authUser} onOpenCreate={() => setModalPost(null)} />
+        <ComposeBar currentUser={authUser} role={role} onOpenCreate={() => setModalPost(null)} />
 
         {/* Search bar */}
         <div className="relative">
@@ -535,6 +535,7 @@ export default function FeedPage() {
                   key={post.id}
                   post={post}
                   currentUser={authUser}
+                  role={role}
                   onEdit={(p) => setModalPost(p)}
                   onDelete={handleDeletePost}
                 />
@@ -616,10 +617,10 @@ PostCard.propTypes = {
   }).isRequired,
   currentUser: PropTypes.shape({
     id: PropTypes.number,
-    role: PropTypes.string,
     name: PropTypes.string,
     avatar_url: PropTypes.string,
   }),
+  role: PropTypes.string,
   onEdit: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
 };
@@ -633,8 +634,8 @@ ComposeBar.propTypes = {
     id: PropTypes.number,
     name: PropTypes.string,
     avatar_url: PropTypes.string,
-    role: PropTypes.string,
   }),
+  role: PropTypes.string,
   onOpenCreate: PropTypes.func.isRequired,
 };
 
