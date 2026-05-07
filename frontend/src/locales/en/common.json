@@ -5,6 +5,7 @@
     "companies": "Companies",
     "sb_applications": "SB Applications",
     "users": "Users",
+    "system_admins": "System Admins",
     "feed": "Feed",
     "contracts": "Contracts",
     "repository": "Repository",
@@ -53,6 +54,8 @@
     "back": "Back"
   },
   "roles": {
+    "system_admin": "System Admin",
+    "system_admin_readonly": "System Admin (Read-Only)",
     "superadmin": "Super Admin",
     "admin_sm": "SM Admin",
     "sb_owner": "SB Owner",
@@ -240,6 +243,38 @@
       "name_required": "Name is required.",
       "franchise_required": "Franchise is required.",
       "email_invalid": "Please enter a valid email address."
+    }
+  },
+  "system_admin": {
+    "created_success": "System admin successfully created.",
+    "updated_success": "System admin successfully updated.",
+    "deleted_success": "System admin successfully deleted."
+  },
+  "system_admins": {
+    "title": "System Administrators",
+    "subtitle": "Manage accounts with global permissions across the platform.",
+    "new": "New Admin",
+    "new_title": "Register System Administrator",
+    "edit_title": "Edit Administrator",
+    "delete_confirm": "Are you sure you want to delete {{name}}? This action cannot be undone.",
+    "warning_title": "Attention: Full Permissions",
+    "warning_desc": "The 'System Admin' account will have access to all modules and can modify sensitive information. Assign this role with extreme caution.",
+    "load_error": "Could not load administrators.",
+    "empty": "No administrators registered yet.",
+    "create": "Register Administrator",
+    "creating": "Registering...",
+    "form": {
+      "role": "Assigned Role",
+      "name": "Name",
+      "name_placeholder": "e.g. John Doe",
+      "name_required": "Name is required.",
+      "email": "Email Address",
+      "email_placeholder": "e.g. john@example.com",
+      "email_invalid": "Please enter a valid email address.",
+      "password": "Password",
+      "password_placeholder": "Minimum 12 characters",
+      "password_optional": "Leave blank to keep unchanged",
+      "password_min": "Password must be at least 12 characters."
     }
   }
 }

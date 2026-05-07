@@ -31,8 +31,31 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
+        $this->seedRoles();
         $this->createSuperAdmin();
         $this->call(FeedSeeder::class);
+    }
+
+    /**
+     * Ensure all application roles exist in the database.
+     */
+    private function seedRoles(): void
+    {
+        $roles = [
+            Role::SUPERADMIN,
+            Role::SYSTEM_ADMIN,
+            Role::SYSTEM_ADMIN_READONLY,
+            Role::ADMIN_SM,
+            Role::SB_OWNER,
+            Role::SB_EMPLOYEE,
+            Role::BB_EMPLOYEE,
+            Role::SUB_FRANCHISE_OWNER,
+            Role::SUB_FRANCHISE_ADMIN,
+        ];
+
+        foreach ($roles as $role) {
+            SpatieRole::firstOrCreate(['name' => $role, 'guard_name' => 'web']);
+        }
     }
 
     /**
@@ -42,8 +65,6 @@ class DatabaseSeeder extends Seeder
      */
     private function createSuperAdmin(): void
     {
-        // Ensure the Spatie role exists before assigning it.
-        SpatieRole::firstOrCreate(['name' => Role::SUPERADMIN, 'guard_name' => 'web']);
 
         $email = env('SUPERADMIN_EMAIL', 'admin@smportal.com');
         $password = env('SUPERADMIN_PASSWORD', 'password');

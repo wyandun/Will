@@ -276,8 +276,8 @@ export default function FranchisesPage() {
       await franchisesApi.toggleFranchiseStatus(franchise.id);
       await loadFranchises();
     } catch (error) {
-      const messageKey = error?.response?.data?.message;
-      const message = messageKey ? t(messageKey, messageKey) : t('franchises.toggle_error');
+      const msgKey = error?.response?.data?.message;
+      const message = msgKey ? t(msgKey, { defaultValue: msgKey }) : t('franchises.toggle_error');
       window.alert(message);
     }
   }
@@ -294,8 +294,8 @@ export default function FranchisesPage() {
       await franchisesApi.deleteFranchise(franchise.id);
       await loadFranchises();
     } catch (error) {
-      const messageKey = error?.response?.data?.message;
-      const message = messageKey ? t(messageKey, messageKey) : t('franchises.delete_error');
+      const msgKey = error?.response?.data?.message;
+      const message = msgKey ? t(msgKey, { defaultValue: msgKey }) : t('franchises.delete_error');
       window.alert(message);
     }
   }
