@@ -4,8 +4,8 @@ namespace App\Http\Requests\SystemAdmin;
 
 use App\Enums\Role;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 class UpdateSystemAdminRequest extends FormRequest
 {
@@ -26,7 +26,7 @@ class UpdateSystemAdminRequest extends FormRequest
                 Rule::unique('users')->ignore($this->route('system_admin')),
             ],
             'password' => ['nullable', 'string', Password::min(12)],
-            'role' => ['required', 'string', 'in:' . Role::SYSTEM_ADMIN . ',' . Role::SYSTEM_ADMIN_READONLY],
+            'role' => ['required', 'string', 'in:'.Role::SYSTEM_ADMIN.','.Role::SYSTEM_ADMIN_READONLY],
         ];
     }
 

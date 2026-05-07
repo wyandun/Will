@@ -19,7 +19,7 @@ class StoreSystemAdminRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'string', Password::min(12)],
-            'role' => ['required', 'string', 'in:' . Role::SYSTEM_ADMIN . ',' . Role::SYSTEM_ADMIN_READONLY],
+            'role' => ['required', 'string', 'in:'.Role::SYSTEM_ADMIN.','.Role::SYSTEM_ADMIN_READONLY],
         ];
     }
 

@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\Role;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SystemAdmin\StoreSystemAdminRequest;
 use App\Http\Requests\SystemAdmin\UpdateSystemAdminRequest;
-use App\Enums\Role;
 use App\Models\User;
 use App\Models\UserPermission;
 use Illuminate\Http\JsonResponse;
@@ -93,7 +93,7 @@ class SystemAdminController extends Controller
 
         $systemAdmin->name = $validated['name'];
         $systemAdmin->email = $validated['email'];
-        if (!empty($validated['password'])) {
+        if (! empty($validated['password'])) {
             $systemAdmin->password = Hash::make($validated['password']);
         }
         $systemAdmin->save();
