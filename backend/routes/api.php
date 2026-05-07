@@ -74,6 +74,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('feed')->group(function () {
         Route::get('/posts', [FeedController::class, 'posts']);
         Route::get('/presence', [FeedController::class, 'presence']);
+        Route::post('/posts', [FeedController::class, 'store']);
+        Route::put('/posts/{id}', [FeedController::class, 'update']);
+        Route::delete('/posts/{id}', [FeedController::class, 'destroy']);
     });
 
     // Dashboard

@@ -166,4 +166,149 @@ class FeedControllerTest extends TestCase
         $this->assertIsArray($response->json('data.online'));
         $this->assertIsArray($response->json('data.recently_active'));
     }
+
+    // -------------------------------------------------------------------------
+    // POST /api/v1/feed/posts
+    // -------------------------------------------------------------------------
+
+    public function test_superadmin_can_create_post_and_gets_201(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('superadmin');
+
+        $response = $this->actingAs($user)->postJson('/api/v1/feed/posts', [
+            'title' => 'New Announcement',
+            'body' => 'This is the body.',
+            'type' => 'announcement',
+            'visibility' => 'global',
+        ]);
+
+        $response->assertStatus(201);
+        $response->assertJsonPath('success', true);
+        $response->assertJsonStructure(['success', 'data' => ['post']]);
+    }
+
+    public function test_admin_sm_can_create_post_and_gets_201(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('admin_sm');
+
+        $response = $this->actingAs($user)->postJson('/api/v1/feed/posts', [
+            'title' => 'Franchise News',
+            'body' => 'Body content.',
+            'type' => 'news',
+            'visibility' => 'franchise',
+        ]);
+
+        $response->assertStatus(201);
+        $response->assertJsonPath('success', true);
+    }
+
+    public function test_sb_owner_cannot_create_post_and_gets_403(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('sb_owner');
+
+        $response = $this->actingAs($user)->postJson('/api/v1/feed/posts', [
+            'title' => 'My Post',
+            'body' => 'Body.',
+            'type' => 'news',
+            'visibility' => 'global',
+        ]);
+
+        $response->assertStatus(403);
+    }
+
+    public function test_create_post_fails_validation_when_required_fields_missing(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('superadmin');
+
+        $response = $this->actingAs($user)->postJson('/api/v1/feed/posts', []);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['title', 'body', 'type', 'visibility']);
+    }
+
+    // -------------------------------------------------------------------------
+    // PUT /api/v1/feed/posts/{id}
+    // -------------------------------------------------------------------------
+
+    public function test_author_can_update_own_post_and_gets_200(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('admin_sm');
+
+        $post = Post::factory()->create([
+            'author_id' => $user->id,
+            'title' => 'Original',
+        ]);
+
+        $response = $this->actingAs($user)->putJson("/api/v1/feed/posts/{$post->id}", [
+            'title' => 'Updated Title',
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('success', true);
+    }
+
+    public function test_other_user_cannot_update_post_and_gets_403(): void
+    {
+        $author = User::factory()->create();
+        $author->assignRole('admin_sm');
+
+        $other = User::factory()->create();
+        $other->assignRole('sb_owner');
+
+        $post = Post::factory()->create(['author_id' => $author->id]);
+
+        $response = $this->actingAs($other)->putJson("/api/v1/feed/posts/{$post->id}", [
+            'title' => 'Hacked',
+        ]);
+
+        $response->assertStatus(403);
+    }
+
+    // -------------------------------------------------------------------------
+    // DELETE /api/v1/feed/posts/{id}
+    // -------------------------------------------------------------------------
+
+    public function test_author_can_delete_own_post_and_gets_200(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('admin_sm');
+
+        $post = Post::factory()->create(['author_id' => $user->id]);
+
+        $response = $this->actingAs($user)->deleteJson("/api/v1/feed/posts/{$post->id}");
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('success', true);
+    }
+
+    public function test_superadmin_can_delete_any_post_and_gets_200(): void
+    {
+        $author = User::factory()->create();
+        $author->assignRole('admin_sm');
+
+        $superadmin = User::factory()->create();
+        $superadmin->assignRole('superadmin');
+
+        $post = Post::factory()->create(['author_id' => $author->id]);
+
+        $response = $this->actingAs($superadmin)->deleteJson("/api/v1/feed/posts/{$post->id}");
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('success', true);
+    }
+
+    public function test_delete_nonexistent_post_returns_404(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('superadmin');
+
+        $response = $this->actingAs($user)->deleteJson('/api/v1/feed/posts/99999');
+
+        $response->assertStatus(404);
+    }
 }

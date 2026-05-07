@@ -4,8 +4,12 @@ namespace App\Services;
 
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class FeedService
 {
@@ -231,5 +235,136 @@ class FeedService
             'online' => $online,
             'recently_active' => $recentlyActive,
         ];
+    }
+
+    // -------------------------------------------------------------------------
+    // CRUD
+    // -------------------------------------------------------------------------
+
+    /**
+     * Create a new post and optionally persist an image and/or attachment.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function createPost(User $user, array $data, ?UploadedFile $image = null, ?UploadedFile $attachment = null): array
+    {
+        $imageUrl = null;
+        $fileUrl = null;
+        $fileName = null;
+
+        if ($image !== null) {
+            $path = $image->store('posts', 'public');
+            $imageUrl = Storage::disk('public')->url((string) $path);
+        }
+
+        if ($attachment !== null) {
+            $path = $attachment->store('attachments', 'public');
+            $fileUrl = Storage::disk('public')->url((string) $path);
+            $fileName = $attachment->getClientOriginalName();
+        }
+
+        $postId = DB::table('posts')->insertGetId([
+            'author_id' => $user->id,
+            'title' => $data['title'],
+            'body' => $data['body'],
+            'type' => $data['type'],
+            'visibility' => $data['visibility'],
+            'is_pinned' => isset($data['is_pinned']) ? (bool) $data['is_pinned'] : false,
+            'published_at' => $data['published_at'] ?? null,
+            'image_url' => $imageUrl,
+            'file_url' => $fileUrl,
+            'file_name' => $fileName,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $post = DB::table('posts')->where('id', $postId)->first();
+
+        return (array) $post;
+    }
+
+    /**
+     * Update an existing post.
+     *
+     * Only the post author or a superadmin may edit.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function updatePost(int $postId, User $user, array $data, ?UploadedFile $image = null, ?UploadedFile $attachment = null): array
+    {
+        $post = DB::table('posts')->whereNull('deleted_at')->where('id', $postId)->first();
+
+        if ($post === null) {
+            throw new NotFoundHttpException('Post not found.');
+        }
+
+        if ((int) $post->author_id !== $user->id && ! $user->hasRole('superadmin')) {
+            Log::warning('Unauthorized post update attempt', [
+                'user_id' => $user->id,
+                'post_id' => $postId,
+            ]);
+            throw new AccessDeniedHttpException('You are not allowed to edit this post.');
+        }
+
+        $updates = [];
+
+        foreach (['title', 'body', 'type', 'visibility', 'published_at'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $updates[$field] = $data[$field];
+            }
+        }
+
+        if (array_key_exists('is_pinned', $data)) {
+            $updates['is_pinned'] = (bool) $data['is_pinned'];
+        }
+
+        if ($image !== null) {
+            $path = $image->store('posts', 'public');
+            $updates['image_url'] = Storage::disk('public')->url((string) $path);
+        }
+
+        if ($attachment !== null) {
+            $path = $attachment->store('attachments', 'public');
+            $updates['file_url'] = Storage::disk('public')->url((string) $path);
+            $updates['file_name'] = $attachment->getClientOriginalName();
+        }
+
+        if (! empty($updates)) {
+            $updates['updated_at'] = now();
+            DB::table('posts')->where('id', $postId)->update($updates);
+        }
+
+        $fresh = DB::table('posts')->where('id', $postId)->first();
+
+        return (array) $fresh;
+    }
+
+    /**
+     * Soft-delete a post.
+     *
+     * Only the post author or a superadmin may delete.
+     */
+    public function deletePost(int $postId, User $user): void
+    {
+        $post = DB::table('posts')->whereNull('deleted_at')->where('id', $postId)->first();
+
+        if ($post === null) {
+            throw new NotFoundHttpException('Post not found.');
+        }
+
+        if ((int) $post->author_id !== $user->id && ! $user->hasRole('superadmin')) {
+            Log::warning('Unauthorized post delete attempt', [
+                'user_id' => $user->id,
+                'post_id' => $postId,
+            ]);
+            throw new AccessDeniedHttpException('You are not allowed to delete this post.');
+        }
+
+        DB::table('posts')->where('id', $postId)->update([
+            'deleted_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 }
