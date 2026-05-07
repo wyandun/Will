@@ -181,7 +181,7 @@ class CompanyController extends Controller
         ]);
     }
 
-    #[OA\Put(
+    #[OA\Patch(
         path: '/companies/{id}',
         tags: ['Companies'],
         summary: 'Actualizar una empresa existente',
@@ -268,7 +268,7 @@ class CompanyController extends Controller
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'success', type: 'boolean', example: true),
-                        new OA\Property(property: 'data', type: 'string', nullable: true, example: null),
+                        new OA\Property(property: 'data', nullable: true, example: null),
                         new OA\Property(property: 'message', type: 'string', example: 'Empresa eliminada correctamente.'),
                     ]
                 )
