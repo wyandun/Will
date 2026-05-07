@@ -26,6 +26,7 @@ function buildNavItems(role, permissions) {
     companies:        isAdmin,
     'sb-applications': isAdmin,
     users:            isAdmin,
+    system_admins:    role === 'superadmin',
     feed:             canRead('feed'),
     contracts:        canRead('contracts'),
     repository:       canRead('repository'),

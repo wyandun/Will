@@ -5,6 +5,7 @@
     "companies": "Empresas",
     "sb_applications": "Solicitudes SB",
     "users": "Usuarios",
+    "system_admins": "Admin de Sistema",
     "feed": "Feed",
     "contracts": "Contratos",
     "repository": "Repositorio",
@@ -53,6 +54,8 @@
     "back": "Volver"  
   },
   "roles": {
+    "system_admin": "Admin de Sistema",
+    "system_admin_readonly": "Admin de Sistema (Lectura)",
     "superadmin": "Super Admin",
     "admin_sm": "Admin SM",
     "sb_owner": "Dueño SB",
@@ -218,6 +221,38 @@
       "name_required": "El nombre es obligatorio.",
       "franchise_required": "La franquicia es obligatoria.",
       "email_invalid": "Por favor ingresá un correo electrónico válido."
+    }
+  },
+  "system_admin": {
+    "created_success": "Administrador de sistema creado correctamente.",
+    "updated_success": "Administrador de sistema actualizado correctamente.",
+    "deleted_success": "Administrador de sistema eliminado correctamente."
+  },
+  "system_admins": {
+    "title": "Administradores de Sistema",
+    "subtitle": "Gestiona las cuentas con permisos globales en la plataforma.",
+    "new": "Nuevo Admin",
+    "new_title": "Registrar Administrador de Sistema",
+    "edit_title": "Editar Administrador",
+    "delete_confirm": "¿Estás seguro de que deseas eliminar a {{name}}? Esta acción no se puede deshacer.",
+    "warning_title": "Atención: Permisos Totales",
+    "warning_desc": "La cuenta 'Admin de Sistema' tendrá acceso a todos los módulos de la plataforma y podrá modificar información sensible. Asigná este rol con extrema precaución.",
+    "load_error": "No se pudieron cargar los administradores.",
+    "empty": "No hay administradores registrados.",
+    "create": "Registrar Administrador",
+    "creating": "Registrando...",
+    "form": {
+      "role": "Rol Asignado",
+      "name": "Nombre",
+      "name_placeholder": "Ej. Juan Pérez",
+      "name_required": "El nombre es obligatorio.",
+      "email": "Correo Electrónico",
+      "email_placeholder": "ej. juan@ejemplo.com",
+      "email_invalid": "Ingresá un correo electrónico válido.",
+      "password": "Contraseña",
+      "password_placeholder": "Mínimo 12 caracteres",
+      "password_optional": "Dejar en blanco para no cambiar",
+      "password_min": "La contraseña debe tener al menos 12 caracteres."
     }
   }
 }
