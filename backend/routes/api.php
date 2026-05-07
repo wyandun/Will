@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FranchiseController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\SystemAdminController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/ping', fn () => response()->json(['status' => 'ok']));
@@ -57,6 +58,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('bb-assignments', [BbAssignmentController::class, 'store']);
     Route::delete('bb-assignments/{bbAssignment}', [BbAssignmentController::class, 'destroy']);
+
+    Route::apiResource('system-admins', SystemAdminController::class)->only(['index', 'store', 'update', 'destroy']);
 
     // User profile
     Route::prefix('profile')->group(function () {

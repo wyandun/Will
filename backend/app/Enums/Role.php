@@ -11,6 +11,10 @@ final class Role
 {
     public const SUPERADMIN = 'superadmin';
 
+    public const SYSTEM_ADMIN = 'system_admin';
+
+    public const SYSTEM_ADMIN_READONLY = 'system_admin_readonly';
+
     public const ADMIN_SM = 'admin_sm';
 
     public const SB_OWNER = 'sb_owner';

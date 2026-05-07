@@ -8,6 +8,7 @@ import FranchisesPage from './pages/franchises/FranchisesPage';
 import CompaniesPage from './pages/companies/CompaniesPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
 import ProfilePage from './pages/profile/ProfilePage';
+import SystemAdminsPage from './pages/system_admins/SystemAdminsPage';
 import { useAuthStore } from './store/authStore';
 
 /**
@@ -95,6 +96,14 @@ export default function App() {
             element={
               <RoleRoute roles={ADMIN_ROLES}>
                 <StubPage title={t('nav.users')} />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/system-admins"
+            element={
+              <RoleRoute roles={['superadmin']}>
+                <SystemAdminsPage />
               </RoleRoute>
             }
           />
