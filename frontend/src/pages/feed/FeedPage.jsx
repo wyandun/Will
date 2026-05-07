@@ -43,7 +43,7 @@ function IconComment({ className = 'w-4 h-4' }) {
 function timeAgo(dateStr) {
   if (!dateStr) return '';
   // Append 'Z' if no timezone info so the browser treats it as UTC, not local time
-  const normalized = /[Z+\-]\d*$/.test(dateStr) ? dateStr : dateStr.replace(' ', 'T') + 'Z';
+  const normalized = /[Z+-]\d*$/.test(dateStr) ? dateStr : dateStr.replace(' ', 'T') + 'Z';
   const diff = Math.floor((Date.now() - new Date(normalized).getTime()) / 1000);
   if (diff <= 0) return 'just now';
   if (diff < 60) return `${diff}s ago`;
@@ -310,7 +310,6 @@ export default function FeedPage() {
   const [presenceLoading, setPresenceLoading] = useState(true);
 
   const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
   const debounceRef = useRef(null);
 
   const fetchPosts = (term, pageNum) => {
@@ -343,7 +342,6 @@ export default function FeedPage() {
   function handleSearchChange(e) {
     const value = e.target.value;
     setSearch(value);
-    setPage(1);
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       fetchPosts(value, 1);
@@ -351,7 +349,6 @@ export default function FeedPage() {
   }
 
   function handlePageChange(newPage) {
-    setPage(newPage);
     fetchPosts(search, newPage);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
