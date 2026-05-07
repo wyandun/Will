@@ -49,14 +49,15 @@
     "required": "*",
     "total": "total",
     "coming_soon": "This module is coming soon.",
-    "unexpected_error": "An unexpected error occurred. Please try again."
+    "unexpected_error": "An unexpected error occurred. Please try again.",
+    "back": "Back"
   },
   "roles": {
     "superadmin": "Super Admin",
     "admin_sm": "SM Admin",
     "sb_owner": "SB Owner",
     "sb_employee": "Employee",
-    "bb": "Business Bishop",
+    "bb_employee": "Business Bishop",
     "sub_franchise_owner": "SF Owner",
     "sub_franchise_admin": "SF Admin",
     "user": "User"
@@ -121,6 +122,29 @@
     "col_actions": "Actions",
     "count_one": "franchise",
     "count_other": "franchises",
+    "col_email": "Email",
+    "col_country": "Country",
+    "col_timezone": "Time Zone",
+    "active": "Active",
+    "inactive": "Inactive",
+    "admins": "Admins",
+    "clients": "Clients",
+    "deactivate": "Deactivate",
+    "activate": "Activate",
+    "deactivate_confirm": "Deactivate \"{{name}}\"? It will be hidden from operations.",
+    "activate_confirm": "Activate \"{{name}}\"? It will be visible again.",
+    "toggle_error": "Failed to update status. Please try again.",
+    "search_placeholder": "Search franchises by name…",
+    "no_results": "No franchises match your search.",
+    "registered": "registered franchise",
+    "registered_plural": "registered franchises",
+    "results": "result",
+    "results_plural": "results",
+    "created_success": "Franchise successfully created.",
+    "updated_success": "Franchise successfully updated.",
+    "deleted_success": "Franchise successfully deleted.",
+    "activated_success": "Franchise successfully activated.",
+    "deactivated_success": "Franchise successfully deactivated.",
     "form": {
       "name": "Name",
       "region": "Region",
@@ -131,7 +155,20 @@
       "phone_placeholder": "e.g. 5551234567",
       "address_placeholder": "e.g. 123 Main St, Miami, FL",
       "name_required": "Name is required.",
-      "phone_max": "Phone must be 30 characters or fewer."
+      "name_max": "Name must be 255 characters or fewer.",
+      "type_invalid": "Type must be 'sm' or 'sub'.",
+      "parent_invalid": "The parent company does not exist.",
+      "owner_invalid": "The owner user does not exist.",
+      "phone_max": "Phone must be 30 characters or fewer.",
+      "email": "Email",
+      "email_placeholder": "e.g. contact@franchise.com",
+      "email_invalid": "Please enter a valid email address.",
+      "country": "Country",
+      "country_placeholder": "e.g. USA",
+      "timezone": "Time Zone",
+      "timezone_placeholder": "Select a timezone",
+      "timezone_invalid": "invalid",
+      "timezone_legacy": "\"{{tz}}\" is not a valid timezone. Please select a new one."
     }
   },
   "companies": {
@@ -179,7 +216,8 @@
       "address_placeholder": "e.g. 123 Main St",
       "notes_placeholder": "Any additional notes about this company…",
       "name_required": "Name is required.",
-      "franchise_required": "Franchise is required."
+      "franchise_required": "Franchise is required.",
+      "email_invalid": "Please enter a valid email address."
     }
   }
 }

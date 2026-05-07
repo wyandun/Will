@@ -46,6 +46,8 @@ Route::prefix('auth')->middleware('auth:sanctum')->group(function () {
 // Protected resources — require Sanctum authentication
 // ---------------------------------------------------------------------------
 Route::middleware('auth:sanctum')->group(function () {
+    // Franchises
+    Route::patch('franchises/{franchise}/toggle-status', [FranchiseController::class, 'toggleStatus']);
     Route::apiResource('franchises', FranchiseController::class);
 
     // close-deal must be declared BEFORE apiResource to prevent {company}

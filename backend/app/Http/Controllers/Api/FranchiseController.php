@@ -44,7 +44,7 @@ class FranchiseController extends Controller
         return response()->json([
             'success' => true,
             'data' => new FranchiseResource($franchise),
-            'message' => 'Franquicia creada correctamente.',
+            'message' => 'franchises.created_success',
         ], 201);
     }
 
@@ -78,7 +78,27 @@ class FranchiseController extends Controller
         return response()->json([
             'success' => true,
             'data' => new FranchiseResource($franchise),
-            'message' => 'Franquicia actualizada correctamente.',
+            'message' => 'franchises.updated_success',
+        ]);
+    }
+
+    /**
+     * Toggle franchise active/inactive status.
+     *
+     * PATCH /api/v1/franchises/{franchise}/toggle-status
+     */
+    public function toggleStatus(Franchise $franchise): JsonResponse
+    {
+        $this->authorize('toggleStatus', $franchise);
+
+        $franchise = $this->franchiseService->toggleStatus($franchise);
+
+        return response()->json([
+            'success' => true,
+            'data' => new FranchiseResource($franchise),
+            'message' => $franchise->is_active
+                ? 'franchises.activated_success'
+                : 'franchises.deactivated_success',
         ]);
     }
 
@@ -96,7 +116,7 @@ class FranchiseController extends Controller
         return response()->json([
             'success' => true,
             'data' => null,
-            'message' => 'Franquicia eliminada correctamente.',
+            'message' => 'franchises.deleted_success',
         ]);
     }
 }

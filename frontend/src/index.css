@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+@layer base {
+  button {
+    cursor: pointer;
+  }
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
 }

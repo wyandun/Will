@@ -81,8 +81,9 @@ services:
       DOCUSEAL_URL: ${DOCUSEAL_URL:-http://docuseal:3000}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
     volumes:
-      # Persist uploaded files and generated PDFs between restarts
+      - ./backend:/var/www/html  # <--- AGREGA ESTA LÍNEA (El puente total)
       - ./backend/storage:/var/www/html/storage
+      - /var/www/html/vendor    # Evita que Windows borre las librerías de Linux
     depends_on:
       postgres:
         condition: service_healthy
@@ -97,6 +98,9 @@ services:
   # - Serves the React build from /var/www/frontend/dist for all other routes
   # - Exposes port 80 (add 443 with a real certificate for production)
   # ---------------------------------------------------------------------------
+ # ---------------------------------------------------------------------------
+# Nginx
+# ---------------------------------------------------------------------------
   nginx:
     image: nginx:1.27-alpine
     container_name: sm_nginx
@@ -105,17 +109,14 @@ services:
       - "80:80"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-      # Laravel public directory (contains index.php + storage link)
-      - ./backend/public:/var/www/html/public:ro
-      # Storage files served directly (avatars, PDFs, etc.)
-      - ./backend/storage/app/public:/var/www/html/public/storage:ro
+      # Laravel public directory (contiene index.php + storage link)
+      - ./backend/public:/var/www/html/public
       # React production build output
       - ./frontend/dist:/var/www/frontend/dist:ro
     depends_on:
       - backend
     networks:
       - app-network
-
   # ---------------------------------------------------------------------------
   # Queue Worker
   # Runs Laravel queue:work using the same image as the backend.

@@ -49,14 +49,15 @@
     "required": "*",
     "total": "total",
     "coming_soon": "Este módulo estará disponible próximamente.",
-    "unexpected_error": "Ocurrió un error inesperado. Por favor intentá de nuevo."
+    "unexpected_error": "Ocurrió un error inesperado. Por favor intentá de nuevo.",
+    "back": "Volver"  
   },
   "roles": {
     "superadmin": "Super Admin",
     "admin_sm": "Admin SM",
     "sb_owner": "Dueño SB",
     "sb_employee": "Empleado",
-    "bb": "Business Bishop",
+    "bb_employee": "Business Bishop",
     "sub_franchise_owner": "Dueño SF",
     "sub_franchise_admin": "Admin SF",
     "user": "Usuario"
@@ -121,6 +122,29 @@
     "col_actions": "Acciones",
     "count_one": "franquicia",
     "count_other": "franquicias",
+    "col_email": "Correo",
+    "col_country": "País",
+    "col_timezone": "Zona Horaria",
+    "active": "Activa",
+    "inactive": "Inactiva",
+    "admins": "Admins",
+    "clients": "Clientes",
+    "deactivate": "Desactivar",
+    "activate": "Activar",
+    "deactivate_confirm": "¿Desactivar \"{{name}}\"? Quedará oculta de las operaciones.",
+    "activate_confirm": "¿Activar \"{{name}}\"? Volverá a estar visible.",
+    "toggle_error": "Error al cambiar el estado. Por favor intentá de nuevo.",
+    "search_placeholder": "Buscar franquicias por nombre…",
+    "no_results": "Ninguna franquicia coincide con tu búsqueda.",
+    "registered": "franquicia registrada",
+    "registered_plural": "franquicias registradas",
+    "results": "resultado",
+    "results_plural": "resultados",
+    "created_success": "Franquicia creada correctamente.",
+    "updated_success": "Franquicia actualizada correctamente.",
+    "deleted_success": "Franquicia eliminada correctamente.",
+    "activated_success": "Franquicia activada correctamente.",
+    "deactivated_success": "Franquicia desactivada correctamente.",
     "form": {
       "name": "Nombre",
       "region": "Región",
@@ -131,7 +155,20 @@
       "phone_placeholder": "ej. 5551234567",
       "address_placeholder": "ej. 123 Main St, Miami, FL",
       "name_required": "El nombre es obligatorio.",
-      "phone_max": "El teléfono no puede superar los 30 caracteres."
+      "name_max": "El nombre no puede superar los 255 caracteres.",
+      "type_invalid": "El tipo debe ser 'sm' o 'sub'.",
+      "parent_invalid": "La empresa padre no existe.",
+      "owner_invalid": "El usuario propietario no existe.",
+      "phone_max": "El teléfono no puede superar los 30 caracteres.",
+      "email": "Correo electrónico",
+      "email_placeholder": "ej. contacto@franquicia.com",
+      "email_invalid": "Por favor ingresá un correo electrónico válido.",
+      "country": "País",
+      "country_placeholder": "ej. USA",
+      "timezone": "Zona horaria",
+      "timezone_placeholder": "Selecciona una zona horaria",
+      "timezone_invalid": "inválida",
+      "timezone_legacy": "\"{{tz}}\" no es una zona horaria válida. Por favor selecciona una nueva."
     }
   },
   "companies": {
@@ -179,7 +216,8 @@
       "address_placeholder": "ej. 123 Main St",
       "notes_placeholder": "Notas adicionales sobre esta empresa…",
       "name_required": "El nombre es obligatorio.",
-      "franchise_required": "La franquicia es obligatoria."
+      "franchise_required": "La franquicia es obligatoria.",
+      "email_invalid": "Por favor ingresá un correo electrónico válido."
     }
   }
 }

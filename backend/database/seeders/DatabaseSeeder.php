@@ -2,12 +2,13 @@
 
 namespace Database\Seeders;
 
+use App\Enums\Role;
 use App\Models\User;
 use App\Models\UserPermission;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Role as SpatieRole;
 
 class DatabaseSeeder extends Seeder
 {
@@ -41,7 +42,7 @@ class DatabaseSeeder extends Seeder
     private function createSuperAdmin(): void
     {
         // Ensure the Spatie role exists before assigning it.
-        Role::firstOrCreate(['name' => 'superadmin', 'guard_name' => 'web']);
+        SpatieRole::firstOrCreate(['name' => Role::SUPERADMIN, 'guard_name' => 'web']);
 
         $email = env('SUPERADMIN_EMAIL', 'admin@smportal.com');
         $password = env('SUPERADMIN_PASSWORD', 'password');
@@ -55,7 +56,7 @@ class DatabaseSeeder extends Seeder
         );
 
         // Assign Spatie role (idempotent — syncRoles replaces any previous role).
-        $user->syncRoles(['superadmin']);
+        $user->syncRoles([Role::SUPERADMIN]);
 
         // Grant full read + write access to every module.
         foreach (self::ALL_MODULES as $module) {

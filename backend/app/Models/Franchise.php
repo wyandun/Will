@@ -2,17 +2,32 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
+ * @property int $id
  * @property string $name
+ * @property string $type
+ * @property int|null $parent_company_id
+ * @property int|null $owner_user_id
+ * @property string|null $region
+ * @property string|null $email
+ * @property string|null $country
+ * @property string|null $timezone
+ * @property string|null $address
+ * @property string|null $phone
+ * @property bool $is_active
+ * @property int $admins_count
+ * @property int $clients_count
  */
 class Franchise extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -27,7 +42,23 @@ class Franchise extends Model
         'region',
         'address',
         'phone',
+        'email',
+        'country',
+        'timezone',
+        'is_active',
     ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'is_active' => 'boolean',
+        ];
+    }
 
     // ---------------------------------------------------------------------------
     // Relationships
@@ -52,10 +83,34 @@ class Franchise extends Model
 
     /**
      * Companies that belong to this SM franchise.
-     * The Company model will be created in a later sprint.
      */
     public function companies(): HasMany
     {
         return $this->hasMany(Company::class, 'sm_franchise_id');
+    }
+
+    // ---------------------------------------------------------------------------
+    // Scopes
+    // ---------------------------------------------------------------------------
+    // TODO: Client-side filtering on a paginated dataset is broken by design:
+    //       the user can only search within the current page and results on
+    //       subsequent pages are invisible. Before production, add backend
+    //       ?search= and ?active= query parameters in FranchiseService::list()
+    //       using these scopes.
+
+    /**
+     * Scope a query to only include active franchises.
+     */
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('is_active', true);
+    }
+
+    /**
+     * Scope a query to only include inactive franchises.
+     */
+    public function scopeInactive(Builder $query): Builder
+    {
+        return $query->where('is_active', false);
     }
 }
