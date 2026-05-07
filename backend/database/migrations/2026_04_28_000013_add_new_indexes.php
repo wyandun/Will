@@ -74,13 +74,19 @@ return new class extends Migration
     }
 
     /**
-     * Check whether a named index already exists in PostgreSQL's catalog.
+     * Check whether a named index already exists.
+     * Uses pg_indexes on PostgreSQL; falls back to a Schema call on SQLite.
      */
     private function indexExists(string $table, string $indexName): bool
     {
-        return (bool) DB::selectOne(
-            'SELECT 1 FROM pg_indexes WHERE tablename = ? AND indexname = ?',
-            [$table, $indexName]
-        );
+        if (DB::getDriverName() === 'pgsql') {
+            return (bool) DB::selectOne(
+                'SELECT 1 FROM pg_indexes WHERE tablename = ? AND indexname = ?',
+                [$table, $indexName]
+            );
+        }
+
+        return collect(DB::select("PRAGMA index_list($table)"))
+            ->contains('name', $indexName);
     }
 };

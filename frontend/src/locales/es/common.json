@@ -101,6 +101,25 @@
     "signed": "Firmado",
     "read_more": "Leer"
   },
+  "feed": {
+    "title": "Feed",
+    "search_placeholder": "Buscar por título, contenido o autor…",
+    "online_now": "En línea ahora",
+    "recently_active": "Activos recientemente",
+    "you": "Tú",
+    "view_more": "Ver más publicaciones",
+    "no_posts": "Sin publicaciones aún.",
+    "no_posts_search": "No hay publicaciones que coincidan con tu búsqueda.",
+    "no_online": "Nadie en línea ahora mismo.",
+    "no_recent": "Sin actividad reciente.",
+    "type_announcement": "Anuncio",
+    "type_news": "Novedad",
+    "type_training": "Capacitación",
+    "type_alert": "Alerta",
+    "pinned": "Destacado",
+    "load_error": "Error al cargar el feed. Por favor intentá de nuevo.",
+    "presence_error": "Error al cargar datos de presencia."
+  },
   "franchises": {
     "title": "Franquicias",
     "subtitle": "Administrá las franquicias regionales de SM.",
