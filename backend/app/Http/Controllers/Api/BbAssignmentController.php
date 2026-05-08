@@ -13,6 +13,7 @@ class BbAssignmentController extends Controller
 {
     public function __construct(private BbAssignmentService $bbAssignmentService) {}
 
+    // Base URL /api/v1 is set in config/l5-swagger.php servers entry (app/OpenApi/ApiInfo.php).
     #[OA\Post(
         path: '/bb-assignments',
         tags: ['BB Assignments'],
@@ -103,7 +104,7 @@ class BbAssignmentController extends Controller
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'success', type: 'boolean', example: true),
-                        new OA\Property(property: 'data', type: 'string', nullable: true, example: null),
+                        new OA\Property(property: 'data', nullable: true),
                         new OA\Property(property: 'message', type: 'string', example: 'Business Bishop desasignado correctamente.'),
                     ]
                 )

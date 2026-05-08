@@ -12,6 +12,7 @@ class DashboardController extends Controller
 {
     public function __construct(private DashboardService $dashboardService) {}
 
+    // Base URL /api/v1 is set in config/l5-swagger.php servers entry (app/OpenApi/ApiInfo.php).
     #[OA\Get(
         path: '/dashboard',
         tags: ['Dashboard'],

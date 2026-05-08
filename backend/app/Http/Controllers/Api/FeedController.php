@@ -12,6 +12,7 @@ class FeedController extends Controller
 {
     public function __construct(private FeedService $feedService) {}
 
+    // Base URL /api/v1 is set in config/l5-swagger.php servers entry (app/OpenApi/ApiInfo.php).
     #[OA\Get(
         path: '/feed/posts',
         tags: ['Feed'],

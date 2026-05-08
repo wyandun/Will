@@ -17,6 +17,7 @@ class FranchiseController extends Controller
 {
     public function __construct(private FranchiseService $franchiseService) {}
 
+    // Base URL /api/v1 is set in config/l5-swagger.php servers entry (app/OpenApi/ApiInfo.php).
     #[OA\Get(
         path: '/franchises',
         tags: ['Franchises'],
@@ -117,7 +118,11 @@ class FranchiseController extends Controller
             ),
             new OA\Response(response: 401, description: 'No autenticado'),
             new OA\Response(response: 403, description: 'Sin permiso para crear franquicias'),
-            new OA\Response(response: 422, description: 'Error de validación'),
+            new OA\Response(
+                response: 422,
+                description: 'Error de validación',
+                content: new OA\JsonContent(ref: '#/components/schemas/ValidationError')
+            ),
         ]
     )]
     public function store(StoreFranchiseRequest $request): JsonResponse
@@ -175,11 +180,11 @@ class FranchiseController extends Controller
         ]);
     }
 
-    #[OA\Put(
+    #[OA\Patch(
         path: '/franchises/{id}',
         tags: ['Franchises'],
         summary: 'Actualizar una franquicia existente',
-        description: 'Todos los campos son opcionales (semántica PATCH). Solo superadmin puede actualizar franquicias.',
+        description: 'Todos los campos son opcionales. Solo se actualizan los campos enviados. Solo superadmin puede actualizar franquicias.',
         security: [['sanctum' => []]],
         parameters: [
             new OA\Parameter(
@@ -222,7 +227,11 @@ class FranchiseController extends Controller
             new OA\Response(response: 401, description: 'No autenticado'),
             new OA\Response(response: 403, description: 'Sin permiso para actualizar franquicias'),
             new OA\Response(response: 404, description: 'Franquicia no encontrada'),
-            new OA\Response(response: 422, description: 'Error de validación'),
+            new OA\Response(
+                response: 422,
+                description: 'Error de validación',
+                content: new OA\JsonContent(ref: '#/components/schemas/ValidationError')
+            ),
         ]
     )]
     public function update(UpdateFranchiseRequest $request, Franchise $franchise): JsonResponse
@@ -307,7 +316,7 @@ class FranchiseController extends Controller
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'success', type: 'boolean', example: true),
-                        new OA\Property(property: 'data', type: 'string', nullable: true, example: null),
+                        new OA\Property(property: 'data', nullable: true),
                         new OA\Property(property: 'message', type: 'string', example: 'franchises.deleted_success'),
                     ]
                 )
