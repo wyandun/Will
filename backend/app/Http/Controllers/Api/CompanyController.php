@@ -180,7 +180,7 @@ class CompanyController extends Controller
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'success', type: 'boolean', example: true),
-                        new OA\Property(property: 'data', type: 'object'),
+                        new OA\Property(property: 'data', ref: '#/components/schemas/CompanyResource'),
                         new OA\Property(property: 'message', type: 'string', example: 'Empresa actualizada correctamente.'),
                     ]
                 )
@@ -275,7 +275,7 @@ class CompanyController extends Controller
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'success', type: 'boolean', example: true),
-                        new OA\Property(property: 'data', type: 'object'),
+                        new OA\Property(property: 'data', ref: '#/components/schemas/CompanyResource'),
                         new OA\Property(property: 'message', type: 'string', example: 'Deal cerrado correctamente. Empresa y mapas de proceso creados.'),
                     ]
                 )
