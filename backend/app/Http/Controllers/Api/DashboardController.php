@@ -12,7 +12,6 @@ class DashboardController extends Controller
 {
     public function __construct(private DashboardService $dashboardService) {}
 
-    // Base URL /api/v1 is set in config/l5-swagger.php servers entry (app/OpenApi/ApiInfo.php).
     #[OA\Get(
         path: '/dashboard',
         tags: ['Dashboard'],
@@ -134,7 +133,7 @@ class DashboardController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
         ]
     )]
     public function index(Request $request): JsonResponse
@@ -181,7 +180,7 @@ class DashboardController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
         ]
     )]
     public function kpis(Request $request): JsonResponse
@@ -227,7 +226,7 @@ class DashboardController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
         ]
     )]
     public function feed(Request $request): JsonResponse
@@ -270,7 +269,7 @@ class DashboardController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
         ]
     )]
     public function events(Request $request): JsonResponse
@@ -312,7 +311,7 @@ class DashboardController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
         ]
     )]
     public function tracking(Request $request): JsonResponse
@@ -361,7 +360,7 @@ class DashboardController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
         ]
     )]
     public function contracts(Request $request): JsonResponse
@@ -403,7 +402,7 @@ class DashboardController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
         ]
     )]
     public function documents(Request $request): JsonResponse
@@ -444,7 +443,7 @@ class DashboardController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
         ]
     )]
     public function processMaps(Request $request): JsonResponse

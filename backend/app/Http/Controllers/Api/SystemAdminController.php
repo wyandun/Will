@@ -26,7 +26,6 @@ class SystemAdminController extends Controller
         'calendar',
     ];
 
-    // Base URL /api/v1 is set in config/l5-swagger.php servers entry (app/OpenApi/ApiInfo.php).
     #[OA\Get(
         path: '/system-admins',
         tags: ['System Admins'],
@@ -65,8 +64,8 @@ class SystemAdminController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
-            new OA\Response(response: 403, description: 'Solo superadmin puede listar admins de sistema'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
         ]
     )]
     public function index(): JsonResponse
@@ -113,8 +112,8 @@ class SystemAdminController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
-            new OA\Response(response: 403, description: 'Solo superadmin puede crear admins de sistema'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
             new OA\Response(
                 response: 422,
                 description: 'Error de validación (email duplicado, password débil, rol inválido)',
@@ -195,9 +194,9 @@ class SystemAdminController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
-            new OA\Response(response: 403, description: 'Sin permiso o intento de modificar al superadmin'),
-            new OA\Response(response: 404, description: 'Usuario no encontrado'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
+            new OA\Response(response: 404, ref: '#/components/responses/NotFound'),
             new OA\Response(
                 response: 422,
                 description: 'Error de validación',
@@ -268,14 +267,14 @@ class SystemAdminController extends Controller
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'success', type: 'boolean', example: true),
-                        new OA\Property(property: 'data', nullable: true),
+                        new OA\Property(property: 'data', type: 'object', nullable: true, example: null),
                         new OA\Property(property: 'message', type: 'string', example: 'system_admin.deleted_success'),
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
-            new OA\Response(response: 403, description: 'Sin permiso, intento de eliminar al superadmin o auto-eliminación'),
-            new OA\Response(response: 404, description: 'Usuario no encontrado'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
+            new OA\Response(response: 404, ref: '#/components/responses/NotFound'),
         ]
     )]
     public function destroy(User $systemAdmin): JsonResponse

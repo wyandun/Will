@@ -17,7 +17,6 @@ class CompanyController extends Controller
 {
     public function __construct(private CompanyService $companyService) {}
 
-    // Base URL /api/v1 is set in config/l5-swagger.php servers entry (app/OpenApi/ApiInfo.php).
     #[OA\Get(
         path: '/companies',
         tags: ['Companies'],
@@ -69,8 +68,8 @@ class CompanyController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
-            new OA\Response(response: 403, description: 'Sin permiso para listar empresas'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
         ]
     )]
     public function index(Request $request): AnonymousResourceCollection
@@ -109,8 +108,8 @@ class CompanyController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
-            new OA\Response(response: 403, description: 'Sin permiso para crear empresas'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
             new OA\Response(
                 response: 422,
                 description: 'Error de validación',
@@ -132,14 +131,14 @@ class CompanyController extends Controller
     }
 
     #[OA\Get(
-        path: '/companies/{id}',
+        path: '/companies/{company}',
         tags: ['Companies'],
         summary: 'Obtener una empresa por ID',
         description: 'Retorna los datos completos de una empresa, incluyendo el nombre de su franquicia SM asociada.',
         security: [['sanctum' => []]],
         parameters: [
             new OA\Parameter(
-                name: 'id',
+                name: 'company',
                 in: 'path',
                 required: true,
                 description: 'ID de la empresa',
@@ -158,9 +157,9 @@ class CompanyController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
-            new OA\Response(response: 403, description: 'Sin permiso para ver esta empresa'),
-            new OA\Response(response: 404, description: 'Empresa no encontrada'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
+            new OA\Response(response: 404, ref: '#/components/responses/NotFound'),
         ]
     )]
     public function show(Company $company): JsonResponse
@@ -177,14 +176,14 @@ class CompanyController extends Controller
     }
 
     #[OA\Patch(
-        path: '/companies/{id}',
+        path: '/companies/{company}',
         tags: ['Companies'],
         summary: 'Actualizar una empresa existente',
         description: 'Todos los campos son opcionales. Solo se actualizan los campos enviados.',
         security: [['sanctum' => []]],
         parameters: [
             new OA\Parameter(
-                name: 'id',
+                name: 'company',
                 in: 'path',
                 required: true,
                 description: 'ID de la empresa',
@@ -207,9 +206,9 @@ class CompanyController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
-            new OA\Response(response: 403, description: 'Sin permiso para actualizar esta empresa'),
-            new OA\Response(response: 404, description: 'Empresa no encontrada'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
+            new OA\Response(response: 404, ref: '#/components/responses/NotFound'),
             new OA\Response(
                 response: 422,
                 description: 'Error de validación',
@@ -231,14 +230,14 @@ class CompanyController extends Controller
     }
 
     #[OA\Delete(
-        path: '/companies/{id}',
+        path: '/companies/{company}',
         tags: ['Companies'],
         summary: 'Eliminar una empresa',
         description: 'Solo superadmin puede eliminar empresas.',
         security: [['sanctum' => []]],
         parameters: [
             new OA\Parameter(
-                name: 'id',
+                name: 'company',
                 in: 'path',
                 required: true,
                 description: 'ID de la empresa',
@@ -252,14 +251,14 @@ class CompanyController extends Controller
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'success', type: 'boolean', example: true),
-                        new OA\Property(property: 'data', nullable: true),
+                        new OA\Property(property: 'data', type: 'object', nullable: true, example: null),
                         new OA\Property(property: 'message', type: 'string', example: 'Empresa eliminada correctamente.'),
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
-            new OA\Response(response: 403, description: 'Sin permiso para eliminar esta empresa'),
-            new OA\Response(response: 404, description: 'Empresa no encontrada'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
+            new OA\Response(response: 404, ref: '#/components/responses/NotFound'),
         ]
     )]
     public function destroy(Company $company): JsonResponse
@@ -302,8 +301,8 @@ class CompanyController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
-            new OA\Response(response: 403, description: 'Sin permiso para crear empresas'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
             new OA\Response(
                 response: 422,
                 description: 'Error de validación',

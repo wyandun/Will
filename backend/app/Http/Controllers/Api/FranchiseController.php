@@ -17,7 +17,6 @@ class FranchiseController extends Controller
 {
     public function __construct(private FranchiseService $franchiseService) {}
 
-    // Base URL /api/v1 is set in config/l5-swagger.php servers entry (app/OpenApi/ApiInfo.php).
     #[OA\Get(
         path: '/franchises',
         tags: ['Franchises'],
@@ -67,8 +66,8 @@ class FranchiseController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
-            new OA\Response(response: 403, description: 'Sin permiso para listar franquicias'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
         ]
     )]
     public function index(Request $request): AnonymousResourceCollection
@@ -116,8 +115,8 @@ class FranchiseController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
-            new OA\Response(response: 403, description: 'Sin permiso para crear franquicias'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
             new OA\Response(
                 response: 422,
                 description: 'Error de validación',
@@ -164,9 +163,9 @@ class FranchiseController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
-            new OA\Response(response: 403, description: 'Sin permiso para ver esta franquicia'),
-            new OA\Response(response: 404, description: 'Franquicia no encontrada'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
+            new OA\Response(response: 404, ref: '#/components/responses/NotFound'),
         ]
     )]
     public function show(Franchise $franchise): JsonResponse
@@ -224,9 +223,9 @@ class FranchiseController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
-            new OA\Response(response: 403, description: 'Sin permiso para actualizar franquicias'),
-            new OA\Response(response: 404, description: 'Franquicia no encontrada'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
+            new OA\Response(response: 404, ref: '#/components/responses/NotFound'),
             new OA\Response(
                 response: 422,
                 description: 'Error de validación',
@@ -274,9 +273,9 @@ class FranchiseController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
-            new OA\Response(response: 403, description: 'Sin permiso para cambiar estado de franquicias'),
-            new OA\Response(response: 404, description: 'Franquicia no encontrada'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
+            new OA\Response(response: 404, ref: '#/components/responses/NotFound'),
         ]
     )]
     public function toggleStatus(Franchise $franchise): JsonResponse
@@ -316,14 +315,14 @@ class FranchiseController extends Controller
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'success', type: 'boolean', example: true),
-                        new OA\Property(property: 'data', nullable: true),
+                        new OA\Property(property: 'data', type: 'object', nullable: true, example: null),
                         new OA\Property(property: 'message', type: 'string', example: 'franchises.deleted_success'),
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
-            new OA\Response(response: 403, description: 'Sin permiso para eliminar franquicias'),
-            new OA\Response(response: 404, description: 'Franquicia no encontrada'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
+            new OA\Response(response: 404, ref: '#/components/responses/NotFound'),
         ]
     )]
     public function destroy(Franchise $franchise): JsonResponse
