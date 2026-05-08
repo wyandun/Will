@@ -42,28 +42,7 @@ class CompanyController extends Controller
                         new OA\Property(
                             property: 'data',
                             type: 'array',
-                            items: new OA\Items(
-                                properties: [
-                                    new OA\Property(property: 'id', type: 'integer', example: 1),
-                                    new OA\Property(property: 'name', type: 'string', example: 'Tacos El Gordo LLC'),
-                                    new OA\Property(property: 'industry', type: 'string', nullable: true, example: 'Food & Beverage'),
-                                    new OA\Property(property: 'address', type: 'string', nullable: true, example: '789 Biscayne Blvd'),
-                                    new OA\Property(property: 'city', type: 'string', nullable: true, example: 'Miami'),
-                                    new OA\Property(property: 'phone', type: 'string', nullable: true, example: '+13055559999'),
-                                    new OA\Property(property: 'email', type: 'string', nullable: true, example: 'contact@tacosgordo.com'),
-                                    new OA\Property(property: 'website', type: 'string', nullable: true, example: 'https://tacosgordo.com'),
-                                    new OA\Property(property: 'state', type: 'string', nullable: true, example: 'FL'),
-                                    new OA\Property(property: 'country', type: 'string', nullable: true, example: 'USA'),
-                                    new OA\Property(property: 'logo_path', type: 'string', nullable: true, example: null),
-                                    new OA\Property(property: 'employees_count', type: 'integer', nullable: true, example: 12),
-                                    new OA\Property(property: 'annual_revenue', type: 'number', format: 'float', nullable: true, example: 450000.00),
-                                    new OA\Property(property: 'years_operating', type: 'integer', nullable: true, example: 4),
-                                    new OA\Property(property: 'sm_franchise_id', type: 'integer', example: 1),
-                                    new OA\Property(property: 'franchise_name', type: 'string', nullable: true, example: 'SM Florida'),
-                                    new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
-                                    new OA\Property(property: 'updated_at', type: 'string', format: 'date-time'),
-                                ]
-                            )
+                            items: new OA\Items(ref: '#/components/schemas/CompanyResource')
                         ),
                     ]
                 )
@@ -103,7 +82,7 @@ class CompanyController extends Controller
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'success', type: 'boolean', example: true),
-                        new OA\Property(property: 'data', type: 'object'),
+                        new OA\Property(property: 'data', ref: '#/components/schemas/CompanyResource'),
                         new OA\Property(property: 'message', type: 'string', example: 'Empresa creada correctamente.'),
                     ]
                 )
@@ -152,7 +131,7 @@ class CompanyController extends Controller
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'success', type: 'boolean', example: true),
-                        new OA\Property(property: 'data', type: 'object'),
+                        new OA\Property(property: 'data', ref: '#/components/schemas/CompanyResource'),
                         new OA\Property(property: 'message', type: 'string', example: 'OK.'),
                     ]
                 )
