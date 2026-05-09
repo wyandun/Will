@@ -186,7 +186,7 @@ class InvitationService
 
     private function buildActivationUrl(string $token): string
     {
-        $frontendUrl = rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/');
+        $frontendUrl = rtrim((string) config('app.frontend_url', 'http://localhost:5173'), '/');
 
         return "{$frontendUrl}/invite/{$token}";
     }

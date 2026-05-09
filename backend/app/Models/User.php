@@ -22,6 +22,8 @@ use Spatie\Permission\Traits\HasRoles;
  * @property int|null $sub_franchise_id
  * @property string|null $avatar_path
  * @property Carbon|null $birth_date
+ * @property Carbon|null $invitation_accepted_at
+ * @property Carbon|null $invitation_expires_at
  * @property-read string|null $avatar_url
  */
 class User extends Authenticatable
