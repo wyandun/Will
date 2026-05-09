@@ -4,8 +4,12 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
@@ -23,7 +27,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, HasRoles, Notifiable;
+    use HasApiTokens, HasFactory, HasRoles, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -39,6 +43,13 @@ class User extends Authenticatable
         'bio',
         'birth_date',
         'avatar_path',
+        'sm_franchise_id',
+        'company_id',
+        'sub_franchise_id',
+        'invitation_token',
+        'invitation_accepted_at',
+        'invitation_expires_at',
+        'invited_by',
     ];
 
     /**
@@ -62,6 +73,8 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'birth_date' => 'date',
+            'invitation_accepted_at' => 'datetime',
+            'invitation_expires_at' => 'datetime',
             'sm_franchise_id' => 'integer',
             'company_id' => 'integer',
             'sub_franchise_id' => 'integer',
@@ -77,9 +90,14 @@ class User extends Authenticatable
      */
     public function getAvatarUrlAttribute(): ?string
     {
-        return $this->avatar_path
-            ? Storage::disk('public')->url($this->avatar_path)
-            : null;
+        if (! $this->avatar_path) {
+            return null;
+        }
+
+        /** @var FilesystemAdapter $disk */
+        $disk = Storage::disk('public');
+
+        return $disk->url($this->avatar_path);
     }
 
     // ---------------------------------------------------------------------------
@@ -95,5 +113,25 @@ class User extends Authenticatable
     public function userPermissions(): HasMany
     {
         return $this->hasMany(UserPermission::class);
+    }
+
+    /**
+     * The admin who sent this user's invitation.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function invitedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'invited_by');
+    }
+
+    // ─── Scopes ──────────────────────────────────────────────────────────────
+
+    /**
+     * Users who have a pending invitation (token set, not yet accepted).
+     */
+    public function scopePendingInvitation(Builder $query): Builder
+    {
+        return $query->whereNotNull('invitation_token')->whereNull('invitation_accepted_at');
     }
 }

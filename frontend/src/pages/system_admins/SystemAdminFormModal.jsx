@@ -114,7 +114,7 @@ export default function SystemAdminFormModal({ onClose, onSave, initialData }) {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} noValidate>
+        <form onSubmit={handleSubmit} noValidate autoComplete="off">
           <div className="px-6 py-5 space-y-4">
             {apiError && (
               <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3">
@@ -171,6 +171,7 @@ export default function SystemAdminFormModal({ onClose, onSave, initialData }) {
                 onChange={handleChange}
                 disabled={isSubmitting}
                 placeholder={t('system_admins.form.email_placeholder')}
+                autoComplete="off"
                 className={`w-full rounded-lg border px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 transition ${errors.email ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
               />
               {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
@@ -190,6 +191,7 @@ export default function SystemAdminFormModal({ onClose, onSave, initialData }) {
                   onChange={handleChange}
                   disabled={isSubmitting}
                   placeholder={isEditing ? t('system_admins.form.password_optional') : t('system_admins.form.password_placeholder')}
+                  autoComplete="new-password"
                   className={`w-full rounded-lg border px-3 py-2.5 pr-10 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 transition ${errors.password ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
                 />
                 <button

@@ -26,4 +26,12 @@ class UserPolicy
     {
         return $user->hasRole(Role::SUPERADMIN);
     }
+
+    /**
+     * superadmin and admin_sm can send / manage invitations.
+     */
+    public function inviteUsers(User $user): bool
+    {
+        return $user->hasAnyRole([Role::SUPERADMIN, Role::ADMIN_SM]);
+    }
 }
