@@ -22,8 +22,7 @@ class InvitationController extends Controller
     {
         $this->authorize('inviteUsers', User::class);
 
-        $pending = User::whereNotNull('invitation_token')
-            ->whereNull('invitation_accepted_at')
+        $pending = User::pendingInvitation()
             ->with(['roles', 'invitedBy:id,name'])
             ->orderByDesc('created_at')
             ->get();
@@ -108,8 +107,9 @@ class InvitationController extends Controller
      */
     public function accept(AcceptInvitationRequest $request, string $token): JsonResponse
     {
-        $user = $this->service->verify($token);
-        $result = $this->service->accept($user, $request->validated()['password']);
+        // verify() + write are performed atomically inside accept() via a
+        // DB transaction with lockForUpdate() — no separate verify() call here.
+        $result = $this->service->accept($token, $request->validated()['password']);
 
         return response()->json([
             'success' => true,

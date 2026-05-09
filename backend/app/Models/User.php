@@ -20,6 +20,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property int|null $sm_franchise_id
  * @property int|null $company_id
  * @property int|null $sub_franchise_id
+ * @property int|null $inviter_id
  * @property string|null $avatar_path
  * @property Carbon|null $birth_date
  * @property Carbon|null $invitation_accepted_at
@@ -51,7 +52,7 @@ class User extends Authenticatable
         'invitation_token',
         'invitation_accepted_at',
         'invitation_expires_at',
-        'invited_by',
+        'inviter_id',
     ];
 
     /**
@@ -62,6 +63,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'invitation_token',
     ];
 
     /**
@@ -124,7 +126,7 @@ class User extends Authenticatable
      */
     public function invitedBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'invited_by');
+        return $this->belongsTo(User::class, 'inviter_id');
     }
 
     // ─── Scopes ──────────────────────────────────────────────────────────────

@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\UserPermission;
 use App\Notifications\UserInvitationNotification;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -60,7 +61,7 @@ class InvitationService
             'password' => Hash::make(Str::random(32)),
             'invitation_token' => $token,
             'invitation_expires_at' => now()->addDays(self::EXPIRY_DAYS),
-            'invited_by' => $invitedBy->id,
+            'inviter_id' => $invitedBy->id,
         ]);
 
         $user->assignRole($data['role']);
@@ -103,35 +104,58 @@ class InvitationService
     }
 
     /**
-     * Accept an invitation: set the user's password, mark the account as active,
-     * and return a Sanctum token for auto-login on the frontend.
+     * Accept an invitation: verify the token, set the user's password, mark the
+     * account as active, and return a Sanctum token for auto-login on the frontend.
+     *
+     * The verify + write are wrapped in a single DB transaction with a row-level
+     * lock so that concurrent requests cannot both pass the expiry check and then
+     * both activate the same account (TOCTOU race condition).
      *
      * @return array{user: User, token: string, role: string, permissions: Collection}
+     *
+     * @throws HttpException 404 | 410
      */
-    public function accept(User $user, string $password): array
+    public function accept(string $token, string $password): array
     {
-        $user->update([
-            'password' => Hash::make($password),
-            'invitation_token' => null,
-            'invitation_expires_at' => null,
-            'invitation_accepted_at' => now(),
-        ]);
+        return DB::transaction(function () use ($token, $password) {
+            // Lock the row for the duration of the transaction so a second
+            // concurrent request cannot slip through between verify and write.
+            $user = User::where('invitation_token', $token)
+                ->whereNull('invitation_accepted_at')
+                ->lockForUpdate()
+                ->first();
 
-        // email_verified_at is not in $fillable (it is framework-managed),
-        // so we set it directly and persist with save().
-        $user->email_verified_at = now();
-        $user->save();
+            if (! $user) {
+                abort(404, 'El enlace de invitación no es válido.');
+            }
 
-        $plainToken = $user->createToken('portal')->plainTextToken;
-        $role = $user->getRoleNames()->first() ?? '';
-        $permissions = UserPermission::where('user_id', $user->id)->get();
+            if ($user->invitation_expires_at && $user->invitation_expires_at->isPast()) {
+                abort(410, 'El enlace de invitación ha expirado. Pide que te reenvíen la invitación.');
+            }
 
-        return [
-            'user' => $user->fresh(),
-            'token' => $plainToken,
-            'role' => $role,
-            'permissions' => $permissions,
-        ];
+            $user->update([
+                'password' => Hash::make($password),
+                'invitation_token' => null,
+                'invitation_expires_at' => null,
+                'invitation_accepted_at' => now(),
+            ]);
+
+            // email_verified_at is not in $fillable (it is framework-managed),
+            // so we set it directly and persist with save().
+            $user->email_verified_at = now();
+            $user->save();
+
+            $plainToken = $user->createToken('portal')->plainTextToken;
+            $role = $user->getRoleNames()->first() ?? '';
+            $permissions = UserPermission::where('user_id', $user->id)->get();
+
+            return [
+                'user' => $user->fresh(),
+                'token' => $plainToken,
+                'role' => $role,
+                'permissions' => $permissions,
+            ];
+        });
     }
 
     /**
@@ -159,7 +183,7 @@ class InvitationService
         $user->update([
             'invitation_token' => $token,
             'invitation_expires_at' => now()->addDays(self::EXPIRY_DAYS),
-            'invited_by' => $invitedBy->id,
+            'inviter_id' => $invitedBy->id,
         ]);
 
         if ($role && ! $user->hasRole($role)) {

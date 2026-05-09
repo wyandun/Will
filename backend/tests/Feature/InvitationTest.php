@@ -167,7 +167,6 @@ class InvitationTest extends TestCase
                     'id',
                     'name',
                     'email',
-                    'invitation_token',
                     'invitation_expires_at',
                     'roles',
                 ],
@@ -299,7 +298,7 @@ class InvitationTest extends TestCase
         $this->assertEqualsWithDelta(7, $diff, 0.1);
     }
 
-    public function test_invited_user_has_invited_by_set_to_inviter(): void
+    public function test_invited_user_has_inviter_id_set_to_inviter(): void
     {
         Notification::fake();
         $superadmin = $this->createSuperadmin();
@@ -310,7 +309,7 @@ class InvitationTest extends TestCase
             ]));
 
         $user = User::where('email', 'invitedby@test.com')->first();
-        $this->assertEquals($superadmin->id, $user->invited_by);
+        $this->assertEquals($superadmin->id, $user->inviter_id);
     }
 
     public function test_invited_user_has_correct_role_assigned(): void
