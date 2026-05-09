@@ -6,6 +6,7 @@ use App\Enums\Role;
 use App\Models\User;
 use App\Notifications\UserInvitationNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
@@ -172,6 +173,36 @@ class InvitationTest extends TestCase
                 ],
             ],
         ]);
+    }
+
+    public function test_invitation_index_does_not_trigger_n_plus_1_for_roles(): void
+    {
+        $superadmin = $this->createSuperadmin();
+
+        // Create a batch of pending invitations, each with a role assigned.
+        foreach (range(1, 5) as $i) {
+            $pending = $this->createPendingInvitation(['email' => "n1user{$i}@test.com"]);
+            $pending->assignRole(Role::SB_OWNER);
+        }
+
+        DB::enableQueryLog();
+
+        $response = $this->actingAs($superadmin)->getJson('/api/v1/invitations');
+        $response->assertStatus(200)->assertJsonCount(5, 'data');
+
+        $queries = DB::getQueryLog();
+        DB::disableQueryLog();
+
+        // Eager-loading collapses roles + invitedBy into 2 additional queries for
+        // the entire collection, not 1 per user.  With auth overhead the total
+        // count is small and constant regardless of collection size.
+        // Upper-bound chosen generously; failure here means a relation was
+        // accidentally un-eager-loaded (e.g. Spatie role->permissions queried per user).
+        $this->assertCount(5, $response->json('data'));
+        $this->assertLessThanOrEqual(12, count($queries),
+            'Query count scaled with collection size — possible N+1. Queries: '
+            .implode("\n", array_column($queries, 'query'))
+        );
     }
 
     public function test_invitation_index_does_not_include_accepted_invitations(): void
@@ -549,7 +580,7 @@ class InvitationTest extends TestCase
                     'role' => $role,
                 ]));
 
-            $response->assertStatus(201, "Role {$role} should be accepted.");
+            $this->assertSame(201, $response->status(), "Role {$role} should be accepted.");
         }
     }
 
