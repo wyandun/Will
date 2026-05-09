@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -42,6 +43,10 @@ function PasswordStrength({ password }) {
     </div>
   );
 }
+
+PasswordStrength.propTypes = {
+  password: PropTypes.string.isRequired,
+};
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 

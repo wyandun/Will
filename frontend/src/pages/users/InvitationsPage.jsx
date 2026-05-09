@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { invitationsApi } from '../../api/invitations';
@@ -26,6 +27,10 @@ function RoleBadge({ role }) {
   );
 }
 
+RoleBadge.propTypes = {
+  role: PropTypes.string.isRequired,
+};
+
 // ─── Expiry indicator ─────────────────────────────────────────────────────────
 
 function ExpiryBadge({ expiresAt }) {
@@ -44,6 +49,10 @@ function ExpiryBadge({ expiresAt }) {
     </span>
   );
 }
+
+ExpiryBadge.propTypes = {
+  expiresAt: PropTypes.string,
+};
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
