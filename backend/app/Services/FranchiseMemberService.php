@@ -59,9 +59,11 @@ class FranchiseMemberService
             ->select(['id', 'name', 'email', 'phone', 'job_title', 'created_at'])
             ->orderBy('name')
             ->get()
-            ->map(function (User $u) {
+            ->map(static function (User $u): User {
                 // Flatten the first role name for easy frontend consumption.
-                $u->setAttribute('role', $u->roles->first()?->name);
+                /** @var \Spatie\Permission\Models\Role|null $firstRole */
+                $firstRole = $u->roles->first();
+                $u->setAttribute('role', $firstRole?->name);
 
                 return $u;
             });
