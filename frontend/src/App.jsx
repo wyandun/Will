@@ -5,12 +5,12 @@ import LoginPage from './pages/LoginPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import AuthenticatedLayout from './components/AuthenticatedLayout';
 import FranchisesPage from './pages/franchises/FranchisesPage';
+import FranchiseDetailPage from './pages/franchises/FranchiseDetailPage';
 import CompaniesPage from './pages/companies/CompaniesPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
 import FeedPage from './pages/feed/FeedPage';
 import ProfilePage from './pages/profile/ProfilePage';
-import SystemAdminsPage from './pages/system_admins/SystemAdminsPage';
-import InvitationsPage from './pages/users/InvitationsPage';
+import UsersPage from './pages/users/UsersPage';
 import AcceptInvitationPage from './pages/invitations/AcceptInvitationPage';
 import { useAuthStore } from './store/authStore';
 
@@ -88,6 +88,14 @@ export default function App() {
             }
           />
           <Route
+            path="/franchises/:id"
+            element={
+              <RoleRoute roles={ADMIN_ROLES}>
+                <FranchiseDetailPage />
+              </RoleRoute>
+            }
+          />
+          <Route
             path="/companies"
             element={
               <RoleRoute roles={ADMIN_ROLES}>
@@ -98,16 +106,8 @@ export default function App() {
           <Route
             path="/users"
             element={
-              <RoleRoute roles={ADMIN_ROLES}>
-                <InvitationsPage />
-              </RoleRoute>
-            }
-          />
-          <Route
-            path="/system-admins"
-            element={
               <RoleRoute roles={['superadmin']}>
-                <SystemAdminsPage />
+                <UsersPage />
               </RoleRoute>
             }
           />
