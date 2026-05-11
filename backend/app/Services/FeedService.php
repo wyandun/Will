@@ -264,7 +264,7 @@ class FeedService
                 $attachmentPath = (string) $attachment->store('attachments', 'public');
             }
 
-            $postId = DB::transaction(function () use ($user, $data, $image, $attachment, $imagePath, $attachmentPath) {
+            $postId = DB::transaction(function () use ($user, $data, $attachment, $imagePath, $attachmentPath) {
                 return DB::table('posts')->insertGetId([
                     'author_id' => $user->id,
                     'title' => $data['title'],
