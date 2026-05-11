@@ -55,6 +55,7 @@ class User extends Authenticatable
         'invitation_expires_at',
         'inviter_id',
         'last_seen_at',
+        'area',
     ];
 
     /**
