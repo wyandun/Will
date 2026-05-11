@@ -64,8 +64,8 @@ class SystemAdminController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
-            new OA\Response(response: 403, description: 'Solo superadmin puede listar admins de sistema'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
         ]
     )]
     public function index(): JsonResponse
@@ -112,9 +112,13 @@ class SystemAdminController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
-            new OA\Response(response: 403, description: 'Solo superadmin puede crear admins de sistema'),
-            new OA\Response(response: 422, description: 'Error de validación (email duplicado, password débil, rol inválido)'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
+            new OA\Response(
+                response: 422,
+                description: 'Error de validación (email duplicado, password débil, rol inválido)',
+                content: new OA\JsonContent(ref: '#/components/schemas/ValidationError')
+            ),
         ]
     )]
     public function store(StoreSystemAdminRequest $request): JsonResponse
@@ -151,7 +155,7 @@ class SystemAdminController extends Controller
         ], 201);
     }
 
-    #[OA\Put(
+    #[OA\Patch(
         path: '/system-admins/{id}',
         tags: ['System Admins'],
         summary: 'Actualizar un administrador de sistema',
@@ -190,10 +194,14 @@ class SystemAdminController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
-            new OA\Response(response: 403, description: 'Sin permiso o intento de modificar al superadmin'),
-            new OA\Response(response: 404, description: 'Usuario no encontrado'),
-            new OA\Response(response: 422, description: 'Error de validación'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
+            new OA\Response(response: 404, ref: '#/components/responses/NotFound'),
+            new OA\Response(
+                response: 422,
+                description: 'Error de validación',
+                content: new OA\JsonContent(ref: '#/components/schemas/ValidationError')
+            ),
         ]
     )]
     public function update(UpdateSystemAdminRequest $request, User $systemAdmin): JsonResponse
@@ -259,14 +267,14 @@ class SystemAdminController extends Controller
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'success', type: 'boolean', example: true),
-                        new OA\Property(property: 'data', type: 'string', nullable: true, example: null),
+                        new OA\Property(property: 'data', type: 'object', nullable: true, example: null),
                         new OA\Property(property: 'message', type: 'string', example: 'system_admin.deleted_success'),
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
-            new OA\Response(response: 403, description: 'Sin permiso, intento de eliminar al superadmin o auto-eliminación'),
-            new OA\Response(response: 404, description: 'Usuario no encontrado'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
+            new OA\Response(response: 404, ref: '#/components/responses/NotFound'),
         ]
     )]
     public function destroy(User $systemAdmin): JsonResponse

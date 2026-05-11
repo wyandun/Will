@@ -89,7 +89,7 @@ class FeedController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
         ]
     )]
     public function posts(Request $request): JsonResponse
@@ -155,7 +155,7 @@ class FeedController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
         ]
     )]
     public function presence(Request $request): JsonResponse

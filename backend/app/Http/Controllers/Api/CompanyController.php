@@ -42,34 +42,13 @@ class CompanyController extends Controller
                         new OA\Property(
                             property: 'data',
                             type: 'array',
-                            items: new OA\Items(
-                                properties: [
-                                    new OA\Property(property: 'id', type: 'integer', example: 1),
-                                    new OA\Property(property: 'name', type: 'string', example: 'Tacos El Gordo LLC'),
-                                    new OA\Property(property: 'industry', type: 'string', nullable: true, example: 'Food & Beverage'),
-                                    new OA\Property(property: 'address', type: 'string', nullable: true, example: '789 Biscayne Blvd'),
-                                    new OA\Property(property: 'city', type: 'string', nullable: true, example: 'Miami'),
-                                    new OA\Property(property: 'phone', type: 'string', nullable: true, example: '+13055559999'),
-                                    new OA\Property(property: 'email', type: 'string', nullable: true, example: 'contact@tacosgordo.com'),
-                                    new OA\Property(property: 'website', type: 'string', nullable: true, example: 'https://tacosgordo.com'),
-                                    new OA\Property(property: 'state', type: 'string', nullable: true, example: 'FL'),
-                                    new OA\Property(property: 'country', type: 'string', nullable: true, example: 'USA'),
-                                    new OA\Property(property: 'logo_path', type: 'string', nullable: true, example: null),
-                                    new OA\Property(property: 'employees_count', type: 'integer', nullable: true, example: 12),
-                                    new OA\Property(property: 'annual_revenue', type: 'number', format: 'float', nullable: true, example: 450000.00),
-                                    new OA\Property(property: 'years_operating', type: 'integer', nullable: true, example: 4),
-                                    new OA\Property(property: 'sm_franchise_id', type: 'integer', example: 1),
-                                    new OA\Property(property: 'franchise_name', type: 'string', nullable: true, example: 'SM Florida'),
-                                    new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
-                                    new OA\Property(property: 'updated_at', type: 'string', format: 'date-time'),
-                                ]
-                            )
+                            items: new OA\Items(ref: '#/components/schemas/CompanyResource')
                         ),
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
-            new OA\Response(response: 403, description: 'Sin permiso para listar empresas'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
         ]
     )]
     public function index(Request $request): AnonymousResourceCollection
@@ -90,20 +69,9 @@ class CompanyController extends Controller
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ['name', 'sm_franchise_id'],
-                properties: [
-                    new OA\Property(property: 'name', type: 'string', maxLength: 255, example: 'Tacos El Gordo LLC'),
-                    new OA\Property(property: 'sm_franchise_id', type: 'integer', example: 1),
-                    new OA\Property(property: 'industry', type: 'string', nullable: true, maxLength: 255, example: 'Food & Beverage'),
-                    new OA\Property(property: 'address', type: 'string', nullable: true, maxLength: 255, example: '789 Biscayne Blvd'),
-                    new OA\Property(property: 'phone', type: 'string', nullable: true, maxLength: 30, example: '+13055559999'),
-                    new OA\Property(property: 'email', type: 'string', format: 'email', nullable: true, maxLength: 255, example: 'contact@tacosgordo.com'),
-                    new OA\Property(property: 'website', type: 'string', format: 'uri', nullable: true, maxLength: 255, example: 'https://tacosgordo.com'),
-                    new OA\Property(property: 'city', type: 'string', nullable: true, maxLength: 255, example: 'Miami'),
-                    new OA\Property(property: 'state', type: 'string', nullable: true, maxLength: 50, example: 'FL'),
-                    new OA\Property(property: 'country', type: 'string', nullable: true, maxLength: 50, example: 'USA'),
-                    new OA\Property(property: 'logo_path', type: 'string', nullable: true, maxLength: 255, example: null),
-                    new OA\Property(property: 'notes', type: 'string', nullable: true, example: 'Cliente referido por SM Florida.'),
+                allOf: [
+                    new OA\Schema(ref: '#/components/schemas/CompanyWriteInput'),
+                    new OA\Schema(required: ['name', 'sm_franchise_id']),
                 ]
             )
         ),
@@ -114,14 +82,18 @@ class CompanyController extends Controller
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'success', type: 'boolean', example: true),
-                        new OA\Property(property: 'data', type: 'object'),
+                        new OA\Property(property: 'data', ref: '#/components/schemas/CompanyResource'),
                         new OA\Property(property: 'message', type: 'string', example: 'Empresa creada correctamente.'),
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
-            new OA\Response(response: 403, description: 'Sin permiso para crear empresas'),
-            new OA\Response(response: 422, description: 'Error de validación'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
+            new OA\Response(
+                response: 422,
+                description: 'Error de validación',
+                content: new OA\JsonContent(ref: '#/components/schemas/ValidationError')
+            ),
         ]
     )]
     public function store(StoreCompanyRequest $request): JsonResponse
@@ -138,13 +110,14 @@ class CompanyController extends Controller
     }
 
     #[OA\Get(
-        path: '/companies/{id}',
+        path: '/companies/{company}',
         tags: ['Companies'],
         summary: 'Obtener una empresa por ID',
+        description: 'Retorna los datos completos de una empresa, incluyendo el nombre de su franquicia SM asociada.',
         security: [['sanctum' => []]],
         parameters: [
             new OA\Parameter(
-                name: 'id',
+                name: 'company',
                 in: 'path',
                 required: true,
                 description: 'ID de la empresa',
@@ -158,14 +131,14 @@ class CompanyController extends Controller
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'success', type: 'boolean', example: true),
-                        new OA\Property(property: 'data', type: 'object'),
+                        new OA\Property(property: 'data', ref: '#/components/schemas/CompanyResource'),
                         new OA\Property(property: 'message', type: 'string', example: 'OK.'),
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
-            new OA\Response(response: 403, description: 'Sin permiso para ver esta empresa'),
-            new OA\Response(response: 404, description: 'Empresa no encontrada'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
+            new OA\Response(response: 404, ref: '#/components/responses/NotFound'),
         ]
     )]
     public function show(Company $company): JsonResponse
@@ -182,14 +155,14 @@ class CompanyController extends Controller
     }
 
     #[OA\Patch(
-        path: '/companies/{id}',
+        path: '/companies/{company}',
         tags: ['Companies'],
         summary: 'Actualizar una empresa existente',
-        description: 'Todos los campos son opcionales (semántica PATCH).',
+        description: 'Todos los campos son opcionales. Solo se actualizan los campos enviados.',
         security: [['sanctum' => []]],
         parameters: [
             new OA\Parameter(
-                name: 'id',
+                name: 'company',
                 in: 'path',
                 required: true,
                 description: 'ID de la empresa',
@@ -198,22 +171,7 @@ class CompanyController extends Controller
         ],
         requestBody: new OA\RequestBody(
             required: true,
-            content: new OA\JsonContent(
-                properties: [
-                    new OA\Property(property: 'name', type: 'string', maxLength: 255, example: 'Tacos El Gordo LLC'),
-                    new OA\Property(property: 'sm_franchise_id', type: 'integer', example: 1),
-                    new OA\Property(property: 'industry', type: 'string', nullable: true, maxLength: 255, example: 'Food & Beverage'),
-                    new OA\Property(property: 'address', type: 'string', nullable: true, maxLength: 255, example: '789 Biscayne Blvd'),
-                    new OA\Property(property: 'phone', type: 'string', nullable: true, maxLength: 30, example: '+13055559999'),
-                    new OA\Property(property: 'email', type: 'string', format: 'email', nullable: true, maxLength: 255, example: 'contact@tacosgordo.com'),
-                    new OA\Property(property: 'website', type: 'string', format: 'uri', nullable: true, maxLength: 255, example: 'https://tacosgordo.com'),
-                    new OA\Property(property: 'city', type: 'string', nullable: true, maxLength: 255, example: 'Miami'),
-                    new OA\Property(property: 'state', type: 'string', nullable: true, maxLength: 50, example: 'FL'),
-                    new OA\Property(property: 'country', type: 'string', nullable: true, maxLength: 50, example: 'USA'),
-                    new OA\Property(property: 'logo_path', type: 'string', nullable: true, maxLength: 255, example: null),
-                    new OA\Property(property: 'notes', type: 'string', nullable: true, example: null),
-                ]
-            )
+            content: new OA\JsonContent(ref: '#/components/schemas/CompanyWriteInput')
         ),
         responses: [
             new OA\Response(
@@ -222,15 +180,19 @@ class CompanyController extends Controller
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'success', type: 'boolean', example: true),
-                        new OA\Property(property: 'data', type: 'object'),
+                        new OA\Property(property: 'data', ref: '#/components/schemas/CompanyResource'),
                         new OA\Property(property: 'message', type: 'string', example: 'Empresa actualizada correctamente.'),
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
-            new OA\Response(response: 403, description: 'Sin permiso para actualizar esta empresa'),
-            new OA\Response(response: 404, description: 'Empresa no encontrada'),
-            new OA\Response(response: 422, description: 'Error de validación'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
+            new OA\Response(response: 404, ref: '#/components/responses/NotFound'),
+            new OA\Response(
+                response: 422,
+                description: 'Error de validación',
+                content: new OA\JsonContent(ref: '#/components/schemas/ValidationError')
+            ),
         ]
     )]
     public function update(UpdateCompanyRequest $request, Company $company): JsonResponse
@@ -247,14 +209,14 @@ class CompanyController extends Controller
     }
 
     #[OA\Delete(
-        path: '/companies/{id}',
+        path: '/companies/{company}',
         tags: ['Companies'],
         summary: 'Eliminar una empresa',
         description: 'Solo superadmin puede eliminar empresas.',
         security: [['sanctum' => []]],
         parameters: [
             new OA\Parameter(
-                name: 'id',
+                name: 'company',
                 in: 'path',
                 required: true,
                 description: 'ID de la empresa',
@@ -268,14 +230,14 @@ class CompanyController extends Controller
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'success', type: 'boolean', example: true),
-                        new OA\Property(property: 'data', nullable: true, example: null),
+                        new OA\Property(property: 'data', type: 'object', nullable: true, example: null),
                         new OA\Property(property: 'message', type: 'string', example: 'Empresa eliminada correctamente.'),
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
-            new OA\Response(response: 403, description: 'Sin permiso para eliminar esta empresa'),
-            new OA\Response(response: 404, description: 'Empresa no encontrada'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
+            new OA\Response(response: 404, ref: '#/components/responses/NotFound'),
         ]
     )]
     public function destroy(Company $company): JsonResponse
@@ -300,20 +262,9 @@ class CompanyController extends Controller
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ['name', 'sm_franchise_id'],
-                properties: [
-                    new OA\Property(property: 'name', type: 'string', maxLength: 255, example: 'Tacos El Gordo LLC'),
-                    new OA\Property(property: 'sm_franchise_id', type: 'integer', example: 1),
-                    new OA\Property(property: 'industry', type: 'string', nullable: true, maxLength: 255, example: 'Food & Beverage'),
-                    new OA\Property(property: 'address', type: 'string', nullable: true, maxLength: 255, example: '789 Biscayne Blvd'),
-                    new OA\Property(property: 'phone', type: 'string', nullable: true, maxLength: 30, example: '+13055559999'),
-                    new OA\Property(property: 'email', type: 'string', format: 'email', nullable: true, maxLength: 255, example: 'contact@tacosgordo.com'),
-                    new OA\Property(property: 'website', type: 'string', format: 'uri', nullable: true, maxLength: 255, example: 'https://tacosgordo.com'),
-                    new OA\Property(property: 'city', type: 'string', nullable: true, maxLength: 255, example: 'Miami'),
-                    new OA\Property(property: 'state', type: 'string', nullable: true, maxLength: 50, example: 'FL'),
-                    new OA\Property(property: 'country', type: 'string', nullable: true, maxLength: 50, example: 'USA'),
-                    new OA\Property(property: 'logo_path', type: 'string', nullable: true, maxLength: 255, example: null),
-                    new OA\Property(property: 'notes', type: 'string', nullable: true, example: 'Cliente referido por SM Florida.'),
+                allOf: [
+                    new OA\Schema(ref: '#/components/schemas/CompanyWriteInput'),
+                    new OA\Schema(required: ['name', 'sm_franchise_id']),
                 ]
             )
         ),
@@ -324,14 +275,18 @@ class CompanyController extends Controller
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'success', type: 'boolean', example: true),
-                        new OA\Property(property: 'data', type: 'object'),
+                        new OA\Property(property: 'data', ref: '#/components/schemas/CompanyResource'),
                         new OA\Property(property: 'message', type: 'string', example: 'Deal cerrado correctamente. Empresa y mapas de proceso creados.'),
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'No autenticado'),
-            new OA\Response(response: 403, description: 'Sin permiso para crear empresas'),
-            new OA\Response(response: 422, description: 'Error de validación'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
+            new OA\Response(
+                response: 422,
+                description: 'Error de validación',
+                content: new OA\JsonContent(ref: '#/components/schemas/ValidationError')
+            ),
         ]
     )]
     public function closeDeal(StoreCompanyRequest $request): JsonResponse
