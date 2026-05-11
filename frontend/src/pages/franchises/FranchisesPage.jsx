@@ -33,12 +33,15 @@ function getAvatarColor(name) {
 
 // ─── Card de franquicia ──────────────────────────────────────────────────────
 
-function FranchiseCard({ franchise, onEdit, onToggleStatus, onDelete, isSuperadmin }) {
+function FranchiseCard({ franchise, onEdit, onToggleStatus, onDelete, onViewDetail, isSuperadmin }) {
   const { t } = useTranslation('common');
   const isActive = franchise.is_active !== false;
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
+    <div
+      className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all cursor-pointer"
+      onClick={() => onViewDetail(franchise)}
+    >
       <div className={!isActive ? 'saturate-[0.25] opacity-80' : ''}>
         {/* Header de la card: avatar + nombre + badge */}
         <div className="p-5 pb-3">
@@ -104,7 +107,7 @@ function FranchiseCard({ franchise, onEdit, onToggleStatus, onDelete, isSuperadm
       {isSuperadmin && (
         <div className="px-5 pb-4 flex items-center gap-2 border-t border-slate-100 pt-3">
           <button
-            onClick={() => onEdit(franchise)}
+            onClick={(e) => { e.stopPropagation(); onEdit(franchise); }}
             className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
@@ -113,7 +116,7 @@ function FranchiseCard({ franchise, onEdit, onToggleStatus, onDelete, isSuperadm
             {t('common.edit')}
           </button>
           <button
-            onClick={() => onToggleStatus(franchise)}
+            onClick={(e) => { e.stopPropagation(); onToggleStatus(franchise); }}
             className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${isActive
                 ? 'text-amber-700 bg-amber-50 hover:bg-amber-100'
                 : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
@@ -129,7 +132,7 @@ function FranchiseCard({ franchise, onEdit, onToggleStatus, onDelete, isSuperadm
             {isActive ? t('franchises.deactivate') : t('franchises.activate')}
           </button>
           <button
-            onClick={() => onDelete(franchise)}
+            onClick={(e) => { e.stopPropagation(); onDelete(franchise); }}
             className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
@@ -149,6 +152,7 @@ FranchiseCard.propTypes = {
   onEdit: PropTypes.func.isRequired,
   onToggleStatus: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
+  onViewDetail: PropTypes.func.isRequired,
   isSuperadmin: PropTypes.bool
 };
 
@@ -423,6 +427,7 @@ export default function FranchisesPage() {
                 onEdit={openEditModal}
                 onToggleStatus={handleToggleStatus}
                 onDelete={handleDelete}
+                onViewDetail={(f) => navigate(`/franchises/${f.id}`)}
                 isSuperadmin={isSuperadmin}
               />
             ))}

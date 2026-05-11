@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FeedController;
 use App\Http\Controllers\Api\FranchiseController;
+use App\Http\Controllers\Api\FranchiseMemberController;
 use App\Http\Controllers\Api\InvitationController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\SystemAdminController;
@@ -58,7 +59,11 @@ Route::prefix('auth')->middleware('auth:sanctum')->group(function () {
 // Protected resources — require Sanctum authentication
 // ---------------------------------------------------------------------------
 Route::middleware('auth:sanctum')->group(function () {
-    // Franchises
+    // Franchises — member sub-routes must be declared before apiResource
+    // so {franchise} doesn't capture literal strings like "members"/"admins"/"clients".
+    Route::get('franchises/{franchise}/members', [FranchiseMemberController::class, 'members']);
+    Route::post('franchises/{franchise}/admins', [FranchiseMemberController::class, 'storeAdmin']);
+    Route::post('franchises/{franchise}/clients', [FranchiseMemberController::class, 'storeClient']);
     Route::patch('franchises/{franchise}/toggle-status', [FranchiseController::class, 'toggleStatus']);
     Route::apiResource('franchises', FranchiseController::class);
 

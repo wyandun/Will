@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\Role;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Franchise\StoreFranchiseRequest;
 use App\Http\Requests\Franchise\UpdateFranchiseRequest;
@@ -171,6 +172,15 @@ class FranchiseController extends Controller
     public function show(Franchise $franchise): JsonResponse
     {
         $this->authorize('view', $franchise);
+
+        $franchise->loadCount([
+            'users as admins_count' => function ($q) {
+                $q->whereHas('roles', function ($r) {
+                    $r->where('name', Role::ADMIN_SM);
+                });
+            },
+            'companies as clients_count',
+        ]);
 
         return response()->json([
             'success' => true,
