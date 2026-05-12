@@ -44,19 +44,19 @@ class InvitationController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
-                'data'  => InvitationResource::collection($pending)->resolve(),
-                'meta'  => [
+            'data' => [
+                'data' => InvitationResource::collection($pending)->resolve(),
+                'meta' => [
                     'current_page' => $pending->currentPage(),
-                    'last_page'    => $pending->lastPage(),
-                    'per_page'     => $pending->perPage(),
-                    'total'        => $pending->total(),
+                    'last_page' => $pending->lastPage(),
+                    'per_page' => $pending->perPage(),
+                    'total' => $pending->total(),
                 ],
                 'links' => [
                     'first' => $pending->url(1),
-                    'last'  => $pending->url($pending->lastPage()),
-                    'prev'  => $pending->previousPageUrl(),
-                    'next'  => $pending->nextPageUrl(),
+                    'last' => $pending->url($pending->lastPage()),
+                    'prev' => $pending->previousPageUrl(),
+                    'next' => $pending->nextPageUrl(),
                 ],
             ],
         ]);
@@ -74,7 +74,7 @@ class InvitationController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'user'           => new InvitationResource($result['user']),
+                'user' => new InvitationResource($result['user']),
                 'activation_url' => $result['activation_url'],
             ],
             'message' => 'invitation.sent_success',
@@ -93,7 +93,7 @@ class InvitationController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'user'           => new InvitationResource($result['user']),
+                'user' => new InvitationResource($result['user']),
                 'activation_url' => $result['activation_url'],
             ],
             'message' => 'invitation.resent_success',
