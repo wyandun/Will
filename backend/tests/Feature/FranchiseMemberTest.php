@@ -214,7 +214,7 @@ class FranchiseMemberTest extends TestCase
         $response = $this->postJson("/api/v1/franchises/{$franchise->id}/admins", [
             'name' => 'New Admin',
             'email' => 'newadmin@test.com',
-            'password' => 'password123',
+            'password' => 'Password123',
             'area' => 'full_access',
         ]);
 
@@ -231,7 +231,7 @@ class FranchiseMemberTest extends TestCase
             ->postJson("/api/v1/franchises/{$franchise->id}/admins", [
                 'name' => 'New Admin',
                 'email' => 'newadmin@test.com',
-                'password' => 'password123',
+                'password' => 'Password123',
                 'area' => 'full_access',
             ]);
 
@@ -255,7 +255,7 @@ class FranchiseMemberTest extends TestCase
             ->postJson("/api/v1/franchises/{$franchise->id}/admins", [
                 'name' => 'Role Admin',
                 'email' => 'roleadmin@test.com',
-                'password' => 'password123',
+                'password' => 'Password123',
                 'area' => 'full_access',
             ]);
 
@@ -274,7 +274,7 @@ class FranchiseMemberTest extends TestCase
             ->postJson("/api/v1/franchises/{$franchise->id}/admins", [
                 'name' => 'Area Admin',
                 'email' => 'areaadmin@test.com',
-                'password' => 'password123',
+                'password' => 'Password123',
                 'area' => 'accounting',
             ]);
 
@@ -294,7 +294,7 @@ class FranchiseMemberTest extends TestCase
             ->postJson("/api/v1/franchises/{$franchise->id}/admins", [
                 'name' => 'Full Admin',
                 'email' => 'fulladmin@test.com',
-                'password' => 'password123',
+                'password' => 'Password123',
                 'area' => 'full_access',
             ]);
 
@@ -322,7 +322,7 @@ class FranchiseMemberTest extends TestCase
             ->postJson("/api/v1/franchises/{$franchise->id}/admins", [
                 'name' => 'Accounting Admin',
                 'email' => 'accountingadmin@test.com',
-                'password' => 'password123',
+                'password' => 'Password123',
                 'area' => 'accounting',
             ]);
 
@@ -349,7 +349,7 @@ class FranchiseMemberTest extends TestCase
             ->postJson("/api/v1/franchises/{$franchise->id}/admins", [
                 'name' => 'Marketing Admin',
                 'email' => 'marketingadmin@test.com',
-                'password' => 'password123',
+                'password' => 'Password123',
                 'area' => 'marketing',
             ]);
 
@@ -371,7 +371,7 @@ class FranchiseMemberTest extends TestCase
             ->postJson("/api/v1/franchises/{$franchise->id}/admins", [
                 'name' => 'Duplicate',
                 'email' => 'existing@test.com',
-                'password' => 'password123',
+                'password' => 'Password123',
                 'area' => 'full_access',
             ]);
 
@@ -387,7 +387,7 @@ class FranchiseMemberTest extends TestCase
         $response = $this->actingAs($superadmin)
             ->postJson("/api/v1/franchises/{$franchise->id}/admins", [
                 'email' => 'admin@test.com',
-                'password' => 'password123',
+                'password' => 'Password123',
                 'area' => 'full_access',
             ]);
 
@@ -404,7 +404,7 @@ class FranchiseMemberTest extends TestCase
             ->postJson("/api/v1/franchises/{$franchise->id}/admins", [
                 'name' => 'No Area',
                 'email' => 'noarea@test.com',
-                'password' => 'password123',
+                'password' => 'Password123',
             ]);
 
         $response->assertStatus(422);
@@ -420,7 +420,7 @@ class FranchiseMemberTest extends TestCase
             ->postJson("/api/v1/franchises/{$franchise->id}/admins", [
                 'name' => 'Bad Area',
                 'email' => 'badarea@test.com',
-                'password' => 'password123',
+                'password' => 'Password123',
                 'area' => 'invalid_area',
             ]);
 
@@ -454,7 +454,7 @@ class FranchiseMemberTest extends TestCase
             ->postJson("/api/v1/franchises/{$franchise->id}/admins", [
                 'name' => 'Bad Email',
                 'email' => 'not-an-email',
-                'password' => 'password123',
+                'password' => 'Password123',
                 'area' => 'full_access',
             ]);
 
@@ -472,7 +472,7 @@ class FranchiseMemberTest extends TestCase
             ->postJson("/api/v1/franchises/{$franchise->id}/admins", [
                 'name' => 'New Member',
                 'email' => 'newmember@test.com',
-                'password' => 'password123',
+                'password' => 'Password123',
                 'area' => 'operations',
             ]);
 
@@ -489,7 +489,7 @@ class FranchiseMemberTest extends TestCase
             ->postJson("/api/v1/franchises/{$otherFranchise->id}/admins", [
                 'name' => 'Intruder',
                 'email' => 'intruder@test.com',
-                'password' => 'password123',
+                'password' => 'Password123',
                 'area' => 'full_access',
             ]);
 
@@ -507,7 +507,7 @@ class FranchiseMemberTest extends TestCase
         $response = $this->postJson("/api/v1/franchises/{$franchise->id}/clients", [
             'name' => 'New Client',
             'email' => 'newclient@test.com',
-            'password' => 'password123',
+            'password' => 'Password123',
             'client_type' => 'owner',
         ]);
 
@@ -524,7 +524,7 @@ class FranchiseMemberTest extends TestCase
             ->postJson("/api/v1/franchises/{$franchise->id}/clients", [
                 'name' => 'SB Owner',
                 'email' => 'sbowner@test.com',
-                'password' => 'password123',
+                'password' => 'Password123',
                 'client_type' => 'owner',
             ]);
 
@@ -548,7 +548,7 @@ class FranchiseMemberTest extends TestCase
             ->postJson("/api/v1/franchises/{$franchise->id}/clients", [
                 'name' => 'SB Owner Role',
                 'email' => 'sbownerrole@test.com',
-                'password' => 'password123',
+                'password' => 'Password123',
                 'client_type' => 'owner',
             ]);
 
@@ -568,7 +568,7 @@ class FranchiseMemberTest extends TestCase
             ->postJson("/api/v1/franchises/{$franchise->id}/clients", [
                 'name' => 'Investor',
                 'email' => 'investor@test.com',
-                'password' => 'password123',
+                'password' => 'Password123',
                 'client_type' => 'investor',
             ]);
 
@@ -588,7 +588,7 @@ class FranchiseMemberTest extends TestCase
             ->postJson("/api/v1/franchises/{$franchise->id}/clients", [
                 'name' => 'Duplicate',
                 'email' => 'taken@test.com',
-                'password' => 'password123',
+                'password' => 'Password123',
                 'client_type' => 'owner',
             ]);
 
@@ -604,7 +604,7 @@ class FranchiseMemberTest extends TestCase
         $response = $this->actingAs($superadmin)
             ->postJson("/api/v1/franchises/{$franchise->id}/clients", [
                 'email' => 'client@test.com',
-                'password' => 'password123',
+                'password' => 'Password123',
                 'client_type' => 'owner',
             ]);
 
@@ -621,7 +621,7 @@ class FranchiseMemberTest extends TestCase
             ->postJson("/api/v1/franchises/{$franchise->id}/clients", [
                 'name' => 'No Type',
                 'email' => 'notype@test.com',
-                'password' => 'password123',
+                'password' => 'Password123',
             ]);
 
         $response->assertStatus(422);
@@ -637,7 +637,7 @@ class FranchiseMemberTest extends TestCase
             ->postJson("/api/v1/franchises/{$franchise->id}/clients", [
                 'name' => 'Wrong Type',
                 'email' => 'wrongtype@test.com',
-                'password' => 'password123',
+                'password' => 'Password123',
                 'client_type' => 'admin',
             ]);
 
@@ -672,7 +672,7 @@ class FranchiseMemberTest extends TestCase
             ->postJson("/api/v1/franchises/{$franchise->id}/clients", [
                 'name' => 'My Client',
                 'email' => 'myclient@test.com',
-                'password' => 'password123',
+                'password' => 'Password123',
                 'client_type' => 'owner',
             ]);
 
@@ -689,7 +689,7 @@ class FranchiseMemberTest extends TestCase
             ->postJson("/api/v1/franchises/{$otherFranchise->id}/clients", [
                 'name' => 'Intruder',
                 'email' => 'intruderclient@test.com',
-                'password' => 'password123',
+                'password' => 'Password123',
                 'client_type' => 'owner',
             ]);
 
@@ -706,7 +706,7 @@ class FranchiseMemberTest extends TestCase
             ->postJson("/api/v1/franchises/{$franchise->id}/clients", [
                 'name' => 'Active Client',
                 'email' => 'activeclient@test.com',
-                'password' => 'password123',
+                'password' => 'Password123',
                 'client_type' => 'owner',
             ]);
 

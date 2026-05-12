@@ -17,7 +17,7 @@ class StoreFranchiseAdminRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'string', Password::min(8)],
+            'password' => ['required', 'string', Password::min(8)->mixedCase()->numbers()],
             'area' => ['required', 'string', 'in:full_access,accounting,marketing,operations,legal,human_resources'],
             'phone' => ['nullable', 'string', 'max:30'],
             'position' => ['nullable', 'string', 'max:255'],

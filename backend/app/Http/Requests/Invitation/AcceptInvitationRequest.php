@@ -18,7 +18,7 @@ class AcceptInvitationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()->uncompromised()],
+            'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
         ];
     }
 }
