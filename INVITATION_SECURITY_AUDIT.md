@@ -465,4 +465,19 @@ Esta ronda abordó una filtración genuina de datos en el endpoint `accept()` qu
 | **F3** | Tenant IDs (franchise, company) están en `$fillable` | **Aceptación de Riesgo Controlado**: Estos campos están explícitamente diseñados para asignación masiva en módulos administrativos (`CompanyController`, `BbAssignmentController`). Quitarlo rompería el sistema. El payload solo pasa cuando las validaciones `FormRequest` (vía traits estrictos) lo autorizan. Añadido el punto 10 a `CLAUDE.md`. | `CLAUDE.md` |
 | **F4** | Sin rate limiting en `verify()` y `accept()` | **Falso Positivo (Duplicado 6x)**: Protegidos por `throttle:invitation` (implementado en R4). La IA repetidamente pierde contexto del archivo de rutas. | N/A |
 
+---
+
+## Round 10: Auditoría Estructural Profunda (RESOLVED ✓)
+
+Esta ronda abordó una filtración contextual de datos y discrepancias en códigos HTTP que podrían funcionar como oráculos de tiempo. También se clarificó la postura de unicidad en base de datos al usar SoftDeletes.
+
+### Análisis de Hallazgos
+
+| # | Issue | Fix / Rationale | File / Status |
+|---|-------|-----------------|---------------|
+| **F1** | El `activation_url` se expone en la respuesta | **Mejora Aplicada**: El front-end usa esta URL en entornos de desarrollo para la función "Copiar Enlace". Se condicionó la respuesta de la API usando `app()->environment('local', 'staging')` para asegurar que en producción la URL viaje **exclusivamente** por correo electrónico, evitando exposición en logs y devtools. | `InvitationController.php` |
+| **F2** | `accept()` diferencia 404 vs 410 creando un oráculo | **Mejora Aplicada**: Aunque unificar estos errores empobrece ligeramente la UX frontend, se priorizó la seguridad unificando todas las fallas a un `404 (invitation.invalid_link)`. Esto garantiza que un atacante no pueda distinguir si un token caducado alguna vez existió, cerrando cualquier vector de escrutinio algorítmico. | `InvitationService.php` y `InvitationTest.php` |
+| **F3** | Rate limiting en `verify()` y `accept()` ausente | **Falso Positivo (Duplicado 7x)**: La protección `throttle:invitation` está firmemente implementada y probada. | N/A |
+| **F4** | Migración no crea partial unique index en `email` tras SoftDeletes | **Aceptación de Riesgo Controlado**: La DB mantiene un `UNIQUE(email)` restrictivo. Modificarlo a un Partial Index (`WHERE deleted_at IS NULL`) es exclusivo de PostgreSQL y rompería los tests corriendo en SQLite. La unicidad de "re-invitaciones a correos borrados" ya está manejada de forma segura a nivel de aplicación (`Rule::unique()->whereNull('deleted_at')` y queries usando `withTrashed()`). Se documentó en `CLAUDE.md`. | `CLAUDE.md` |
+
 **Status: Ready for production merge.**

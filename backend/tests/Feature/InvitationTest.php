@@ -1182,7 +1182,7 @@ class InvitationTest extends TestCase
         $response->assertStatus(404);
     }
 
-    public function test_accept_returns_410_for_expired_token(): void
+    public function test_accept_returns_404_for_expired_token(): void
     {
         $pending = $this->createPendingInvitation([
             'invitation_token' => 'expired_accept_token',
@@ -1194,7 +1194,8 @@ class InvitationTest extends TestCase
             'password_confirmation' => 'MySecure123!',
         ]);
 
-        $response->assertStatus(410);
+        $response->assertStatus(404);
+        $response->assertJsonPath('message', 'invitation.invalid_link');
     }
 
     // ===========================================================================

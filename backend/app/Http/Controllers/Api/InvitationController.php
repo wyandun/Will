@@ -56,12 +56,15 @@ class InvitationController extends Controller
 
         $result = $this->service->send($request->validated(), auth()->user());
 
+        $data = ['user' => new InvitationResource($result['user'])];
+
+        if (app()->environment('local', 'staging')) {
+            $data['activation_url'] = $result['activation_url'];
+        }
+
         return response()->json([
             'success' => true,
-            'data' => [
-                'user' => new InvitationResource($result['user']),
-                'activation_url' => $result['activation_url'],
-            ],
+            'data' => $data,
             'message' => 'invitation.sent_success',
         ], 201);
     }
@@ -75,12 +78,15 @@ class InvitationController extends Controller
 
         $result = $this->service->resendById($user, auth()->user());
 
+        $data = ['user' => new InvitationResource($result['user'])];
+
+        if (app()->environment('local', 'staging')) {
+            $data['activation_url'] = $result['activation_url'];
+        }
+
         return response()->json([
             'success' => true,
-            'data' => [
-                'user' => new InvitationResource($result['user']),
-                'activation_url' => $result['activation_url'],
-            ],
+            'data' => $data,
             'message' => 'invitation.resent_success',
         ]);
     }

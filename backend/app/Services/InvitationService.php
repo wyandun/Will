@@ -167,7 +167,7 @@ class InvitationService
             }
 
             if ($user->invitation_expires_at && $user->invitation_expires_at->isPast()) {
-                abort(410, 'invitation.link_expired');
+                abort(404, 'invitation.invalid_link');
             }
 
             // Security: invitation_token is not mass-assignable. All security-
