@@ -404,4 +404,19 @@ En esta revisión, un agente automatizado reportó 4 hallazgos. Tras analizar la
 | **F3** | Soft-deleted users bypass the unique email check | **Falso Positivo (Ya Resuelto en R9)**. La request valida esto intencionalmente para que `InvitationService::send()` intercepte el soft-delete con `User::withTrashed()->first()` y retorne un 422 manejado con un mensaje específico. Se amplió el docblock de la Request. | `SendInvitationRequest.php` |
 | **F4** | `pendingInvitation()` scope includes soft-deleted users | **Falso Positivo (Resuelto)**. El trait `SoftDeletes` inyecta automáticamente un Global Scope que añade `deleted_at IS NULL` a todas las queries de Eloquent. Se documentó este comportamiento en el model scope. | `User::scopePendingInvitation()` |
 
+---
+
+## Round 6: API Pagination Pattern & Hardening (RESOLVED ✓)
+
+Esta revisión resolvió de manera definitiva 4 advertencias recurrentes alineando el código de invitaciones con los patrones nativos del resto del framework.
+
+### Análisis de Hallazgos
+
+| # | Issue | Fix / Rationale | File / Status |
+|---|-------|-----------------|---------------|
+| **F1** | `verify()` leaks user existence | **Mejora Aplicada**: Se eliminó el campo `name` de la respuesta JSON para que no se filtre en caso de escaneo activo. El endpoint ahora solo retorna el `email` para prellenar el formulario. | `InvitationController::verify()` |
+| **F2** | Paginación `resolve()` manual (bypasses envelope) | **Resuelto**: Se reescribió `index()` para usar `InvitationResource::collection($pending)->additional(['success' => true])`, idéntico a `FranchiseController`. Todos los tests mutaron de `data.data` a `data`. | `InvitationController::index()` |
+| **F3** | Token timing window (`verify()` -> `accept()`) | **Falso Positivo (Resuelto)**: La operación concurrente está protegida por `lockForUpdate()` y la destrucción del token (`invitation_token = null`) ocurre de manera atómica dentro de la transacción. Se añadió un DocBlock aclaratorio. | `InvitationService::verify()` |
+| **F4** | `abort_if` 403 no es un JSON string | **Falso Positivo**: Laravel convierte automáticamente todas las excepciones lanzadas por `abort()` en un payload JSON cuando se negocia con `Accept: application/json`. No requiere cambios. | `InvitationController::index()` |
+
 **Status: Ready for production merge.**

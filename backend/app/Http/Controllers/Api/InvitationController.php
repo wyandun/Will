@@ -10,6 +10,7 @@ use App\Http\Resources\InvitationResource;
 use App\Models\User;
 use App\Services\InvitationService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class InvitationController extends Controller
 {
@@ -22,7 +23,7 @@ class InvitationController extends Controller
     /**
      * List all pending (not yet accepted) invitations.
      */
-    public function index(): JsonResponse
+    public function index(): AnonymousResourceCollection
     {
         $this->authorize('inviteUsers', User::class);
 
@@ -42,24 +43,7 @@ class InvitationController extends Controller
 
         $pending = $query->paginate(config('pagination.invitation_per_page', 25));
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'data' => InvitationResource::collection($pending)->resolve(),
-                'meta' => [
-                    'current_page' => $pending->currentPage(),
-                    'last_page' => $pending->lastPage(),
-                    'per_page' => $pending->perPage(),
-                    'total' => $pending->total(),
-                ],
-                'links' => [
-                    'first' => $pending->url(1),
-                    'last' => $pending->url($pending->lastPage()),
-                    'prev' => $pending->previousPageUrl(),
-                    'next' => $pending->nextPageUrl(),
-                ],
-            ],
-        ]);
+        return InvitationResource::collection($pending)->additional(['success' => true]);
     }
 
     /**
@@ -129,7 +113,6 @@ class InvitationController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'name' => $user->name,
                 'email' => $user->email,
             ],
         ]);
