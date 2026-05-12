@@ -50,10 +50,10 @@ class User extends Authenticatable
         'sm_franchise_id',
         'company_id',
         'sub_franchise_id',
-        'invitation_token',
+        // invitation_token and inviter_id are intentionally NOT fillable (security-sensitive).
+        // Set them exclusively via explicit assignment: $user->invitation_token = $value.
         'invitation_accepted_at',
         'invitation_expires_at',
-        'inviter_id',
         'last_seen_at',
         'area',
     ];
@@ -137,6 +137,10 @@ class User extends Authenticatable
 
     /**
      * Users who have a pending invitation (token set, not yet accepted).
+     *
+     * Note: Laravel's SoftDeletes global scope automatically appends
+     * `deleted_at IS NULL` to this query, preventing soft-deleted
+     * invitations from appearing in pending lists.
      */
     public function scopePendingInvitation(Builder $query): Builder
     {

@@ -28,6 +28,11 @@ final class Role
     public const SUB_FRANCHISE_ADMIN = 'sub_franchise_admin';
 
     /**
+     * Prevent instantiation.
+     */
+    private function __construct() {}
+
+    /**
      * All roles that may be assigned via an invitation.
      * SUPERADMIN is excluded — it is never assigned through the invitation flow.
      *

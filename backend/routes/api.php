@@ -41,6 +41,8 @@ Route::prefix('auth')->group(function () {
 // ---------------------------------------------------------------------------
 // Invitations — public (no auth required)
 // Verify token validity and accept an invitation (set password + auto-login).
+// Note: Rate limiting (throttle:invitation) is applied here (Round 1, Finding R4)
+// to prevent token enumeration/brute-force attacks.
 // ---------------------------------------------------------------------------
 Route::prefix('invitations')->middleware('throttle:invitation')->group(function () {
     Route::get('/{token}/verify', [InvitationController::class, 'verify']);

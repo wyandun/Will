@@ -10,6 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role as SpatieRole;
@@ -65,6 +66,11 @@ class InvitationTest extends TestCase
 
         // Reset rate limiter cache so throttle:invitation doesn't accumulate across tests.
         Cache::flush();
+
+        // Fake HIBP API calls so ->uncompromised() always passes in tests.
+        // This prevents network dependency and lets us use any well-formatted
+        // test password without risking a real breach-database hit.
+        Http::fake(['api.pwnedpasswords.com/*' => Http::response('', 200)]);
     }
 
     // ---------------------------------------------------------------------------
@@ -149,7 +155,7 @@ class InvitationTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertJsonPath('success', true);
-        $response->assertJsonCount(2, 'data.data');
+        $response->assertJsonCount(2, 'data');
     }
 
     public function test_admin_sm_can_list_pending_invitations(): void
@@ -161,7 +167,7 @@ class InvitationTest extends TestCase
         $response = $this->actingAs($adminSm)->getJson('/api/v1/invitations');
 
         $response->assertStatus(200);
-        $response->assertJsonCount(1, 'data.data');
+        $response->assertJsonCount(1, 'data');
     }
 
     public function test_invitation_index_returns_correct_json_structure(): void
@@ -175,17 +181,23 @@ class InvitationTest extends TestCase
         $response->assertJsonStructure([
             'success',
             'data' => [
-                'data' => [
-                    '*' => [
-                        'id',
-                        'name',
-                        'email',
-                        'invitation_expires_at',
-                        'roles',
-                    ],
+                '*' => [
+                    'id',
+                    'name',
+                    'email',
+                    'invitation_expires_at',
+                    'role',
                 ],
+            ],
+            'meta' => [
                 'current_page',
                 'total',
+            ],
+            'links' => [
+                'first',
+                'last',
+                'prev',
+                'next',
             ],
         ]);
     }
@@ -203,7 +215,7 @@ class InvitationTest extends TestCase
         DB::enableQueryLog();
 
         $response = $this->actingAs($superadmin)->getJson('/api/v1/invitations');
-        $response->assertStatus(200)->assertJsonCount(5, 'data.data');
+        $response->assertStatus(200)->assertJsonCount(5, 'data');
 
         $queries = DB::getQueryLog();
         DB::disableQueryLog();
@@ -214,7 +226,7 @@ class InvitationTest extends TestCase
         // Pagination adds 1 extra COUNT(*) query.
         // Upper-bound chosen generously; failure here means a relation was
         // accidentally un-eager-loaded (e.g. Spatie role->permissions queried per user).
-        $this->assertCount(5, $response->json('data.data'));
+        $this->assertCount(5, $response->json('data'));
         $this->assertLessThanOrEqual(13, count($queries),
             'Query count scaled with collection size — possible N+1. Queries: '
             .implode("\n", array_column($queries, 'query'))
@@ -236,7 +248,7 @@ class InvitationTest extends TestCase
         $response = $this->actingAs($superadmin)->getJson('/api/v1/invitations');
 
         $response->assertStatus(200);
-        $response->assertJsonCount(1, 'data.data');
+        $response->assertJsonCount(1, 'data');
     }
 
     public function test_regular_user_is_forbidden_from_invitation_index(): void
@@ -253,6 +265,17 @@ class InvitationTest extends TestCase
         $admin = $this->createSystemAdmin();
 
         $response = $this->actingAs($admin)->getJson('/api/v1/invitations');
+
+        $response->assertStatus(403);
+    }
+
+    public function test_index_returns_403_if_user_has_null_franchise(): void
+    {
+        // A non-superadmin with sm_franchise_id = null would produce
+        // WHERE sm_franchise_id IS NULL, potentially leaking cross-tenant rows.
+        $adminSm = $this->createAdminSm(['sm_franchise_id' => null]);
+
+        $response = $this->actingAs($adminSm)->getJson('/api/v1/invitations');
 
         $response->assertStatus(403);
     }
@@ -724,6 +747,23 @@ class InvitationTest extends TestCase
         $response->assertStatus(422);
     }
 
+    public function test_resend_returns_422_if_user_has_no_invitation_token(): void
+    {
+        // Edge case: invitation_accepted_at is null but invitation_token is also null
+        // (e.g. a user that was revoked then un-soft-deleted manually).
+        $superadmin = $this->createSuperadmin();
+        $user = User::factory()->create([
+            'email' => 'no_token@test.com',
+            'invitation_token' => null,
+            'invitation_accepted_at' => null,
+        ]);
+
+        $response = $this->actingAs($superadmin)
+            ->postJson("/api/v1/invitations/{$user->id}/resend");
+
+        $response->assertStatus(422);
+    }
+
     public function test_regular_user_cannot_resend_invitation(): void
     {
         $user = $this->createRegularUser();
@@ -795,7 +835,7 @@ class InvitationTest extends TestCase
             ->deleteJson("/api/v1/invitations/{$pending->id}");
 
         $response = $this->actingAs($superadmin)->getJson('/api/v1/invitations');
-        $response->assertJsonCount(0, 'data.data');
+        $response->assertJsonCount(0, 'data');
     }
 
     public function test_revoke_returns_422_if_invitation_already_accepted(): void
@@ -813,6 +853,22 @@ class InvitationTest extends TestCase
         $response->assertStatus(422);
     }
 
+    public function test_revoke_returns_422_if_user_has_no_invitation_token(): void
+    {
+        // Edge case: invitation_accepted_at is null but invitation_token is also null.
+        $superadmin = $this->createSuperadmin();
+        $user = User::factory()->create([
+            'email' => 'no_token_revoke@test.com',
+            'invitation_token' => null,
+            'invitation_accepted_at' => null,
+        ]);
+
+        $response = $this->actingAs($superadmin)
+            ->deleteJson("/api/v1/invitations/{$user->id}");
+
+        $response->assertStatus(422);
+    }
+
     public function test_regular_user_cannot_revoke_invitation(): void
     {
         $user = $this->createRegularUser();
@@ -822,6 +878,24 @@ class InvitationTest extends TestCase
             ->deleteJson("/api/v1/invitations/{$pending->id}");
 
         $response->assertStatus(403);
+    }
+
+    public function test_revoke_nulls_invitation_token(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $pending = $this->createPendingInvitation([
+            'email' => 'token_null_check@test.com',
+            'invitation_token' => 'token_to_be_nulled',
+        ]);
+        $pendingId = $pending->id;
+
+        $this->actingAs($superadmin)
+            ->deleteJson("/api/v1/invitations/{$pendingId}");
+
+        // Verify the soft-deleted record has token nullified (defense-in-depth)
+        $softDeletedUser = User::withTrashed()->findOrFail($pendingId);
+        $this->assertNull($softDeletedUser->invitation_token);
+        $this->assertNull($softDeletedUser->invitation_expires_at);
     }
 
     // ===========================================================================
@@ -841,9 +915,8 @@ class InvitationTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertJsonPath('success', true);
-        $response->assertJsonPath('data.name', 'María Pérez');
-        $response->assertJsonPath('data.email', 'maria@test.com');
-        $response->assertJsonPath('data.role', Role::SB_OWNER);
+        $response->assertJsonPath('data.email', 'm***@test.com');
+        $response->assertJsonMissingPath('data.role');
     }
 
     public function test_verify_returns_correct_json_structure(): void
@@ -855,8 +928,9 @@ class InvitationTest extends TestCase
         $response->assertStatus(200);
         $response->assertJsonStructure([
             'success',
-            'data' => ['name', 'email', 'role'],
+            'data' => ['email'],
         ]);
+        $response->assertJsonMissingPath('data.role');
     }
 
     public function test_verify_returns_404_for_nonexistent_token(): void
@@ -880,7 +954,7 @@ class InvitationTest extends TestCase
         $response->assertStatus(404);
     }
 
-    public function test_verify_returns_410_for_expired_token(): void
+    public function test_verify_returns_404_for_expired_token(): void
     {
         $pending = $this->createPendingInvitation([
             'invitation_token' => 'expired_token_abc',
@@ -889,7 +963,7 @@ class InvitationTest extends TestCase
 
         $response = $this->getJson('/api/v1/invitations/expired_token_abc/verify');
 
-        $response->assertStatus(410);
+        $response->assertStatus(404);
     }
 
     // ===========================================================================
@@ -928,7 +1002,13 @@ class InvitationTest extends TestCase
         $response->assertStatus(200);
         $response->assertJsonStructure([
             'data' => [
-                'user',
+                'user' => [
+                    'id',
+                    'name',
+                    'email',
+                    'avatar_path',
+                    'sm_franchise_id',
+                ],
                 'token',
                 'role',
                 'permissions',
@@ -1081,9 +1161,10 @@ class InvitationTest extends TestCase
         $pending = $this->createPendingInvitation(['invitation_token' => 'val_pw_exact8']);
         $pending->assignRole(Role::SB_OWNER);
 
+        // Password must be 8+ chars, mixed case, and contain numbers (Password rule).
         $response = $this->postJson('/api/v1/invitations/val_pw_exact8/accept', [
-            'password' => '12345678',
-            'password_confirmation' => '12345678',
+            'password' => 'Abc1defg',
+            'password_confirmation' => 'Abc1defg',
         ]);
 
         $response->assertStatus(200);
@@ -1101,7 +1182,7 @@ class InvitationTest extends TestCase
         $response->assertStatus(404);
     }
 
-    public function test_accept_returns_410_for_expired_token(): void
+    public function test_accept_returns_404_for_expired_token(): void
     {
         $pending = $this->createPendingInvitation([
             'invitation_token' => 'expired_accept_token',
@@ -1113,7 +1194,8 @@ class InvitationTest extends TestCase
             'password_confirmation' => 'MySecure123!',
         ]);
 
-        $response->assertStatus(410);
+        $response->assertStatus(404);
+        $response->assertJsonPath('message', 'invitation.invalid_link');
     }
 
     // ===========================================================================
@@ -1125,7 +1207,8 @@ class InvitationTest extends TestCase
         Notification::fake();
 
         // 1. Admin sends invitation
-        $adminSm = $this->createAdminSm(['email' => 'admin_sender@test.com']);
+        $franchise = $this->createFranchise();
+        $adminSm = $this->createAdminSm(['email' => 'admin_sender@test.com', 'sm_franchise_id' => $franchise->id]);
         $sendResp = $this->actingAs($adminSm)
             ->postJson('/api/v1/invitations', [
                 'name' => 'Nuevo Usuario',
@@ -1147,9 +1230,8 @@ class InvitationTest extends TestCase
         $verifyResp = $this->getJson("/api/v1/invitations/{$token}/verify");
 
         $verifyResp->assertStatus(200);
-        $verifyResp->assertJsonPath('data.name', 'Nuevo Usuario');
-        $verifyResp->assertJsonPath('data.email', 'nuevo@test.com');
-        $verifyResp->assertJsonPath('data.role', Role::SB_OWNER);
+        $verifyResp->assertJsonPath('data.email', 'n***@test.com');
+        $verifyResp->assertJsonMissingPath('data.role');
 
         // 3. Invited user sets their password (public endpoint, no auth)
         $acceptResp = $this->postJson("/api/v1/invitations/{$token}/accept", [
@@ -1177,7 +1259,7 @@ class InvitationTest extends TestCase
 
         // 6. Invitation no longer appears in pending list
         $indexResp = $this->actingAs($adminSm)->getJson('/api/v1/invitations');
-        $indexResp->assertJsonCount(0, 'data.data');
+        $indexResp->assertJsonCount(0, 'data');
     }
 
     // ===========================================================================
@@ -1213,8 +1295,8 @@ class InvitationTest extends TestCase
         $response = $this->actingAs($adminSm)->getJson('/api/v1/invitations');
 
         $response->assertStatus(200);
-        $response->assertJsonCount(1, 'data.data');
-        $response->assertJsonPath('data.data.0.email', 'own@test.com');
+        $response->assertJsonCount(1, 'data');
+        $response->assertJsonPath('data.0.email', 'own@test.com');
     }
 
     public function test_superadmin_sees_all_invitations_across_franchises(): void
@@ -1229,7 +1311,7 @@ class InvitationTest extends TestCase
         $response = $this->actingAs($superadmin)->getJson('/api/v1/invitations');
 
         $response->assertStatus(200);
-        $response->assertJsonCount(2, 'data.data');
+        $response->assertJsonCount(2, 'data');
     }
 
     // ===========================================================================
@@ -1314,18 +1396,17 @@ class InvitationTest extends TestCase
         $this->assertNotContains(Role::SUPERADMIN, Role::invitable());
     }
 
-    public function test_role_invitable_includes_all_non_superadmin_roles(): void
+    public function test_role_invitable_covers_all_non_superadmin_constants(): void
     {
-        $invitable = Role::invitable();
+        $constants = (new \ReflectionClass(Role::class))->getConstants();
+        $expected = array_values(array_filter($constants, fn ($v) => $v !== Role::SUPERADMIN));
+        sort($expected);
+        $actual = Role::invitable();
+        sort($actual);
 
-        $this->assertContains(Role::SYSTEM_ADMIN, $invitable);
-        $this->assertContains(Role::SYSTEM_ADMIN_READONLY, $invitable);
-        $this->assertContains(Role::ADMIN_SM, $invitable);
-        $this->assertContains(Role::SB_OWNER, $invitable);
-        $this->assertContains(Role::SB_EMPLOYEE, $invitable);
-        $this->assertContains(Role::BB_EMPLOYEE, $invitable);
-        $this->assertContains(Role::SUB_FRANCHISE_OWNER, $invitable);
-        $this->assertContains(Role::SUB_FRANCHISE_ADMIN, $invitable);
-        $this->assertCount(8, $invitable);
+        $this->assertSame($expected, $actual,
+            'Role::invitable() is out of sync with the class constants. '
+            .'Add the missing role(s) to invitable().'
+        );
     }
 }

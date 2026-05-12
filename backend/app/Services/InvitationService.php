@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\UserPermission;
 use App\Notifications\UserInvitationNotification;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -64,18 +65,37 @@ class InvitationService
         }
 
         // Brand-new user
+        // CSPRNG via random_bytes(): 64 base-62 chars ≈ 381 bits entropy.
+        // Rate-limited by throttle:invitation (10/min per IP).
         $token = Str::random(64);
 
-        $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            // Placeholder password — overwritten when the user accepts the invitation.
-            'password' => Hash::make(Str::random(32)),
-            'invitation_token' => $token,
-            'invitation_expires_at' => now()->addDays(self::EXPIRY_DAYS),
-            'inviter_id' => $invitedBy->id,
-            'sm_franchise_id' => $invitedBy->sm_franchise_id,
-        ]);
+        try {
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                // Placeholder password — overwritten when the user accepts the invitation.
+                'password' => Hash::make(Str::random(32)),
+                'invitation_expires_at' => now()->addDays(self::EXPIRY_DAYS),
+                'sm_franchise_id' => $invitedBy->sm_franchise_id,
+            ]);
+
+            // Security: invitation_token and inviter_id are not mass-assignable — set explicitly
+            // to prevent token injection via any mass-assignment path.
+            $user->invitation_token = $token;
+            $user->inviter_id = $invitedBy->id;
+            $user->save();
+        } catch (QueryException $e) {
+            // Race condition: another request created an active user with the same email
+            // between validation and this write. Detect duplicate key errors (23000 for SQLite,
+            // 23505 for Postgres) and convert to a user-facing validation error.
+            $code = $e->errorInfo[0] ?? '';
+            if (in_array($code, ['23000', '23505'], true)) {
+                throw ValidationException::withMessages([
+                    'email' => ['invitation.email_already_active'],
+                ]);
+            }
+            throw $e;
+        }
 
         $user->assignRole($data['role']);
 
@@ -87,8 +107,8 @@ class InvitationService
      */
     public function resendById(User $user, User $invitedBy): array
     {
-        if ($user->invitation_accepted_at) {
-            abort(422, 'invitation.already_accepted_cannot_resend');
+        if ($user->invitation_accepted_at || ! $user->invitation_token) {
+            abort(422, 'invitation.not_pending');
         }
 
         return $this->regenerateAndNotify($user, $invitedBy);
@@ -97,7 +117,11 @@ class InvitationService
     /**
      * Verify that a token exists, belongs to a pending invitation, and has not expired.
      *
-     * @throws HttpException 404 | 410
+     * Both failure paths (invalid or expired token) return 404 with the same message
+     * to prevent enumeration attacks that could distinguish between "never existed"
+     * and "once existed but expired."
+     *
+     * @throws HttpException 404
      */
     public function verify(string $token): User
     {
@@ -110,7 +134,7 @@ class InvitationService
         }
 
         if ($user->invitation_expires_at && $user->invitation_expires_at->isPast()) {
-            abort(410, 'invitation.link_expired');
+            abort(404, 'invitation.invalid_link');
         }
 
         return $user;
@@ -124,7 +148,7 @@ class InvitationService
      * lock so that concurrent requests cannot both pass the expiry check and then
      * both activate the same account (TOCTOU race condition).
      *
-     * @return array{user: User, token: string, role: string, permissions: Collection}
+     * @return array{user: array, token: string, role: string, permissions: Collection}
      *
      * @throws HttpException 404 | 410
      */
@@ -143,18 +167,15 @@ class InvitationService
             }
 
             if ($user->invitation_expires_at && $user->invitation_expires_at->isPast()) {
-                abort(410, 'invitation.link_expired');
+                abort(404, 'invitation.invalid_link');
             }
 
-            $user->update([
-                'password' => Hash::make($password),
-                'invitation_token' => null,
-                'invitation_expires_at' => null,
-                'invitation_accepted_at' => now(),
-            ]);
-
-            // email_verified_at is not in $fillable (it is framework-managed),
-            // so we set it directly and persist with save().
+            // Security: invitation_token is not mass-assignable. All security-
+            // sensitive fields are set via explicit assignment in a single save().
+            $user->password = Hash::make($password);
+            $user->invitation_token = null;
+            $user->invitation_expires_at = null;
+            $user->invitation_accepted_at = now();
             $user->email_verified_at = now();
             $user->save();
 
@@ -162,12 +183,24 @@ class InvitationService
             // before issuing a fresh one.
             $user->tokens()->delete();
 
-            $plainToken = $user->createToken('portal')->plainTextToken;
+            // Scope: ['*'] grants full abilities (standard for primary session tokens).
+            // Expiry: uses sanctum.expiration config (default 1440 min = 24 h).
+            $plainToken = $user->createToken(
+                'portal',
+                ['*'],
+                now()->addMinutes((int) config('sanctum.expiration', 1440))
+            )->plainTextToken;
             $role = $user->getRoleNames()->first() ?? '';
             $permissions = UserPermission::where('user_id', $user->id)->get();
 
             return [
-                'user' => $user->fresh(),
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'avatar_path' => $user->avatar_path ?? null,
+                    'sm_franchise_id' => $user->sm_franchise_id ?? null,
+                ],
                 'token' => $plainToken,
                 'role' => $role,
                 'permissions' => $permissions,
@@ -177,12 +210,22 @@ class InvitationService
 
     /**
      * Revoke a pending invitation by soft-deleting the placeholder user record.
+     *
+     * Explicitly nulls the invitation_token before soft-delete (defense-in-depth).
+     * While Eloquent's SoftDeletes trait automatically scopes queries to exclude
+     * soft-deleted rows, explicitly nullifying the token prevents any latent leakage
+     * if the row is ever examined directly.
      */
     public function revoke(User $user): void
     {
-        if ($user->invitation_accepted_at) {
-            abort(422, 'invitation.already_accepted_cannot_revoke');
+        if ($user->invitation_accepted_at || ! $user->invitation_token) {
+            abort(422, 'invitation.not_pending');
         }
+
+        // Security: invitation_token is not mass-assignable — set explicitly.
+        $user->invitation_token = null;
+        $user->invitation_expires_at = null;
+        $user->save();
 
         $user->tokens()->delete();
         $user->delete();
@@ -196,13 +239,14 @@ class InvitationService
      */
     private function regenerateAndNotify(User $user, User $invitedBy, ?string $role = null): array
     {
+        // CSPRNG via random_bytes(): 64 base-62 chars ≈ 381 bits entropy.
         $token = Str::random(64);
 
-        $user->update([
-            'invitation_token' => $token,
-            'invitation_expires_at' => now()->addDays(self::EXPIRY_DAYS),
-            'inviter_id' => $invitedBy->id,
-        ]);
+        // Security: invitation_token is not mass-assignable — set explicitly.
+        $user->invitation_token = $token;
+        $user->invitation_expires_at = now()->addDays(self::EXPIRY_DAYS);
+        $user->inviter_id = $invitedBy->id;
+        $user->save();
 
         if ($role && ! $user->hasRole($role)) {
             $user->syncRoles([$role]);
@@ -220,9 +264,9 @@ class InvitationService
 
         return [
             'user' => $user->load('roles'),
-            // Only expose the raw URL outside production so devs can test
-            // without a real mail service (check storage/logs/laravel.log too).
-            'activation_url' => app()->isProduction() ? null : $activationUrl,
+            // Only expose the raw URL in local/testing so devs can test
+            // without a real mail service. Do not expose in staging/production.
+            'activation_url' => app()->environment(['local', 'testing']) ? $activationUrl : null,
         ];
     }
 

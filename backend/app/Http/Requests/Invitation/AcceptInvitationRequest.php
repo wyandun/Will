@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Invitation;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rules\Password;
 
 class AcceptInvitationRequest extends FormRequest
 {
@@ -17,7 +18,7 @@ class AcceptInvitationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()->uncompromised()],
         ];
     }
 }

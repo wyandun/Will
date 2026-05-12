@@ -3,23 +3,28 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\Role;
+use App\Helpers\StringHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Invitation\AcceptInvitationRequest;
 use App\Http\Requests\Invitation\SendInvitationRequest;
+use App\Http\Resources\InvitationResource;
 use App\Models\User;
 use App\Services\InvitationService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class InvitationController extends Controller
 {
     public function __construct(private readonly InvitationService $service) {}
 
-    // ─── Protected endpoints (auth:sanctum + inviteUsers policy) ─────────────
+    // ─── Protected endpoints ──────────────────────────────────────────────────
+    // index()/store()  → class-level policy: 'inviteUsers' on User::class
+    // resend()/destroy() → instance-level policy: 'manageInvitation' on $user
 
     /**
      * List all pending (not yet accepted) invitations.
      */
-    public function index(): JsonResponse
+    public function index(): AnonymousResourceCollection
     {
         $this->authorize('inviteUsers', User::class);
 
@@ -31,15 +36,15 @@ class InvitationController extends Controller
             ->orderByDesc('created_at');
 
         if (! $authUser->hasRole(Role::SUPERADMIN)) {
+            // Guard against null franchise: WHERE sm_franchise_id = NULL would
+            // silently match other null-franchise rows (cross-tenant data leak).
+            abort_if(is_null($authUser->sm_franchise_id), 403, 'invitation.no_franchise_context');
             $query->where('sm_franchise_id', $authUser->sm_franchise_id);
         }
 
         $pending = $query->paginate(config('pagination.invitation_per_page', 25));
 
-        return response()->json([
-            'success' => true,
-            'data' => $pending,
-        ]);
+        return InvitationResource::collection($pending)->additional(['success' => true]);
     }
 
     /**
@@ -51,9 +56,15 @@ class InvitationController extends Controller
 
         $result = $this->service->send($request->validated(), auth()->user());
 
+        $data = ['user' => new InvitationResource($result['user'])];
+
+        if (config('invitation.expose_activation_url')) {
+            $data['activation_url'] = $result['activation_url'];
+        }
+
         return response()->json([
             'success' => true,
-            'data' => $result,
+            'data' => $data,
             'message' => 'invitation.sent_success',
         ], 201);
     }
@@ -67,9 +78,15 @@ class InvitationController extends Controller
 
         $result = $this->service->resendById($user, auth()->user());
 
+        $data = ['user' => new InvitationResource($result['user'])];
+
+        if (config('invitation.expose_activation_url')) {
+            $data['activation_url'] = $result['activation_url'];
+        }
+
         return response()->json([
             'success' => true,
-            'data' => $result,
+            'data' => $data,
             'message' => 'invitation.resent_success',
         ]);
     }
@@ -94,7 +111,7 @@ class InvitationController extends Controller
 
     /**
      * Verify that an invitation token is valid and not expired.
-     * Returns safe user info for the activation form (name, email, role).
+     * Returns safe user info for the activation form (name, email only).
      */
     public function verify(string $token): JsonResponse
     {
@@ -103,9 +120,7 @@ class InvitationController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->getRoleNames()->first() ?? '',
+                'email' => StringHelper::maskEmail($user->email),
             ],
         ]);
     }
