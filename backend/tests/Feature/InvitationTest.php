@@ -843,7 +843,7 @@ class InvitationTest extends TestCase
         $response->assertJsonPath('success', true);
         $response->assertJsonPath('data.name', 'María Pérez');
         $response->assertJsonPath('data.email', 'maria@test.com');
-        $response->assertJsonPath('data.role', Role::SB_OWNER);
+        $response->assertJsonMissing(['role' => Role::SB_OWNER]);
     }
 
     public function test_verify_returns_correct_json_structure(): void
@@ -855,8 +855,9 @@ class InvitationTest extends TestCase
         $response->assertStatus(200);
         $response->assertJsonStructure([
             'success',
-            'data' => ['name', 'email', 'role'],
+            'data' => ['name', 'email'],
         ]);
+        $response->assertJsonMissingPath('data.role');
     }
 
     public function test_verify_returns_404_for_nonexistent_token(): void
@@ -1149,7 +1150,7 @@ class InvitationTest extends TestCase
         $verifyResp->assertStatus(200);
         $verifyResp->assertJsonPath('data.name', 'Nuevo Usuario');
         $verifyResp->assertJsonPath('data.email', 'nuevo@test.com');
-        $verifyResp->assertJsonPath('data.role', Role::SB_OWNER);
+        $verifyResp->assertJsonMissingPath('data.role');
 
         // 3. Invited user sets their password (public endpoint, no auth)
         $acceptResp = $this->postJson("/api/v1/invitations/{$token}/accept", [
