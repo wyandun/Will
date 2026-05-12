@@ -3,25 +3,29 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Event\ListEventsRequest;
 use App\Http\Requests\Event\StoreEventRequest;
 use App\Http\Requests\Event\UpdateEventRequest;
 use App\Http\Resources\EventResource;
 use App\Models\Event;
 use App\Services\EventService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class EventController extends Controller
 {
     public function __construct(private EventService $eventService) {}
 
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(ListEventsRequest $request): AnonymousResourceCollection
     {
+        $this->authorize('viewAny', Event::class);
+
+        $validated = $request->validated();
+
         $events = $this->eventService->list(
             $request->user(),
-            $request->query('from'),
-            $request->query('to'),
+            $validated['from'] ?? null,
+            $validated['to'] ?? null,
         );
 
         return EventResource::collection($events);

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Enums\Role;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Franchise\StoreFranchiseRequest;
 use App\Http\Requests\Franchise\UpdateFranchiseRequest;
@@ -173,16 +172,7 @@ class FranchiseController extends Controller
     {
         $this->authorize('view', $franchise);
 
-        // N.B. whereHas('roles') generates a correlated subquery — acceptable for
-        // a single-record show() but must NOT be copied into index() or list queries.
-        $franchise->loadCount([
-            'users as admins_count' => function ($q) {
-                $q->whereHas('roles', function ($r) {
-                    $r->where('name', Role::ADMIN_SM);
-                });
-            },
-            'companies as clients_count',
-        ]);
+        $franchise->loadMemberCounts();
 
         return response()->json([
             'success' => true,

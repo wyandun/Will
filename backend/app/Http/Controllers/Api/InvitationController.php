@@ -107,7 +107,6 @@ class InvitationController extends Controller
             'data' => [
                 'name' => $user->name,
                 'email' => $user->email,
-                'role' => $user->getRoleNames()->first() ?? '',
             ],
         ]);
     }

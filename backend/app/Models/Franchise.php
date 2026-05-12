@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Role;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -97,6 +98,25 @@ class Franchise extends Model
     //       subsequent pages are invisible. Before production, add backend
     //       ?search= and ?active= query parameters in FranchiseService::list()
     //       using these scopes.
+
+    /**
+     * Load admins_count and clients_count on this franchise instance.
+     *
+     * Encapsulates the correlated whereHas subquery so controllers don't
+     * duplicate it. Do NOT use this inside index/list queries — the
+     * correlated subquery per row is only acceptable for single records.
+     */
+    public function loadMemberCounts(): self
+    {
+        return $this->loadCount([
+            'users as admins_count' => function ($q) {
+                $q->whereHas('roles', function ($r) {
+                    $r->where('name', Role::ADMIN_SM);
+                });
+            },
+            'companies as clients_count',
+        ]);
+    }
 
     /**
      * Scope a query to only include active franchises.

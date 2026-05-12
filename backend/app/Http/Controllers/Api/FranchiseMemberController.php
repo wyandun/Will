@@ -23,9 +23,14 @@ class FranchiseMemberController extends Controller
     {
         $this->authorize('view', $franchise);
 
+        $members = $this->service->getMembers($franchise);
+
         return response()->json([
             'success' => true,
-            'data' => $this->service->getMembers($franchise),
+            'data' => [
+                'admins' => FranchiseMemberResource::collection($members['admins']),
+                'clients' => FranchiseMemberResource::collection($members['clients']),
+            ],
         ]);
     }
 
