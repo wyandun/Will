@@ -75,11 +75,15 @@ class InvitationService
                 'email' => $data['email'],
                 // Placeholder password — overwritten when the user accepts the invitation.
                 'password' => Hash::make(Str::random(32)),
-                'invitation_token' => $token,
                 'invitation_expires_at' => now()->addDays(self::EXPIRY_DAYS),
                 'inviter_id' => $invitedBy->id,
                 'sm_franchise_id' => $invitedBy->sm_franchise_id,
             ]);
+
+            // Security: invitation_token is not mass-assignable — set explicitly
+            // to prevent token injection via any mass-assignment path.
+            $user->invitation_token = $token;
+            $user->save();
         } catch (QueryException $e) {
             // Race condition: another request created an active user with the same email
             // between validation and this write. Detect duplicate key errors (23000 for SQLite,
@@ -166,15 +170,12 @@ class InvitationService
                 abort(410, 'invitation.link_expired');
             }
 
-            $user->update([
-                'password' => Hash::make($password),
-                'invitation_token' => null,
-                'invitation_expires_at' => null,
-                'invitation_accepted_at' => now(),
-            ]);
-
-            // email_verified_at is not in $fillable (it is framework-managed),
-            // so we set it directly and persist with save().
+            // Security: invitation_token is not mass-assignable. All security-
+            // sensitive fields are set via explicit assignment in a single save().
+            $user->password = Hash::make($password);
+            $user->invitation_token = null;
+            $user->invitation_expires_at = null;
+            $user->invitation_accepted_at = now();
             $user->email_verified_at = now();
             $user->save();
 
@@ -182,7 +183,13 @@ class InvitationService
             // before issuing a fresh one.
             $user->tokens()->delete();
 
-            $plainToken = $user->createToken('portal')->plainTextToken;
+            // Scope: ['*'] grants full abilities (standard for primary session tokens).
+            // Expiry: uses sanctum.expiration config (default 1440 min = 24 h).
+            $plainToken = $user->createToken(
+                'portal',
+                ['*'],
+                now()->addMinutes((int) config('sanctum.expiration', 1440))
+            )->plainTextToken;
             $role = $user->getRoleNames()->first() ?? '';
             $permissions = UserPermission::where('user_id', $user->id)->get();
 
@@ -209,10 +216,10 @@ class InvitationService
             abort(422, 'invitation.not_pending');
         }
 
-        $user->update([
-            'invitation_token' => null,
-            'invitation_expires_at' => null,
-        ]);
+        // Security: invitation_token is not mass-assignable — set explicitly.
+        $user->invitation_token = null;
+        $user->invitation_expires_at = null;
+        $user->save();
 
         $user->tokens()->delete();
         $user->delete();
@@ -229,11 +236,11 @@ class InvitationService
         // CSPRNG via random_bytes(): 64 base-62 chars ≈ 381 bits entropy.
         $token = Str::random(64);
 
-        $user->update([
-            'invitation_token' => $token,
-            'invitation_expires_at' => now()->addDays(self::EXPIRY_DAYS),
-            'inviter_id' => $invitedBy->id,
-        ]);
+        // Security: invitation_token is not mass-assignable — set explicitly.
+        $user->invitation_token = $token;
+        $user->invitation_expires_at = now()->addDays(self::EXPIRY_DAYS);
+        $user->inviter_id = $invitedBy->id;
+        $user->save();
 
         if ($role && ! $user->hasRole($role)) {
             $user->syncRoles([$role]);

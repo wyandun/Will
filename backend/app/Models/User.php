@@ -50,7 +50,8 @@ class User extends Authenticatable
         'sm_franchise_id',
         'company_id',
         'sub_franchise_id',
-        'invitation_token',
+        // invitation_token is intentionally NOT fillable (security-sensitive).
+        // Set it exclusively via explicit assignment: $user->invitation_token = $value.
         'invitation_accepted_at',
         'invitation_expires_at',
         'inviter_id',
