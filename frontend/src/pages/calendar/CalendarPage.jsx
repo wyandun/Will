@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { eventsApi } from '../../api/events';
@@ -78,6 +79,16 @@ function formatTime(isoString, allDay) {
   return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
 
+// ─── Shared event shape ───────────────────────────────────────────────────────
+const eventShape = PropTypes.shape({
+  id:       PropTypes.number.isRequired,
+  title:    PropTypes.string.isRequired,
+  all_day:  PropTypes.bool,
+  color:    PropTypes.string,
+  start_at: PropTypes.string,
+  type:     PropTypes.string,
+});
+
 // ─── Shared action buttons ────────────────────────────────────────────────────
 function ActionButtons({ ev, onEdit, onDelete, t }) {
   return (
@@ -104,8 +115,15 @@ function ActionButtons({ ev, onEdit, onDelete, t }) {
   );
 }
 
+ActionButtons.propTypes = {
+  ev:       eventShape.isRequired,
+  onEdit:   PropTypes.func.isRequired,
+  onDelete: PropTypes.func.isRequired,
+  t:        PropTypes.func.isRequired,
+};
+
 // ─── Month View ───────────────────────────────────────────────────────────────
-function MonthView({ events, currentDate, onEdit, onDelete, t }) {
+function MonthView({ events, currentDate, onEdit }) {
   const year  = currentDate.getFullYear();
   const month = currentDate.getMonth();
   const days  = buildMonthGrid(year, month);
@@ -188,8 +206,14 @@ function MonthView({ events, currentDate, onEdit, onDelete, t }) {
   );
 }
 
+MonthView.propTypes = {
+  events:      PropTypes.arrayOf(eventShape).isRequired,
+  currentDate: PropTypes.instanceOf(Date).isRequired,
+  onEdit:      PropTypes.func.isRequired,
+};
+
 // ─── Week View ────────────────────────────────────────────────────────────────
-function WeekView({ events, currentDate, onEdit, onDelete, t }) {
+function WeekView({ events, currentDate, onEdit }) {
   const weekStart = getWeekStart(currentDate);
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart);
@@ -253,6 +277,12 @@ function WeekView({ events, currentDate, onEdit, onDelete, t }) {
     </div>
   );
 }
+
+WeekView.propTypes = {
+  events:      PropTypes.arrayOf(eventShape).isRequired,
+  currentDate: PropTypes.instanceOf(Date).isRequired,
+  onEdit:      PropTypes.func.isRequired,
+};
 
 // ─── List View ────────────────────────────────────────────────────────────────
 function ListView({ events, onEdit, onDelete, t }) {
@@ -352,6 +382,13 @@ function ListView({ events, onEdit, onDelete, t }) {
     </div>
   );
 }
+
+ListView.propTypes = {
+  events:   PropTypes.arrayOf(eventShape).isRequired,
+  onEdit:   PropTypes.func.isRequired,
+  onDelete: PropTypes.func.isRequired,
+  t:        PropTypes.func.isRequired,
+};
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function CalendarPage() {
