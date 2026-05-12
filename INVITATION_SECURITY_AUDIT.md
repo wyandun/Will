@@ -480,4 +480,18 @@ Esta ronda abordó una filtración contextual de datos y discrepancias en códig
 | **F3** | Rate limiting en `verify()` y `accept()` ausente | **Falso Positivo (Duplicado 7x)**: La protección `throttle:invitation` está firmemente implementada y probada. | N/A |
 | **F4** | Migración no crea partial unique index en `email` tras SoftDeletes | **Aceptación de Riesgo Controlado**: La DB mantiene un `UNIQUE(email)` restrictivo. Modificarlo a un Partial Index (`WHERE deleted_at IS NULL`) es exclusivo de PostgreSQL y rompería los tests corriendo en SQLite. La unicidad de "re-invitaciones a correos borrados" ya está manejada de forma segura a nivel de aplicación (`Rule::unique()->whereNull('deleted_at')` y queries usando `withTrashed()`). Se documentó en `CLAUDE.md`. | `CLAUDE.md` |
 
+---
+
+## Round 11: Hardening Final — Config Flag (RESOLVED ✓)
+
+Esta ronda introdujo la mejora estructural más limpia de toda la serie: desacoplar la lógica de seguridad del entorno de aplicación a un flag de configuración explícito y versionado.
+
+### Análisis de Hallazgos
+
+| # | Issue | Fix / Rationale | File / Status |
+|---|-------|-----------------|---------------|
+| **F1** | `! app()->isProduction()` no protege staging | **Resuelto**: Creado `config/invitation.php` con la clave `expose_activation_url` (default `false`). La variable `INVITATION_EXPOSE_URL` se activa explícitamente en `phpunit.xml` para tests. Staging nunca la tendrá activa a menos que se configure deliberadamente. Los archivos `.env.example` y `CLAUDE.md` documentan el riesgo. | `config/invitation.php`, `InvitationController.php`, `phpunit.xml`, `.env.example` |
+| **F2** | Role no tiene test de sincronización | **Falso Positivo (Duplicado R8)**: El test `test_role_invitable_covers_all_non_superadmin_constants` ya existe en `InvitationTest.php` desde el Round 8. Usa reflection para detectar desincronización automáticamente en CI. Documentado en `CLAUDE.md` punto 14. | N/A |
+| **F3** | `pendingInvitation()` scope ambiguo con `created_at` | **Falso Positivo**: El scope solo aplica `whereNotNull` / `whereNull` — sin JOINs. No existe ambigüedad de columna posible. Documentado en `CLAUDE.md` punto 15. | N/A |
+
 **Status: Ready for production merge.**

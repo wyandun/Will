@@ -58,7 +58,7 @@ class InvitationController extends Controller
 
         $data = ['user' => new InvitationResource($result['user'])];
 
-        if (! app()->isProduction()) {
+        if (config('invitation.expose_activation_url')) {
             $data['activation_url'] = $result['activation_url'];
         }
 
@@ -80,7 +80,7 @@ class InvitationController extends Controller
 
         $data = ['user' => new InvitationResource($result['user'])];
 
-        if (! app()->isProduction()) {
+        if (config('invitation.expose_activation_url')) {
             $data['activation_url'] = $result['activation_url'];
         }
 
