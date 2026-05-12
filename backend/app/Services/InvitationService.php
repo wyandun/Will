@@ -76,13 +76,13 @@ class InvitationService
                 // Placeholder password — overwritten when the user accepts the invitation.
                 'password' => Hash::make(Str::random(32)),
                 'invitation_expires_at' => now()->addDays(self::EXPIRY_DAYS),
-                'inviter_id' => $invitedBy->id,
                 'sm_franchise_id' => $invitedBy->sm_franchise_id,
             ]);
 
-            // Security: invitation_token is not mass-assignable — set explicitly
+            // Security: invitation_token and inviter_id are not mass-assignable — set explicitly
             // to prevent token injection via any mass-assignment path.
             $user->invitation_token = $token;
+            $user->inviter_id = $invitedBy->id;
             $user->save();
         } catch (QueryException $e) {
             // Race condition: another request created an active user with the same email

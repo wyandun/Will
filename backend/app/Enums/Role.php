@@ -28,6 +28,11 @@ final class Role
     public const SUB_FRANCHISE_ADMIN = 'sub_franchise_admin';
 
     /**
+     * Prevent instantiation.
+     */
+    private function __construct() {}
+
+    /**
      * All roles that may be assigned via an invitation.
      * SUPERADMIN is excluded — it is never assigned through the invitation flow.
      *
@@ -35,15 +40,9 @@ final class Role
      */
     public static function invitable(): array
     {
-        return [
-            self::SYSTEM_ADMIN,
-            self::SYSTEM_ADMIN_READONLY,
-            self::ADMIN_SM,
-            self::SB_OWNER,
-            self::SB_EMPLOYEE,
-            self::BB_EMPLOYEE,
-            self::SUB_FRANCHISE_OWNER,
-            self::SUB_FRANCHISE_ADMIN,
-        ];
+        return array_values(array_filter(
+            (new \ReflectionClass(self::class))->getConstants(),
+            fn (string $value) => $value !== self::SUPERADMIN
+        ));
     }
 }

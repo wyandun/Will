@@ -419,4 +419,19 @@ Esta revisión resolvió de manera definitiva 4 advertencias recurrentes alinean
 | **F3** | Token timing window (`verify()` -> `accept()`) | **Falso Positivo (Resuelto)**: La operación concurrente está protegida por `lockForUpdate()` y la destrucción del token (`invitation_token = null`) ocurre de manera atómica dentro de la transacción. Se añadió un DocBlock aclaratorio. | `InvitationService::verify()` |
 | **F4** | `abort_if` 403 no es un JSON string | **Falso Positivo**: Laravel convierte automáticamente todas las excepciones lanzadas por `abort()` en un payload JSON cuando se negocia con `Accept: application/json`. No requiere cambios. | `InvitationController::index()` |
 
+---
+
+## Round 7: Anti-Enumeration & Breaking the Feedback Loop (RESOLVED ✓)
+
+Esta ronda se enfocó en endurecer las defensas anti-enumeración de usuarios, aplicar protección de asignación masiva a `inviter_id`, y lo más importante: **documentar las decisiones arquitectónicas de seguridad en CLAUDE.md** para evitar que los agentes automatizados entren en bucles de reportes falsos o contradictorios.
+
+### Análisis de Hallazgos
+
+| # | Issue | Fix / Rationale | File / Status |
+|---|-------|-----------------|---------------|
+| **F1** | `verify()` retorna email (Flip-flop del agente respecto a R6) | **Mejora Aplicada**: Se implementó una función `maskEmail()` para retornar el email ofuscado (ej. `j***@example.com`). Esto permite que el frontend muestre un hint amigable sin exponer la dirección real ante ataques de enumeración. | `InvitationController::verify()` |
+| **F2** | La clase `Role` debe ser un PHP Enum | **Mejora Adaptada**: Se mantuvo como clase (ya que la librería *Spatie Permissions* depende estrictamente de strings), pero se blindó añadiendo un constructor privado y utilizando `ReflectionClass` en `invitable()` para auto-detectar todas las constantes futuras. | `Role.php` |
+| **F3** | No hay rate-limiting en `verify()` y `accept()` | **Falso Positivo (Duplicado 3x)**: Ya está protegido por `throttle:invitation` (implementado desde R4). Se añadió a la documentación de decisiones de seguridad. | `CLAUDE.md` |
+| **F4** | `inviter_id` es mass-assignable | **Resuelto**: Al igual que `invitation_token` en rondas previas, se removió `inviter_id` de la propiedad `$fillable` del modelo `User` y ahora se asigna de manera estrictamente explícita (`$user->inviter_id = ...`) en la capa de servicios. | `User.php` y `InvitationService.php` |
+
 **Status: Ready for production merge.**

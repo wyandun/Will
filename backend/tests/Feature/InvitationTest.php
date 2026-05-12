@@ -915,7 +915,7 @@ class InvitationTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertJsonPath('success', true);
-        $response->assertJsonPath('data.email', 'maria@test.com');
+        $response->assertJsonPath('data.email', 'm****@test.com');
         $response->assertJsonMissingPath('data.role');
     }
 
@@ -1223,7 +1223,7 @@ class InvitationTest extends TestCase
         $verifyResp = $this->getJson("/api/v1/invitations/{$token}/verify");
 
         $verifyResp->assertStatus(200);
-        $verifyResp->assertJsonPath('data.email', 'nuevo@test.com');
+        $verifyResp->assertJsonPath('data.email', 'n****@test.com');
         $verifyResp->assertJsonMissingPath('data.role');
 
         // 3. Invited user sets their password (public endpoint, no auth)

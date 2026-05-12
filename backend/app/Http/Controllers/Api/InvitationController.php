@@ -113,9 +113,22 @@ class InvitationController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'email' => $user->email,
+                'email' => $this->maskEmail($user->email),
             ],
         ]);
+    }
+
+    /**
+     * Mask an email address to prevent enumeration.
+     *
+     * e.g., john@example.com -> j***@example.com
+     */
+    private function maskEmail(string $email): string
+    {
+        [$local, $domain] = explode('@', $email);
+        $masked = substr($local, 0, 1).str_repeat('*', max(strlen($local) - 1, 3));
+
+        return "{$masked}@{$domain}";
     }
 
     /**
