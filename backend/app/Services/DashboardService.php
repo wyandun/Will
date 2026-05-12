@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\User;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class DashboardService
 {
@@ -207,7 +208,9 @@ class DashboardService
                 'id' => $post->id,
                 'title' => $post->title,
                 'author_name' => $post->author_name,
-                'author_avatar' => $post->author_avatar,
+                'author_avatar' => $post->author_avatar
+                    ? Storage::disk('public')->url($post->author_avatar)
+                    : null,
                 'content' => $post->body,
                 'image_path' => $post->image_url,
                 'likes_count' => (int) ($likes[$post->id] ?? 0),
