@@ -356,7 +356,7 @@ class FeedController extends Controller
     {
         $result = $this->feedService->react($postId, $request->user(), $request->validated('emoji'));
 
-        $message = $result['user_reaction'] !== null ? 'Reacción registrada.' : 'Reacción eliminada.';
+        $message = $result['user_reaction'] !== null ? __('feed.reaction_added') : __('feed.reaction_removed');
 
         return response()->json([
             'success' => true,
@@ -487,7 +487,7 @@ class FeedController extends Controller
         return response()->json([
             'success' => true,
             'data' => ['comment' => $comment],
-            'message' => 'Comentario publicado.',
+            'message' => __('feed.comment_created'),
         ], 201);
     }
 
