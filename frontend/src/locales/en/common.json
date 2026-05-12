@@ -412,6 +412,60 @@
       "client_type_investor": "Investor"
     }
   },
+  "calendar": {
+    "title": "Calendar",
+    "subtitle": "Manage your meetings and events.",
+    "new": "New Event",
+    "loading": "Loading events…",
+    "load_error": "Failed to load events. Please try again.",
+    "delete_error": "Failed to delete the event. Please try again.",
+    "delete_confirm": "Delete \"{{title}}\"? This action cannot be undone.",
+    "empty_title": "No events yet",
+    "empty_subtitle": "Create your first event to get started.",
+    "creating": "Creating…",
+    "create": "Create Event",
+    "edit_title": "Edit Event",
+    "new_title": "New Event",
+    "save_success": "Event saved successfully.",
+    "delete_success": "Event deleted successfully.",
+    "col_title": "Title",
+    "col_date": "Date",
+    "col_location": "Location",
+    "col_type": "Type",
+    "col_actions": "Actions",
+    "all_day_badge": "All day",
+    "types": {
+      "casual": "Casual",
+      "meeting": "Meeting",
+      "deadline": "Deadline",
+      "reminder": "Reminder",
+      "training": "Training"
+    },
+    "visibility": {
+      "private": "Private",
+      "franchise": "Franchise",
+      "public": "Public"
+    },
+    "form": {
+      "title": "Title",
+      "title_placeholder": "e.g. Team meeting",
+      "title_required": "Title is required.",
+      "description": "Description",
+      "description_placeholder": "Add a description…",
+      "location": "Location",
+      "location_placeholder": "e.g. Conference room A",
+      "start_at": "From",
+      "end_at": "To",
+      "end_before_start": "End must be after start.",
+      "timezone": "Timezone",
+      "timezone_placeholder": "Select a timezone",
+      "all_day": "All Day",
+      "color": "Color",
+      "visibility": "Visibility",
+      "type": "Type",
+      "type_placeholder": "Select a type"
+    }
+  },
   "system_admins": {
     "title": "System Administrators",
     "subtitle": "Manage accounts with global permissions across the platform.",

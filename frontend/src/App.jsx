@@ -12,6 +12,7 @@ import FeedPage from './pages/feed/FeedPage';
 import ProfilePage from './pages/profile/ProfilePage';
 import UsersPage from './pages/users/UsersPage';
 import AcceptInvitationPage from './pages/invitations/AcceptInvitationPage';
+import CalendarPage from './pages/calendar/CalendarPage';
 import { useAuthStore } from './store/authStore';
 
 /**
@@ -134,7 +135,7 @@ export default function App() {
               </RoleRoute>
             }
           />
-          <Route path="/calendar"    element={<StubPage title={t('nav.calendar')} />} />
+          <Route path="/calendar"    element={<CalendarPage />} />
           <Route path="/profile"     element={<ProfilePage />} />
         </Route>
 
