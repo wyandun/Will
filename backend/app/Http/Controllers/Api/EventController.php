@@ -38,6 +38,8 @@ class EventController extends Controller
 
     public function show(Event $event): EventResource
     {
+        $this->authorize('view', $event);
+
         $event->load('user');
 
         return new EventResource($event);

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Franchise\StoreFranchiseAdminRequest;
 use App\Http\Requests\Franchise\StoreFranchiseClientRequest;
+use App\Http\Resources\FranchiseMemberResource;
 use App\Models\Franchise;
 use App\Services\FranchiseMemberService;
 use Illuminate\Http\JsonResponse;
@@ -41,7 +42,7 @@ class FranchiseMemberController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $user,
+            'data' => new FranchiseMemberResource($user),
             'message' => 'franchise_detail.admin_created',
         ], 201);
     }
@@ -59,7 +60,7 @@ class FranchiseMemberController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $user,
+            'data' => new FranchiseMemberResource($user),
             'message' => 'franchise_detail.client_created',
         ], 201);
     }

@@ -6,9 +6,11 @@ use App\Enums\Role;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Invitation\AcceptInvitationRequest;
 use App\Http\Requests\Invitation\SendInvitationRequest;
+use App\Http\Resources\InvitationResource;
 use App\Models\User;
 use App\Services\InvitationService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class InvitationController extends Controller
 {
@@ -38,7 +40,7 @@ class InvitationController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $pending,
+            'data' => InvitationResource::collection($pending),
         ]);
     }
 
@@ -49,7 +51,7 @@ class InvitationController extends Controller
     {
         $this->authorize('inviteUsers', User::class);
 
-        $result = $this->service->send($request->validated(), auth()->user());
+        $result = $this->service->send($request->validated(), $request->user());
 
         return response()->json([
             'success' => true,
@@ -61,11 +63,11 @@ class InvitationController extends Controller
     /**
      * Resend an existing pending invitation (regenerates the token).
      */
-    public function resend(User $user): JsonResponse
+    public function resend(Request $request, User $user): JsonResponse
     {
         $this->authorize('manageInvitation', $user);
 
-        $result = $this->service->resendById($user, auth()->user());
+        $result = $this->service->resendById($user, $request->user());
 
         return response()->json([
             'success' => true,
