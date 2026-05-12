@@ -16,12 +16,27 @@ class EventService
      * - sb_owner / sb_employee / bb_employee: own events + public events
      * - fallback: own events only
      */
-    public function list(User $user): Collection
+    /**
+     * Return events visible to the given user.
+     *
+     * - superadmin / system_admin: all events
+     * - admin_sm: own events + franchise-scoped events within their franchise + public events
+     * - sb_owner / sb_employee / bb_employee: own events + public events
+     * - fallback: own events only
+     *
+     * Optional $from / $to constrain results to events whose start_at falls
+     * within the supplied range (ISO date strings, both endpoints inclusive).
+     */
+    public function list(User $user, ?string $from = null, ?string $to = null): Collection
     {
         $role = $user->getRoleNames()->first();
 
         if (in_array($role, ['superadmin', 'system_admin'])) {
-            return Event::with('user')->orderBy('start_at')->get();
+            return Event::with('user')
+                ->when($from, fn ($q) => $q->where('start_at', '>=', $from))
+                ->when($to, fn ($q) => $q->where('start_at', '<=', $to))
+                ->orderBy('start_at')
+                ->get();
         }
 
         if ($role === 'admin_sm' && $user->sm_franchise_id) {
@@ -37,6 +52,8 @@ class EventService
                         })
                         ->orWhere('visibility', 'public');
                 })
+                ->when($from, fn ($q) => $q->where('start_at', '>=', $from))
+                ->when($to, fn ($q) => $q->where('start_at', '<=', $to))
                 ->orderBy('start_at')
                 ->get();
         }
@@ -47,6 +64,8 @@ class EventService
                 $q->where('user_id', $user->id)
                     ->orWhere('visibility', 'public');
             })
+            ->when($from, fn ($q) => $q->where('start_at', '>=', $from))
+            ->when($to, fn ($q) => $q->where('start_at', '<=', $to))
             ->orderBy('start_at')
             ->get();
     }

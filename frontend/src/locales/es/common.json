@@ -434,6 +434,11 @@
     "col_type": "Tipo",
     "col_actions": "Acciones",
     "all_day_badge": "Todo el día",
+    "today": "Hoy",
+    "view_month": "Mes",
+    "view_week": "Semana",
+    "view_list": "Lista",
+    "no_events_period": "Sin eventos en este período.",
     "types": {
       "casual": "Casual",
       "meeting": "Reunión",

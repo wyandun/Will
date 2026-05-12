@@ -434,6 +434,11 @@
     "col_type": "Type",
     "col_actions": "Actions",
     "all_day_badge": "All day",
+    "today": "Today",
+    "view_month": "Month",
+    "view_week": "Week",
+    "view_list": "List",
+    "no_events_period": "No events this period.",
     "types": {
       "casual": "Casual",
       "meeting": "Meeting",

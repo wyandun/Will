@@ -18,7 +18,11 @@ class EventController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
-        $events = $this->eventService->list($request->user());
+        $events = $this->eventService->list(
+            $request->user(),
+            $request->query('from'),
+            $request->query('to'),
+        );
 
         return EventResource::collection($events);
     }

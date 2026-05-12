@@ -526,6 +526,155 @@ class EventTest extends TestCase
     }
 
     // ===========================================================================
+    // GET /api/v1/events?from=&to=  (date-range filtering — supports calendar views)
+    // ===========================================================================
+
+    public function test_events_filtered_by_from_date_only(): void
+    {
+        $user = $this->createSuperadmin();
+
+        Event::factory()->create(['user_id' => $user->id, 'start_at' => '2026-01-10 09:00:00', 'end_at' => '2026-01-10 10:00:00']);
+        Event::factory()->create(['user_id' => $user->id, 'start_at' => '2026-02-15 09:00:00', 'end_at' => '2026-02-15 10:00:00']);
+        Event::factory()->create(['user_id' => $user->id, 'start_at' => '2026-03-20 09:00:00', 'end_at' => '2026-03-20 10:00:00']);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events?from=2026-02-01');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(2, 'data');
+    }
+
+    public function test_events_filtered_by_to_date_only(): void
+    {
+        $user = $this->createSuperadmin();
+
+        Event::factory()->create(['user_id' => $user->id, 'start_at' => '2026-01-10 09:00:00', 'end_at' => '2026-01-10 10:00:00']);
+        Event::factory()->create(['user_id' => $user->id, 'start_at' => '2026-02-15 09:00:00', 'end_at' => '2026-02-15 10:00:00']);
+        Event::factory()->create(['user_id' => $user->id, 'start_at' => '2026-03-20 09:00:00', 'end_at' => '2026-03-20 10:00:00']);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events?to=2026-02-28');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(2, 'data');
+    }
+
+    public function test_events_filtered_by_full_date_range(): void
+    {
+        $user = $this->createSuperadmin();
+
+        Event::factory()->create(['user_id' => $user->id, 'start_at' => '2026-01-10 09:00:00', 'end_at' => '2026-01-10 10:00:00']);
+        $inRange = Event::factory()->create(['user_id' => $user->id, 'start_at' => '2026-02-15 09:00:00', 'end_at' => '2026-02-15 10:00:00']);
+        Event::factory()->create(['user_id' => $user->id, 'start_at' => '2026-03-20 09:00:00', 'end_at' => '2026-03-20 10:00:00']);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events?from=2026-02-01&to=2026-02-28');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(1, 'data');
+        $response->assertJsonPath('data.0.id', $inRange->id);
+    }
+
+    public function test_date_range_filter_includes_boundary_dates(): void
+    {
+        $user = $this->createSuperadmin();
+
+        $first = Event::factory()->create(['user_id' => $user->id, 'start_at' => '2026-06-01 00:00:00', 'end_at' => '2026-06-01 01:00:00']);
+        $last = Event::factory()->create(['user_id' => $user->id, 'start_at' => '2026-06-30 23:59:00', 'end_at' => '2026-06-30 23:59:59']);
+        Event::factory()->create(['user_id' => $user->id, 'start_at' => '2026-07-01 00:00:00', 'end_at' => '2026-07-01 01:00:00']);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events?from=2026-06-01&to=2026-06-30 23:59:59');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(2, 'data');
+        $ids = collect($response->json('data'))->pluck('id')->all();
+        $this->assertContains($first->id, $ids);
+        $this->assertContains($last->id, $ids);
+    }
+
+    public function test_date_range_filter_respects_role_visibility(): void
+    {
+        $owner = $this->createSbOwner();
+        $other = User::factory()->create();
+
+        // Own event in range — visible
+        Event::factory()->create(['user_id' => $owner->id, 'start_at' => '2026-06-10 09:00:00', 'end_at' => '2026-06-10 10:00:00', 'visibility' => 'private']);
+        // Other's public event in range — visible
+        Event::factory()->create(['user_id' => $other->id, 'start_at' => '2026-06-15 09:00:00', 'end_at' => '2026-06-15 10:00:00', 'visibility' => 'public']);
+        // Other's private event in range — NOT visible
+        Event::factory()->create(['user_id' => $other->id, 'start_at' => '2026-06-20 09:00:00', 'end_at' => '2026-06-20 10:00:00', 'visibility' => 'private']);
+        // Own event outside range — excluded by date filter
+        Event::factory()->create(['user_id' => $owner->id, 'start_at' => '2026-07-05 09:00:00', 'end_at' => '2026-07-05 10:00:00', 'visibility' => 'private']);
+
+        $response = $this->actingAs($owner)->getJson('/api/v1/events?from=2026-06-01&to=2026-06-30');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(2, 'data');
+    }
+
+    public function test_date_range_filter_respects_admin_sm_scope(): void
+    {
+        $franchise = Franchise::factory()->create();
+        $admin = $this->createAdminSm($franchise);
+        $colleague = User::factory()->create(['sm_franchise_id' => $franchise->id]);
+        $outsider = User::factory()->create();
+
+        // Own private event in range — visible
+        Event::factory()->create(['user_id' => $admin->id, 'start_at' => '2026-06-05 09:00:00', 'end_at' => '2026-06-05 10:00:00', 'visibility' => 'private']);
+        // Colleague franchise event in range — visible
+        Event::factory()->create(['user_id' => $colleague->id, 'start_at' => '2026-06-10 09:00:00', 'end_at' => '2026-06-10 10:00:00', 'visibility' => 'franchise']);
+        // Outsider public event in range — visible
+        Event::factory()->create(['user_id' => $outsider->id, 'start_at' => '2026-06-15 09:00:00', 'end_at' => '2026-06-15 10:00:00', 'visibility' => 'public']);
+        // Outsider private event in range — NOT visible
+        Event::factory()->create(['user_id' => $outsider->id, 'start_at' => '2026-06-20 09:00:00', 'end_at' => '2026-06-20 10:00:00', 'visibility' => 'private']);
+        // Own event outside range — excluded by date filter
+        Event::factory()->create(['user_id' => $admin->id, 'start_at' => '2026-07-01 09:00:00', 'end_at' => '2026-07-01 10:00:00', 'visibility' => 'private']);
+
+        $response = $this->actingAs($admin)->getJson('/api/v1/events?from=2026-06-01&to=2026-06-30');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(3, 'data');
+    }
+
+    public function test_no_date_params_returns_all_visible_events(): void
+    {
+        $user = $this->createSuperadmin();
+        Event::factory()->count(5)->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(5, 'data');
+    }
+
+    public function test_date_range_returns_empty_when_no_events_in_period(): void
+    {
+        $user = $this->createSuperadmin();
+        Event::factory()->create(['user_id' => $user->id, 'start_at' => '2026-01-10 09:00:00', 'end_at' => '2026-01-10 10:00:00']);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events?from=2026-06-01&to=2026-06-30');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(0, 'data');
+    }
+
+    public function test_results_are_ordered_by_start_at_ascending(): void
+    {
+        $user = $this->createSuperadmin();
+
+        Event::factory()->create(['user_id' => $user->id, 'start_at' => '2026-06-20 09:00:00', 'end_at' => '2026-06-20 10:00:00']);
+        Event::factory()->create(['user_id' => $user->id, 'start_at' => '2026-06-05 09:00:00', 'end_at' => '2026-06-05 10:00:00']);
+        Event::factory()->create(['user_id' => $user->id, 'start_at' => '2026-06-12 09:00:00', 'end_at' => '2026-06-12 10:00:00']);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events?from=2026-06-01&to=2026-06-30');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(3, 'data');
+
+        $dates = collect($response->json('data'))->pluck('start_at')->all();
+        $sorted = $dates;
+        sort($sorted);
+        $this->assertSame($sorted, $dates);
+    }
+
+    // ===========================================================================
     // Color & All Day — specific field behavior
     // ===========================================================================
 
