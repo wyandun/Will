@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\InvitationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class InvitationController extends Controller
 {
@@ -21,7 +22,7 @@ class InvitationController extends Controller
     /**
      * List all pending (not yet accepted) invitations.
      */
-    public function index(): JsonResponse
+    public function index(): AnonymousResourceCollection
     {
         $this->authorize('inviteUsers', User::class);
 
