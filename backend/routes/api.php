@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FeedController;
 use App\Http\Controllers\Api\FranchiseController;
+use App\Http\Controllers\Api\InvitationController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\SystemAdminController;
 use Illuminate\Support\Facades\Route;
@@ -37,6 +38,17 @@ Route::prefix('auth')->group(function () {
 });
 
 // ---------------------------------------------------------------------------
+// Invitations — public (no auth required)
+// Verify token validity and accept an invitation (set password + auto-login).
+// Note: Rate limiting (throttle:invitation) is applied here (Round 1, Finding R4)
+// to prevent token enumeration/brute-force attacks.
+// ---------------------------------------------------------------------------
+Route::prefix('invitations')->middleware('throttle:invitation')->group(function () {
+    Route::get('/{token}/verify', [InvitationController::class, 'verify']);
+    Route::post('/{token}/accept', [InvitationController::class, 'accept']);
+});
+
+// ---------------------------------------------------------------------------
 // Auth — protected
 // ---------------------------------------------------------------------------
 Route::prefix('auth')->middleware('auth:sanctum')->group(function () {
@@ -61,6 +73,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('bb-assignments/{bbAssignment}', [BbAssignmentController::class, 'destroy']);
 
     Route::apiResource('system-admins', SystemAdminController::class)->only(['index', 'store', 'update', 'destroy']);
+
+    // Invitations — protected management endpoints
+    Route::get('invitations', [InvitationController::class, 'index']);
+    Route::post('invitations', [InvitationController::class, 'store']);
+    Route::post('invitations/{user}/resend', [InvitationController::class, 'resend']);
+    Route::delete('invitations/{user}', [InvitationController::class, 'destroy']);
 
     // User profile
     Route::prefix('profile')->group(function () {

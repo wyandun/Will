@@ -4,8 +4,12 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
@@ -16,15 +20,18 @@ use Spatie\Permission\Traits\HasRoles;
  * @property int|null $sm_franchise_id
  * @property int|null $company_id
  * @property int|null $sub_franchise_id
+ * @property int|null $inviter_id
  * @property string|null $avatar_path
  * @property Carbon|null $birth_date
+ * @property Carbon|null $invitation_accepted_at
+ * @property Carbon|null $invitation_expires_at
  * @property Carbon|null $last_seen_at
  * @property-read string|null $avatar_url
  */
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, HasRoles, Notifiable;
+    use HasApiTokens, HasFactory, HasRoles, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -40,6 +47,14 @@ class User extends Authenticatable
         'bio',
         'birth_date',
         'avatar_path',
+        'sm_franchise_id',
+        'company_id',
+        'sub_franchise_id',
+        // invitation_token and inviter_id are intentionally NOT fillable (security-sensitive).
+        // Set them exclusively via explicit assignment: $user->invitation_token = $value.
+        'invitation_accepted_at',
+        'invitation_expires_at',
+        'last_seen_at',
     ];
 
     /**
@@ -50,6 +65,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'invitation_token',
     ];
 
     /**
@@ -63,6 +79,8 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'birth_date' => 'date',
+            'invitation_accepted_at' => 'datetime',
+            'invitation_expires_at' => 'datetime',
             'last_seen_at' => 'datetime',
             'sm_franchise_id' => 'integer',
             'company_id' => 'integer',
@@ -79,9 +97,14 @@ class User extends Authenticatable
      */
     public function getAvatarUrlAttribute(): ?string
     {
-        return $this->avatar_path
-            ? Storage::disk('public')->url($this->avatar_path)
-            : null;
+        if (! $this->avatar_path) {
+            return null;
+        }
+
+        /** @var FilesystemAdapter $disk */
+        $disk = Storage::disk('public');
+
+        return $disk->url($this->avatar_path);
     }
 
     // ---------------------------------------------------------------------------
@@ -97,5 +120,29 @@ class User extends Authenticatable
     public function userPermissions(): HasMany
     {
         return $this->hasMany(UserPermission::class);
+    }
+
+    /**
+     * The admin who sent this user's invitation.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function invitedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'inviter_id');
+    }
+
+    // ─── Scopes ──────────────────────────────────────────────────────────────
+
+    /**
+     * Users who have a pending invitation (token set, not yet accepted).
+     *
+     * Note: Laravel's SoftDeletes global scope automatically appends
+     * `deleted_at IS NULL` to this query, preventing soft-deleted
+     * invitations from appearing in pending lists.
+     */
+    public function scopePendingInvitation(Builder $query): Builder
+    {
+        return $query->whereNotNull('invitation_token')->whereNull('invitation_accepted_at');
     }
 }

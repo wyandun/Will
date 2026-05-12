@@ -45,5 +45,11 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('login', function (Request $request): Limit {
             return Limit::perMinute(5)->by($request->input('email').$request->ip());
         });
+
+        // 10 requests per minute per IP for public invitation endpoints (verify + accept).
+        // Prevents token enumeration and brute-force on the accept flow.
+        RateLimiter::for('invitation', function (Request $request): Limit {
+            return Limit::perMinute(10)->by($request->ip());
+        });
     }
 }
