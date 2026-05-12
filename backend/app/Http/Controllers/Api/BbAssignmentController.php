@@ -7,17 +7,59 @@ use App\Http\Requests\BbAssignment\StoreBbAssignmentRequest;
 use App\Models\BbAssignment;
 use App\Services\BbAssignmentService;
 use Illuminate\Http\JsonResponse;
+use OpenApi\Attributes as OA;
 
 class BbAssignmentController extends Controller
 {
     public function __construct(private BbAssignmentService $bbAssignmentService) {}
 
-    /**
-     * Assign a BB user to a company.
-     *
-     * POST /api/v1/bb-assignments
-     * Only superadmin and admin_sm can perform this action.
-     */
+    #[OA\Post(
+        path: '/bb-assignments',
+        tags: ['BB Assignments'],
+        summary: 'Asignar un Business Bishop a una empresa',
+        description: 'Vincula un usuario con rol bb a una empresa. Un BB puede estar asignado a múltiples empresas. Solo superadmin y admin_sm (dentro de su franquicia) pueden realizar esta acción.',
+        security: [['sanctum' => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['bb_user_id', 'company_id'],
+                properties: [
+                    new OA\Property(
+                        property: 'bb_user_id',
+                        type: 'integer',
+                        example: 8,
+                        description: 'ID del usuario que debe tener el rol bb'
+                    ),
+                    new OA\Property(
+                        property: 'company_id',
+                        type: 'integer',
+                        example: 3,
+                        description: 'ID de la empresa a la que se asigna el BB. admin_sm solo puede asignar empresas de su franquicia.'
+                    ),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: 'Business Bishop asignado correctamente',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'data', ref: '#/components/schemas/BbAssignmentResource'),
+                        new OA\Property(property: 'message', type: 'string', example: 'Business Bishop asignado correctamente.'),
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
+            new OA\Response(
+                response: 422,
+                description: 'Error de validación',
+                content: new OA\JsonContent(ref: '#/components/schemas/ValidationError')
+            ),
+        ]
+    )]
     public function store(StoreBbAssignmentRequest $request): JsonResponse
     {
         $this->authorize('create', BbAssignment::class);
@@ -33,12 +75,38 @@ class BbAssignmentController extends Controller
         ], 201);
     }
 
-    /**
-     * Remove a BB assignment.
-     *
-     * DELETE /api/v1/bb-assignments/{bbAssignment}
-     * Only superadmin and admin_sm can perform this action.
-     */
+    #[OA\Delete(
+        path: '/bb-assignments/{bbAssignment}',
+        tags: ['BB Assignments'],
+        summary: 'Desasignar un Business Bishop de una empresa',
+        description: 'Elimina el vínculo BB-empresa. Solo superadmin y admin_sm pueden realizar esta acción.',
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(
+                name: 'bbAssignment',
+                in: 'path',
+                required: true,
+                description: 'ID del registro bb_assignment',
+                schema: new OA\Schema(type: 'integer', example: 1)
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Business Bishop desasignado correctamente',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'data', type: 'object', nullable: true, example: null),
+                        new OA\Property(property: 'message', type: 'string', example: 'Business Bishop desasignado correctamente.'),
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
+            new OA\Response(response: 404, ref: '#/components/responses/NotFound'),
+        ]
+    )]
     public function destroy(BbAssignment $bbAssignment): JsonResponse
     {
         $this->authorize('delete', $bbAssignment);

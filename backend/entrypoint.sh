@@ -13,4 +13,6 @@ set -e
 chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
+php /var/www/html/artisan storage:link --force 2>/dev/null || true
+
 exec "$@"

@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BbAssignmentController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\FeedController;
 use App\Http\Controllers\Api\FranchiseController;
 use App\Http\Controllers\Api\InvitationController;
 use App\Http\Controllers\Api\ProfileController;
@@ -83,6 +84,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/', [ProfileController::class, 'update']);
         Route::patch('/password', [ProfileController::class, 'updatePassword']);
         Route::post('/avatar', [ProfileController::class, 'uploadAvatar']);
+    });
+
+    // Feed
+    Route::prefix('feed')->group(function () {
+        Route::get('/posts', [FeedController::class, 'posts']);
+        Route::get('/presence', [FeedController::class, 'presence']);
+        Route::post('/posts', [FeedController::class, 'store']);
+        Route::put('/posts/{id}', [FeedController::class, 'update']);
+        Route::delete('/posts/{id}', [FeedController::class, 'destroy']);
     });
 
     // Dashboard
