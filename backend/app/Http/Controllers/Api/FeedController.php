@@ -11,8 +11,6 @@ use App\Services\FeedService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class FeedController extends Controller
 {
@@ -269,19 +267,13 @@ class FeedController extends Controller
     )]
     public function update(UpdatePostRequest $request, int $id): JsonResponse
     {
-        try {
-            $post = $this->feedService->updatePost(
-                $id,
-                $request->user(),
-                $request->validated(),
-                $request->hasFile('image') ? $request->file('image') : null,
-                $request->hasFile('attachment') ? $request->file('attachment') : null,
-            );
-        } catch (NotFoundHttpException $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 404);
-        } catch (AccessDeniedHttpException $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 403);
-        }
+        $post = $this->feedService->updatePost(
+            $id,
+            $request->user(),
+            $request->validated(),
+            $request->hasFile('image') ? $request->file('image') : null,
+            $request->hasFile('attachment') ? $request->file('attachment') : null,
+        );
 
         return response()->json([
             'success' => true,
@@ -313,13 +305,7 @@ class FeedController extends Controller
     )]
     public function destroy(Request $request, int $id): JsonResponse
     {
-        try {
-            $this->feedService->deletePost($id, $request->user());
-        } catch (NotFoundHttpException $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 404);
-        } catch (AccessDeniedHttpException $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 403);
-        }
+        $this->feedService->deletePost($id, $request->user());
 
         return response()->json(['success' => true]);
     }
@@ -366,11 +352,7 @@ class FeedController extends Controller
     )]
     public function react(ReactPostRequest $request, int $postId): JsonResponse
     {
-        try {
-            $result = $this->feedService->react($postId, $request->user(), $request->validated()['emoji']);
-        } catch (NotFoundHttpException $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 404);
-        }
+        $result = $this->feedService->react($postId, $request->user(), $request->validated()['emoji']);
 
         $message = $result['user_reaction'] !== null ? 'Reacción registrada.' : 'Reacción eliminada.';
 
@@ -388,7 +370,20 @@ class FeedController extends Controller
         security: [['sanctum' => []]],
         parameters: [
             new OA\Parameter(name: 'postId', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
-            new OA\Parameter(name: 'page', in: 'query', required: false, schema: new OA\Schema(type: 'integer', example: 1)),
+            new OA\Parameter(
+                name: 'page',
+                in: 'query',
+                required: false,
+                description: 'Número de página (empieza en 1)',
+                schema: new OA\Schema(type: 'integer', example: 1, minimum: 1)
+            ),
+            new OA\Parameter(
+                name: 'per_page',
+                in: 'query',
+                required: false,
+                description: 'Resultados por página (5–50, default 10)',
+                schema: new OA\Schema(type: 'integer', example: 10, minimum: 5, maximum: 50)
+            ),
         ],
         responses: [
             new OA\Response(
@@ -437,12 +432,9 @@ class FeedController extends Controller
     public function comments(Request $request, int $postId): JsonResponse
     {
         $page = max(1, (int) $request->query('page', 1));
+        $perPage = min(50, max(5, (int) $request->query('per_page', 10)));
 
-        try {
-            $data = $this->feedService->getComments($postId, $request->user(), $page);
-        } catch (NotFoundHttpException $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 404);
-        }
+        $data = $this->feedService->getComments($postId, $request->user(), $page, $perPage);
 
         return response()->json([
             'success' => true,
@@ -487,11 +479,7 @@ class FeedController extends Controller
     )]
     public function addComment(StoreCommentRequest $request, int $postId): JsonResponse
     {
-        try {
-            $comment = $this->feedService->addComment($postId, $request->user(), $request->validated()['content']);
-        } catch (NotFoundHttpException $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 404);
-        }
+        $comment = $this->feedService->addComment($postId, $request->user(), $request->validated()['content']);
 
         return response()->json([
             'success' => true,
@@ -525,13 +513,7 @@ class FeedController extends Controller
     )]
     public function deleteComment(Request $request, int $commentId): JsonResponse
     {
-        try {
-            $this->feedService->deleteComment($commentId, $request->user());
-        } catch (NotFoundHttpException $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 404);
-        } catch (AccessDeniedHttpException $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 403);
-        }
+        $this->feedService->deleteComment($commentId, $request->user());
 
         return response()->json(['success' => true]);
     }

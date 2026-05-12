@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Feed;
 
+use App\Enums\ReactionEmoji;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ReactPostRequest extends FormRequest
 {
@@ -17,7 +19,7 @@ class ReactPostRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'emoji' => ['required', 'string', 'in:👍,❤️,😂,🎉,😮'],
+            'emoji' => ['required', 'string', Rule::enum(ReactionEmoji::class)],
         ];
     }
 }

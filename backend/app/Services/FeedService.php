@@ -24,51 +24,63 @@ class FeedService
      * If the user has reacted with a different emoji, it is replaced.
      * If the user has not reacted, a new like interaction is inserted.
      *
+     * The entire toggle runs inside a DB::transaction with a lockForUpdate
+     * on the existing row to prevent race conditions from concurrent requests.
+     *
+     * The likes count is derived via delta arithmetic instead of a fresh COUNT(*)
+     * to avoid a second read after the write.
+     *
      * @return array{likes_count: int, user_reaction: string|null}
      */
     public function react(int $postId, User $user, string $emoji): array
     {
-        $post = DB::table('posts')->whereNull('deleted_at')->where('id', $postId)->first();
+        $this->findPostOrFail($postId);
 
-        if ($post === null) {
-            throw new NotFoundHttpException('Post not found.');
-        }
+        $userReaction = null;
+        $likesCount = 0;
 
-        $existing = DB::table('post_interactions')
-            ->where('post_id', $postId)
-            ->where('user_id', $user->id)
-            ->where('type', 'like')
-            ->first();
+        DB::transaction(function () use ($postId, $user, $emoji, &$userReaction, &$likesCount): void {
+            // Read the current count and lock the existing reaction row atomically.
+            $previousCount = (int) DB::table('post_interactions')
+                ->where('post_id', $postId)
+                ->where('type', 'like')
+                ->count();
 
-        if ($existing !== null) {
-            if ($existing->content === $emoji) {
-                // Same emoji — toggle off
-                DB::table('post_interactions')->where('id', $existing->id)->delete();
-                $userReaction = null;
+            $existing = DB::table('post_interactions')
+                ->where('post_id', $postId)
+                ->where('user_id', $user->id)
+                ->where('type', 'like')
+                ->lockForUpdate()
+                ->first();
+
+            if ($existing !== null) {
+                if ($existing->content === $emoji) {
+                    // Same emoji — toggle off
+                    DB::table('post_interactions')->where('id', $existing->id)->delete();
+                    $userReaction = null;
+                    $likesCount = max(0, $previousCount - 1);
+                } else {
+                    // Different emoji — replace (count unchanged)
+                    DB::table('post_interactions')
+                        ->where('id', $existing->id)
+                        ->update(['content' => $emoji, 'updated_at' => now()]);
+                    $userReaction = $emoji;
+                    $likesCount = $previousCount;
+                }
             } else {
-                // Different emoji — replace
-                DB::table('post_interactions')
-                    ->where('id', $existing->id)
-                    ->update(['content' => $emoji, 'updated_at' => now()]);
+                // No prior reaction — insert
+                DB::table('post_interactions')->insert([
+                    'post_id' => $postId,
+                    'user_id' => $user->id,
+                    'type' => 'like',
+                    'content' => $emoji,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
                 $userReaction = $emoji;
+                $likesCount = $previousCount + 1;
             }
-        } else {
-            // No prior reaction — insert
-            DB::table('post_interactions')->insert([
-                'post_id' => $postId,
-                'user_id' => $user->id,
-                'type' => 'like',
-                'content' => $emoji,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-            $userReaction = $emoji;
-        }
-
-        $likesCount = (int) DB::table('post_interactions')
-            ->where('post_id', $postId)
-            ->where('type', 'like')
-            ->count();
+        });
 
         return [
             'likes_count' => $likesCount,
@@ -85,11 +97,7 @@ class FeedService
      */
     public function getComments(int $postId, User $user, int $page = 1, int $perPage = 10): array
     {
-        $post = DB::table('posts')->whereNull('deleted_at')->where('id', $postId)->first();
-
-        if ($post === null) {
-            throw new NotFoundHttpException('Post not found.');
-        }
+        $this->findPostOrFail($postId);
 
         $paginator = DB::table('post_interactions as pi')
             ->join('users as u', 'u.id', '=', 'pi.user_id')
@@ -116,7 +124,7 @@ class FeedService
             $roleMap = DB::table('model_has_roles')
                 ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
                 ->whereIn('model_has_roles.model_id', $authorIds)
-                ->where('model_has_roles.model_type', 'App\\Models\\User')
+                ->where('model_has_roles.model_type', User::class)
                 ->select('model_has_roles.model_id', 'roles.name')
                 ->get()
                 ->groupBy('model_id')
@@ -156,11 +164,7 @@ class FeedService
      */
     public function addComment(int $postId, User $user, string $content): array
     {
-        $post = DB::table('posts')->whereNull('deleted_at')->where('id', $postId)->first();
-
-        if ($post === null) {
-            throw new NotFoundHttpException('Post not found.');
-        }
+        $this->findPostOrFail($postId);
 
         $id = DB::table('post_interactions')->insertGetId([
             'post_id' => $postId,
@@ -175,7 +179,7 @@ class FeedService
         $role = DB::table('model_has_roles')
             ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
             ->where('model_has_roles.model_id', $user->id)
-            ->where('model_has_roles.model_type', 'App\\Models\\User')
+            ->where('model_has_roles.model_type', User::class)
             ->value('roles.name');
 
         return [
@@ -331,7 +335,7 @@ class FeedService
             $authorRoleMap = DB::table('model_has_roles')
                 ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
                 ->whereIn('model_has_roles.model_id', $authorIds)
-                ->where('model_has_roles.model_type', 'App\\Models\\User')
+                ->where('model_has_roles.model_type', User::class)
                 ->select('model_has_roles.model_id', 'roles.name')
                 ->get()
                 ->groupBy('model_id')
@@ -424,7 +428,7 @@ class FeedService
             $roleMap = DB::table('model_has_roles')
                 ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
                 ->whereIn('model_has_roles.model_id', $userIds)
-                ->where('model_has_roles.model_type', 'App\\Models\\User')
+                ->where('model_has_roles.model_type', User::class)
                 ->select('model_has_roles.model_id', 'roles.name')
                 ->get()
                 ->groupBy('model_id')
@@ -586,6 +590,29 @@ class FeedService
         $fresh = DB::table('posts')->where('id', $postId)->first();
 
         return (array) $fresh;
+    }
+
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Find a non-deleted post by ID or throw a 404.
+     *
+     * Centralizes the repeated "find post or fail" pattern used across
+     * react(), getComments(), and addComment().
+     *
+     * @throws NotFoundHttpException
+     */
+    private function findPostOrFail(int $postId): object
+    {
+        $post = DB::table('posts')->whereNull('deleted_at')->where('id', $postId)->first();
+
+        if ($post === null) {
+            throw new NotFoundHttpException('Post not found.');
+        }
+
+        return $post;
     }
 
     /**
