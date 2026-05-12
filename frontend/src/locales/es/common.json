@@ -412,6 +412,60 @@
       "client_type_investor": "Inversor"
     }
   },
+  "calendar": {
+    "title": "Calendario",
+    "subtitle": "Gestioná tus reuniones y eventos.",
+    "new": "Nuevo Evento",
+    "loading": "Cargando eventos…",
+    "load_error": "Error al cargar eventos. Por favor intentá de nuevo.",
+    "delete_error": "Error al eliminar el evento. Por favor intentá de nuevo.",
+    "delete_confirm": "¿Eliminar \"{{title}}\"? Esta acción no se puede deshacer.",
+    "empty_title": "Sin eventos aún",
+    "empty_subtitle": "Crea tu primer evento para comenzar.",
+    "creating": "Creando…",
+    "create": "Crear Evento",
+    "edit_title": "Editar Evento",
+    "new_title": "Nuevo Evento",
+    "save_success": "Evento guardado correctamente.",
+    "delete_success": "Evento eliminado correctamente.",
+    "col_title": "Título",
+    "col_date": "Fecha",
+    "col_location": "Lugar",
+    "col_type": "Tipo",
+    "col_actions": "Acciones",
+    "all_day_badge": "Todo el día",
+    "types": {
+      "casual": "Casual",
+      "meeting": "Reunión",
+      "deadline": "Fecha límite",
+      "reminder": "Recordatorio",
+      "training": "Capacitación"
+    },
+    "visibility": {
+      "private": "Privado",
+      "franchise": "Franquicia",
+      "public": "Público"
+    },
+    "form": {
+      "title": "Título",
+      "title_placeholder": "ej. Reunión de equipo",
+      "title_required": "El título es obligatorio.",
+      "description": "Descripción",
+      "description_placeholder": "Agregá una descripción…",
+      "location": "Lugar",
+      "location_placeholder": "ej. Sala de conferencias A",
+      "start_at": "Desde",
+      "end_at": "Hasta",
+      "end_before_start": "El fin debe ser posterior al inicio.",
+      "timezone": "Zona horaria",
+      "timezone_placeholder": "Selecciona una zona horaria",
+      "all_day": "Todo el día",
+      "color": "Color",
+      "visibility": "Visibilidad",
+      "type": "Tipo",
+      "type_placeholder": "Seleccioná un tipo"
+    }
+  },
   "system_admins": {
     "title": "Administradores de Sistema",
     "subtitle": "Gestiona las cuentas con permisos globales en la plataforma.",

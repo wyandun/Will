@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BbAssignmentController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\FeedController;
 use App\Http\Controllers\Api\FranchiseController;
 use App\Http\Controllers\Api\FranchiseMemberController;
@@ -99,6 +100,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/posts/{id}', [FeedController::class, 'update']);
         Route::delete('/posts/{id}', [FeedController::class, 'destroy']);
     });
+
+    // Events (Calendar)
+    Route::apiResource('events', EventController::class);
 
     // Dashboard
     Route::prefix('dashboard')->group(function () {

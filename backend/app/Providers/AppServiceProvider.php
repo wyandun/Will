@@ -4,10 +4,12 @@ namespace App\Providers;
 
 use App\Models\BbAssignment;
 use App\Models\Company;
+use App\Models\Event;
 use App\Models\Franchise;
 use App\Models\User;
 use App\Policies\BbAssignmentPolicy;
 use App\Policies\CompanyPolicy;
+use App\Policies\EventPolicy;
 use App\Policies\FranchisePolicy;
 use App\Policies\UserPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -33,8 +35,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::policy(BbAssignment::class, BbAssignmentPolicy::class);
-        Gate::policy(Franchise::class, FranchisePolicy::class);
         Gate::policy(Company::class, CompanyPolicy::class);
+        Gate::policy(Event::class, EventPolicy::class);
+        Gate::policy(Franchise::class, FranchisePolicy::class);
         Gate::policy(User::class, UserPolicy::class);
 
         if ($this->app->environment('production')) {
