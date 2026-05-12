@@ -32,6 +32,7 @@ class SendInvitationRequest extends FormRequest
                 //    and let the service regenerate their token.
                 //  - Soft-deleted users (deleted_at IS NOT NULL) also pass through
                 //    so the service can return a user-facing error about the deleted account.
+                //    (Safely handled by `User::withTrashed()->first()` in InvitationService).
                 //  - Only a live, accepted account triggers the 422 at validation time.
                 Rule::unique('users', 'email')
                     ->whereNotNull('invitation_accepted_at')

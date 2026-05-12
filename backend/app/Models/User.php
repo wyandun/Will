@@ -137,6 +137,10 @@ class User extends Authenticatable
 
     /**
      * Users who have a pending invitation (token set, not yet accepted).
+     *
+     * Note: Laravel's SoftDeletes global scope automatically appends
+     * `deleted_at IS NULL` to this query, preventing soft-deleted
+     * invitations from appearing in pending lists.
      */
     public function scopePendingInvitation(Builder $query): Builder
     {

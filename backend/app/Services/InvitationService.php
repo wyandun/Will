@@ -258,9 +258,9 @@ class InvitationService
 
         return [
             'user' => $user->load('roles'),
-            // Only expose the raw URL outside production so devs can test
-            // without a real mail service (check storage/logs/laravel.log too).
-            'activation_url' => app()->isProduction() ? null : $activationUrl,
+            // Only expose the raw URL in local/testing so devs can test
+            // without a real mail service. Do not expose in staging/production.
+            'activation_url' => app()->environment(['local', 'testing']) ? $activationUrl : null,
         ];
     }
 
