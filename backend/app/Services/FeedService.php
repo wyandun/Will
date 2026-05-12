@@ -14,6 +14,213 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 class FeedService
 {
     // -------------------------------------------------------------------------
+    // Interactions
+    // -------------------------------------------------------------------------
+
+    /**
+     * React to a post (toggle).
+     *
+     * If the user has already reacted with the same emoji, the reaction is removed.
+     * If the user has reacted with a different emoji, it is replaced.
+     * If the user has not reacted, a new like interaction is inserted.
+     *
+     * @return array{likes_count: int, user_reaction: string|null}
+     */
+    public function react(int $postId, User $user, string $emoji): array
+    {
+        $post = DB::table('posts')->whereNull('deleted_at')->where('id', $postId)->first();
+
+        if ($post === null) {
+            throw new NotFoundHttpException('Post not found.');
+        }
+
+        $existing = DB::table('post_interactions')
+            ->where('post_id', $postId)
+            ->where('user_id', $user->id)
+            ->where('type', 'like')
+            ->first();
+
+        if ($existing !== null) {
+            if ($existing->content === $emoji) {
+                // Same emoji — toggle off
+                DB::table('post_interactions')->where('id', $existing->id)->delete();
+                $userReaction = null;
+            } else {
+                // Different emoji — replace
+                DB::table('post_interactions')
+                    ->where('id', $existing->id)
+                    ->update(['content' => $emoji, 'updated_at' => now()]);
+                $userReaction = $emoji;
+            }
+        } else {
+            // No prior reaction — insert
+            DB::table('post_interactions')->insert([
+                'post_id' => $postId,
+                'user_id' => $user->id,
+                'type' => 'like',
+                'content' => $emoji,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $userReaction = $emoji;
+        }
+
+        $likesCount = (int) DB::table('post_interactions')
+            ->where('post_id', $postId)
+            ->where('type', 'like')
+            ->count();
+
+        return [
+            'likes_count' => $likesCount,
+            'user_reaction' => $userReaction,
+        ];
+    }
+
+    /**
+     * Return paginated comments for a post.
+     *
+     * Each comment includes author info, the `is_own` flag, and the author's role.
+     *
+     * @return array{items: array<int, array<string, mixed>>, meta: array{current_page: int, last_page: int, per_page: int, total: int}}
+     */
+    public function getComments(int $postId, User $user, int $page = 1, int $perPage = 10): array
+    {
+        $post = DB::table('posts')->whereNull('deleted_at')->where('id', $postId)->first();
+
+        if ($post === null) {
+            throw new NotFoundHttpException('Post not found.');
+        }
+
+        $paginator = DB::table('post_interactions as pi')
+            ->join('users as u', 'u.id', '=', 'pi.user_id')
+            ->where('pi.post_id', $postId)
+            ->where('pi.type', 'comment')
+            ->select([
+                'pi.id',
+                'pi.content',
+                'pi.created_at',
+                'pi.user_id',
+                'u.name as author_name',
+                'u.avatar_path as author_avatar_path',
+            ])
+            ->orderBy('pi.created_at')
+            ->paginate($perPage, ['*'], 'page', $page);
+
+        $rows = collect($paginator->items());
+
+        // Resolve roles for all comment authors
+        $authorIds = $rows->pluck('user_id')->unique()->values()->all();
+        $roleMap = [];
+
+        if (! empty($authorIds)) {
+            $roleMap = DB::table('model_has_roles')
+                ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
+                ->whereIn('model_has_roles.model_id', $authorIds)
+                ->where('model_has_roles.model_type', 'App\\Models\\User')
+                ->select('model_has_roles.model_id', 'roles.name')
+                ->get()
+                ->groupBy('model_id')
+                ->map(fn ($rows2) => $rows2->first()->name)
+                ->all();
+        }
+
+        $items = $rows->map(function ($row) use ($user, $roleMap) {
+            return [
+                'id' => $row->id,
+                'content' => $row->content,
+                'author_name' => $row->author_name,
+                'author_avatar_url' => $row->author_avatar_path
+                    ? Storage::disk('public')->url($row->author_avatar_path)
+                    : null,
+                'author_role' => $roleMap[$row->user_id] ?? null,
+                'created_at' => $row->created_at,
+                'is_own' => $row->user_id === $user->id,
+            ];
+        })->all();
+
+        return [
+            'items' => $items,
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+            ],
+        ];
+    }
+
+    /**
+     * Add a comment to a post.
+     *
+     * @return array<string, mixed>
+     */
+    public function addComment(int $postId, User $user, string $content): array
+    {
+        $post = DB::table('posts')->whereNull('deleted_at')->where('id', $postId)->first();
+
+        if ($post === null) {
+            throw new NotFoundHttpException('Post not found.');
+        }
+
+        $id = DB::table('post_interactions')->insertGetId([
+            'post_id' => $postId,
+            'user_id' => $user->id,
+            'type' => 'comment',
+            'content' => $content,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Resolve role for response
+        $role = DB::table('model_has_roles')
+            ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
+            ->where('model_has_roles.model_id', $user->id)
+            ->where('model_has_roles.model_type', 'App\\Models\\User')
+            ->value('roles.name');
+
+        return [
+            'id' => $id,
+            'content' => $content,
+            'author_name' => $user->name,
+            'author_avatar_url' => $user->avatar_path
+                ? Storage::disk('public')->url($user->avatar_path)
+                : null,
+            'author_role' => $role,
+            'created_at' => now()->toDateTimeString(),
+            'is_own' => true,
+        ];
+    }
+
+    /**
+     * Delete a comment (physical delete).
+     *
+     * Only the comment author or a superadmin may delete.
+     * Physical delete is used because comments have no audit requirement
+     * and the table has no deleted_at column.
+     */
+    public function deleteComment(int $commentId, User $user): void
+    {
+        $comment = DB::table('post_interactions')
+            ->where('id', $commentId)
+            ->where('type', 'comment')
+            ->first();
+
+        if ($comment === null) {
+            throw new NotFoundHttpException('Comment not found.');
+        }
+
+        if ((int) $comment->user_id !== $user->id && ! $user->hasRole('superadmin')) {
+            Log::warning('Unauthorized comment delete attempt', [
+                'user_id' => $user->id,
+                'comment_id' => $commentId,
+            ]);
+            throw new AccessDeniedHttpException('You are not allowed to delete this comment.');
+        }
+
+        DB::table('post_interactions')->where('id', $commentId)->delete();
+    }
+
+    // -------------------------------------------------------------------------
     // Posts
     // -------------------------------------------------------------------------
 
@@ -71,6 +278,7 @@ class FeedService
             'posts.file_url',
             'posts.file_name',
             'posts.created_at',
+            'authors.id as author_id',
             'authors.name as author_name',
             'authors.avatar_path as author_avatar',
         ])
@@ -108,7 +316,30 @@ class FeedService
             ->groupBy('post_id')
             ->pluck('total', 'post_id');
 
-        $items = $rows->map(function ($post) use ($likes, $comments) {
+        // Current user's reaction per post (emoji stored in content)
+        $userReactions = DB::table('post_interactions')
+            ->whereIn('post_id', $postIds)
+            ->where('user_id', $user->id)
+            ->where('type', 'like')
+            ->pluck('content', 'post_id');
+
+        // Resolve the primary role for each unique author
+        $authorIds = $rows->pluck('author_id')->unique()->values()->all();
+        $authorRoleMap = [];
+
+        if (! empty($authorIds)) {
+            $authorRoleMap = DB::table('model_has_roles')
+                ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
+                ->whereIn('model_has_roles.model_id', $authorIds)
+                ->where('model_has_roles.model_type', 'App\\Models\\User')
+                ->select('model_has_roles.model_id', 'roles.name')
+                ->get()
+                ->groupBy('model_id')
+                ->map(fn ($roleRows) => $roleRows->first()->name)
+                ->all();
+        }
+
+        $items = $rows->map(function ($post) use ($likes, $comments, $userReactions, $authorRoleMap) {
             return [
                 'id' => $post->id,
                 'title' => $post->title,
@@ -118,12 +349,15 @@ class FeedService
                 'image_url' => $post->image_url,
                 'file_url' => $post->file_url,
                 'file_name' => $post->file_name,
+                'author_id' => (int) $post->author_id,
                 'author_name' => $post->author_name,
+                'author_role' => $authorRoleMap[$post->author_id] ?? null,
                 'author_avatar' => $post->author_avatar
                     ? Storage::disk('public')->url($post->author_avatar)
                     : null,
                 'likes_count' => (int) ($likes[$post->id] ?? 0),
                 'comments_count' => (int) ($comments[$post->id] ?? 0),
+                'user_reaction' => $userReactions[$post->id] ?? null,
                 'created_at' => $post->created_at,
             ];
         })->all();
@@ -267,6 +501,7 @@ class FeedService
             $postId = DB::transaction(function () use ($user, $data, $attachment, $imagePath, $attachmentPath) {
                 return DB::table('posts')->insertGetId([
                     'author_id' => $user->id,
+                    'franchise_id' => $user->sm_franchise_id ?? null,
                     'title' => $data['title'],
                     'body' => $data['body'],
                     'type' => $data['type'],

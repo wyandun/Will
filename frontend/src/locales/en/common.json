@@ -154,7 +154,22 @@
     "post_deleted": "Post deleted successfully.",
     "delete_post_confirm": "Delete this post? This action cannot be undone.",
     "menu_edit": "Edit",
-    "menu_delete": "Delete"
+    "menu_delete": "Delete",
+    "menu_copy_link": "Copy link",
+    "link_copied": "Link copied to clipboard.",
+    "reactions_count_one": "{{count}} reaction",
+    "reactions_count_other": "{{count}} reactions",
+    "comments_count_one": "{{count}} comment",
+    "comments_count_other": "{{count}} comments",
+    "btn_react": "React",
+    "btn_comment": "Comment",
+    "comment_placeholder": "Write a comment…",
+    "comment_send": "Send",
+    "comment_delete_confirm": "Delete this comment?",
+    "comment_deleted": "Comment deleted.",
+    "comment_error": "Failed to post comment. Please try again.",
+    "no_comments": "No comments yet. Be the first!",
+    "load_comments_error": "Failed to load comments."
   },
   "franchises": {
     "title": "Franchises",

@@ -23,18 +23,18 @@ function IconPin({ className = 'w-3.5 h-3.5' }) {
   );
 }
 
-function IconHeart({ className = 'w-4 h-4' }) {
-  return (
-    <svg className={className} fill="currentColor" viewBox="0 0 24 24">
-      <path d="M12 21.593c-5.63-5.539-11-10.297-11-14.402 0-3.791 3.068-5.191 5.281-5.191 1.312 0 4.151.501 5.719 4.457 1.59-3.968 4.464-4.447 5.726-4.447 2.54 0 5.274 1.621 5.274 5.181 0 4.069-5.136 8.625-11 14.402z" />
-    </svg>
-  );
-}
-
 function IconComment({ className = 'w-4 h-4' }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+    </svg>
+  );
+}
+
+function IconTrash({ className = 'w-3.5 h-3.5' }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a2 2 0 012-2h4a2 2 0 012 2M4 7h16" />
     </svg>
   );
 }
@@ -63,21 +63,204 @@ function typeBadgeClass(type) {
   return TYPE_COLORS[type] ?? 'bg-slate-100 text-slate-600';
 }
 
+// Role badge config: role → { label, className }
+const ROLE_BADGES = {
+  superadmin: { label: 'Super Admin', className: 'bg-purple-100 text-purple-700' },
+  admin_sm: { label: 'Admin SM', className: 'bg-blue-100 text-blue-700' },
+  sb_owner: { label: 'SB Owner', className: 'bg-green-100 text-green-700' },
+  sb_employee: { label: 'Empleado', className: 'bg-slate-100 text-slate-600' },
+  bb_employee: { label: 'Business Bishop', className: 'bg-amber-100 text-amber-700' },
+};
+
+const EMOJI_OPTIONS = ['👍', '❤️', '😂', '🎉', '😮'];
+
+/**
+ * Convert URLs in plain text to clickable <a> elements.
+ * Handles http:// and https:// links.
+ */
+function LinkifiedText({ text }) {
+  if (!text) return null;
+
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+
+  return (
+    <>
+      {parts.map((part, i) =>
+        urlRegex.test(part) ? (
+          <a
+            key={i}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 underline break-all hover:text-blue-800"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {part}
+          </a>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
+  );
+}
+
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 function Skeleton({ className }) {
   return <div className={`animate-pulse bg-slate-200 rounded-xl ${className}`} />;
 }
 
+// ─── CommentPanel ─────────────────────────────────────────────────────────────
+
+function CommentPanel({ postId, onToast }) {
+  const { t } = useTranslation('common');
+  const [comments, setComments] = useState([]);
+  const [meta, setMeta] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [text, setText] = useState('');
+  const inputRef = useRef(null);
+
+  const fetchComments = (page = 1) => {
+    setLoading(true);
+    feedApi.getComments(postId, page)
+      .then((res) => {
+        const payload = res.data.data ?? {};
+        setComments(payload.items ?? []);
+        setMeta(payload.meta ?? null);
+      })
+      .catch(() => onToast(t('feed.load_comments_error')))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchComments(1);
+    inputRef.current?.focus();
+  }, [postId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function handleSend() {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    setSending(true);
+    feedApi.addComment(postId, trimmed)
+      .then((res) => {
+        const comment = res.data.data?.comment;
+        if (comment) setComments((prev) => [...prev, comment]);
+        setText('');
+        if (meta) setMeta((m) => m ? { ...m, total: m.total + 1 } : m);
+      })
+      .catch(() => onToast(t('feed.comment_error')))
+      .finally(() => setSending(false));
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  }
+
+  function handleDelete(commentId) {
+    if (!window.confirm(t('feed.comment_delete_confirm'))) return;
+    feedApi.deleteComment(commentId)
+      .then(() => {
+        setComments((prev) => prev.filter((c) => c.id !== commentId));
+        onToast(t('feed.comment_deleted'));
+      })
+      .catch(() => onToast(t('common.unexpected_error')));
+  }
+
+  return (
+    <div className="border-t border-slate-100 pt-3 flex flex-col gap-3">
+      {/* Comment list */}
+      {loading ? (
+        <div className="flex flex-col gap-2">
+          {[1, 2].map((i) => <Skeleton key={i} className="h-10" />)}
+        </div>
+      ) : comments.length === 0 ? (
+        <p className="text-xs text-slate-400 text-center py-2">{t('feed.no_comments')}</p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {comments.map((c) => (
+            <li key={c.id} className="flex items-start gap-2 group">
+              <div className="w-6 h-6 rounded-full bg-slate-200 text-slate-600 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                {(c.author_name ?? '?')[0].toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0 bg-slate-50 rounded-xl px-3 py-1.5">
+                <p className="text-xs font-semibold text-slate-700">{c.author_name}</p>
+                <p className="text-xs text-slate-600 break-words">
+                  <LinkifiedText text={c.content} />
+                </p>
+                <p className="text-[10px] text-slate-400 mt-0.5">{timeAgo(c.created_at)}</p>
+              </div>
+              {c.is_own && (
+                <button
+                  type="button"
+                  onClick={() => handleDelete(c.id)}
+                  className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-500 transition-all flex-shrink-0 mt-1"
+                  aria-label="Delete comment"
+                >
+                  <IconTrash />
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* Load more */}
+      {meta && meta.current_page < meta.last_page && (
+        <button
+          type="button"
+          onClick={() => fetchComments(meta.current_page + 1)}
+          className="text-xs text-blue-600 hover:underline self-center"
+        >
+          {t('feed.next')}
+        </button>
+      )}
+
+      {/* Input */}
+      <div className="flex items-center gap-2">
+        <input
+          ref={inputRef}
+          type="text"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={handleKeyDown}
+          maxLength={2000}
+          placeholder={t('feed.comment_placeholder')}
+          className="flex-1 text-xs border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent bg-white"
+        />
+        <button
+          type="button"
+          onClick={handleSend}
+          disabled={!text.trim() || sending}
+          className="px-3 py-1.5 rounded-xl text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          {t('feed.comment_send')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── PostCard ─────────────────────────────────────────────────────────────────
 
-function PostCard({ post, currentUser, role, onEdit, onDelete }) {
+function PostCard({ post, currentUser, role, onEdit, onDelete, onToast }) {
   const { t } = useTranslation('common');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
+  const [commentOpen, setCommentOpen] = useState(false);
+  const [likesCount, setLikesCount] = useState(post.likes_count ?? 0);
+  const [userReaction, setUserReaction] = useState(post.user_reaction ?? null);
   const menuRef = useRef(null);
+  const emojiRef = useRef(null);
 
   const initial = (post.author_name ?? '?')[0].toUpperCase();
   const typeKey = `feed.type_${post.type}`;
+  const roleBadge = post.author_role ? ROLE_BADGES[post.author_role] : null;
 
   const canManage =
     currentUser &&
@@ -85,17 +268,47 @@ function PostCard({ post, currentUser, role, onEdit, onDelete }) {
       role === 'superadmin' ||
       role === 'admin_sm');
 
-  // Close menu when clicking outside
+  // Close menus when clicking outside
   useEffect(() => {
-    if (!menuOpen) return;
+    if (!menuOpen && !emojiPickerOpen) return;
     function handleOutside(e) {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
         setMenuOpen(false);
       }
+      if (emojiRef.current && !emojiRef.current.contains(e.target)) {
+        setEmojiPickerOpen(false);
+      }
     }
     document.addEventListener('mousedown', handleOutside);
     return () => document.removeEventListener('mousedown', handleOutside);
-  }, [menuOpen]);
+  }, [menuOpen, emojiPickerOpen]);
+
+  function handleReact(emoji) {
+    setEmojiPickerOpen(false);
+    feedApi.reactToPost(post.id, emoji)
+      .then((res) => {
+        const data = res.data.data ?? {};
+        setLikesCount(data.likes_count ?? 0);
+        setUserReaction(data.user_reaction ?? null);
+      })
+      .catch(() => onToast(t('common.unexpected_error')));
+  }
+
+  function handleCopyLink() {
+    setMenuOpen(false);
+    navigator.clipboard.writeText(`${window.location.origin}/feed/posts/${post.id}`)
+      .then(() => onToast(t('feed.link_copied')))
+      .catch(() => onToast(t('common.unexpected_error')));
+  }
+
+  const reactionsLabel = t(
+    likesCount === 1 ? 'feed.reactions_count_one' : 'feed.reactions_count_other',
+    { count: likesCount }
+  );
+  const commentsLabel = t(
+    (post.comments_count ?? 0) === 1 ? 'feed.comments_count_one' : 'feed.comments_count_other',
+    { count: post.comments_count ?? 0 }
+  );
 
   return (
     <div className="flex flex-col gap-3 p-5 bg-white rounded-2xl border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all">
@@ -125,7 +338,7 @@ function PostCard({ post, currentUser, role, onEdit, onDelete }) {
               ···
             </button>
             {menuOpen && (
-              <div className="absolute right-0 top-7 z-20 w-36 bg-white border border-slate-200 rounded-xl shadow-lg py-1">
+              <div className="absolute right-0 top-7 z-20 w-40 bg-white border border-slate-200 rounded-xl shadow-lg py-1">
                 <button
                   type="button"
                   onClick={() => { setMenuOpen(false); onEdit(post); }}
@@ -139,6 +352,13 @@ function PostCard({ post, currentUser, role, onEdit, onDelete }) {
                   className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                 >
                   {t('feed.menu_delete')}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  {t('feed.menu_copy_link')}
                 </button>
               </div>
             )}
@@ -155,35 +375,90 @@ function PostCard({ post, currentUser, role, onEdit, onDelete }) {
         />
       )}
 
-      {/* Title + body snippet */}
+      {/* Title + body */}
       <div>
         <p className="text-sm font-semibold text-slate-800 line-clamp-1">{post.title}</p>
-        <p className="text-xs text-slate-500 mt-1 line-clamp-2">{post.body}</p>
+        <p className="text-xs text-slate-500 mt-1 line-clamp-3">
+          <LinkifiedText text={post.body} />
+        </p>
       </div>
 
-      {/* Footer: author + interactions */}
-      <div className="flex items-center justify-between mt-auto">
-        <div className="flex items-center gap-2">
-          {post.author_avatar ? (
-            <img src={post.author_avatar} alt={post.author_name} className="w-6 h-6 rounded-full object-cover" />
-          ) : (
-            <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
-              {initial}
+      {/* Author row */}
+      <div className="flex items-center gap-2">
+        {post.author_avatar ? (
+          <img src={post.author_avatar} alt={post.author_name} className="w-6 h-6 rounded-full object-cover flex-shrink-0" />
+        ) : (
+          <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
+            {initial}
+          </div>
+        )}
+        <span className="text-xs text-slate-600 truncate">{post.author_name}</span>
+        {roleBadge && (
+          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 ${roleBadge.className}`}>
+            {roleBadge.label}
+          </span>
+        )}
+      </div>
+
+      {/* Reaction + comment counter */}
+      <div className="text-xs text-slate-400">
+        {reactionsLabel} · {commentsLabel}
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex items-center gap-2 pt-1 border-t border-slate-50">
+        {/* React button with emoji picker */}
+        <div className="relative" ref={emojiRef}>
+          <button
+            type="button"
+            onClick={() => setEmojiPickerOpen((prev) => !prev)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
+              userReaction
+                ? 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+                : 'text-slate-500 hover:bg-slate-100'
+            }`}
+          >
+            <span className="text-base leading-none">{userReaction ?? '😊'}</span>
+            {t('feed.btn_react')}
+          </button>
+          {emojiPickerOpen && (
+            <div className="absolute left-0 bottom-9 z-20 flex items-center gap-1 bg-white border border-slate-200 rounded-2xl shadow-lg px-2 py-1.5">
+              {EMOJI_OPTIONS.map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => handleReact(emoji)}
+                  className={`text-xl leading-none p-1 rounded-lg hover:bg-slate-100 transition-colors ${
+                    userReaction === emoji ? 'bg-amber-100' : ''
+                  }`}
+                  aria-label={emoji}
+                >
+                  {emoji}
+                </button>
+              ))}
             </div>
           )}
-          <span className="text-xs text-slate-600 truncate max-w-[8rem]">{post.author_name}</span>
         </div>
-        <div className="flex items-center gap-3 text-xs text-slate-400">
-          <span className="flex items-center gap-1">
-            <IconHeart className="text-rose-400" />
-            {post.likes_count ?? 0}
-          </span>
-          <span className="flex items-center gap-1">
-            <IconComment />
-            {post.comments_count ?? 0}
-          </span>
-        </div>
+
+        {/* Comment button */}
+        <button
+          type="button"
+          onClick={() => setCommentOpen((prev) => !prev)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
+            commentOpen
+              ? 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+              : 'text-slate-500 hover:bg-slate-100'
+          }`}
+        >
+          <IconComment className="w-4 h-4" />
+          {t('feed.btn_comment')}
+        </button>
       </div>
+
+      {/* Inline comment panel */}
+      {commentOpen && (
+        <CommentPanel postId={post.id} onToast={onToast} />
+      )}
     </div>
   );
 }
@@ -538,6 +813,7 @@ export default function FeedPage() {
                   role={role}
                   onEdit={(p) => setModalPost(p)}
                   onDelete={handleDeletePost}
+                  onToast={setToast}
                 />
               ))}
             </div>
@@ -573,11 +849,15 @@ export default function FeedPage() {
 const classNameProp = { className: PropTypes.string };
 IconSearch.propTypes = classNameProp;
 IconPin.propTypes = classNameProp;
-IconHeart.propTypes = classNameProp;
 IconComment.propTypes = classNameProp;
+IconTrash.propTypes = classNameProp;
 
 Skeleton.propTypes = {
   className: PropTypes.string,
+};
+
+LinkifiedText.propTypes = {
+  text: PropTypes.string,
 };
 
 Pagination.propTypes = {
@@ -600,10 +880,16 @@ const userShape = PropTypes.shape({
   is_current_user: PropTypes.bool,
 });
 
+CommentPanel.propTypes = {
+  postId: PropTypes.number.isRequired,
+  onToast: PropTypes.func.isRequired,
+};
+
 PostCard.propTypes = {
   post: PropTypes.shape({
     id: PropTypes.number.isRequired,
     author_id: PropTypes.number,
+    author_role: PropTypes.string,
     title: PropTypes.string,
     body: PropTypes.string,
     type: PropTypes.string,
@@ -613,6 +899,7 @@ PostCard.propTypes = {
     author_avatar: PropTypes.string,
     likes_count: PropTypes.number,
     comments_count: PropTypes.number,
+    user_reaction: PropTypes.string,
     created_at: PropTypes.string,
   }).isRequired,
   currentUser: PropTypes.shape({
@@ -623,6 +910,7 @@ PostCard.propTypes = {
   role: PropTypes.string,
   onEdit: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
+  onToast: PropTypes.func.isRequired,
 };
 
 UserAvatar.propTypes = {

@@ -154,7 +154,22 @@
     "post_deleted": "Publicación eliminada correctamente.",
     "delete_post_confirm": "¿Eliminar esta publicación? Esta acción no se puede deshacer.",
     "menu_edit": "Editar",
-    "menu_delete": "Eliminar"
+    "menu_delete": "Eliminar",
+    "menu_copy_link": "Copiar enlace",
+    "link_copied": "Enlace copiado al portapapeles.",
+    "reactions_count_one": "{{count}} reacción",
+    "reactions_count_other": "{{count}} reacciones",
+    "comments_count_one": "{{count}} comentario",
+    "comments_count_other": "{{count}} comentarios",
+    "btn_react": "Reaccionar",
+    "btn_comment": "Comentar",
+    "comment_placeholder": "Escribí un comentario…",
+    "comment_send": "Enviar",
+    "comment_delete_confirm": "¿Eliminar este comentario?",
+    "comment_deleted": "Comentario eliminado.",
+    "comment_error": "Error al publicar el comentario. Intentá de nuevo.",
+    "no_comments": "Sin comentarios aún. ¡Sé el primero!",
+    "load_comments_error": "Error al cargar los comentarios."
   },
   "franchises": {
     "title": "Franquicias",
