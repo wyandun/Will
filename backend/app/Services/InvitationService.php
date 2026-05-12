@@ -148,7 +148,7 @@ class InvitationService
      * lock so that concurrent requests cannot both pass the expiry check and then
      * both activate the same account (TOCTOU race condition).
      *
-     * @return array{user: User, token: string, role: string, permissions: Collection}
+     * @return array{user: array, token: string, role: string, permissions: Collection}
      *
      * @throws HttpException 404 | 410
      */
