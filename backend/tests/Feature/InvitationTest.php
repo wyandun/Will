@@ -149,7 +149,7 @@ class InvitationTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertJsonPath('success', true);
-        $response->assertJsonCount(2, 'data.data');
+        $response->assertJsonCount(2, 'data');
     }
 
     public function test_admin_sm_can_list_pending_invitations(): void
@@ -161,7 +161,7 @@ class InvitationTest extends TestCase
         $response = $this->actingAs($adminSm)->getJson('/api/v1/invitations');
 
         $response->assertStatus(200);
-        $response->assertJsonCount(1, 'data.data');
+        $response->assertJsonCount(1, 'data');
     }
 
     public function test_invitation_index_returns_correct_json_structure(): void
@@ -175,15 +175,15 @@ class InvitationTest extends TestCase
         $response->assertJsonStructure([
             'success',
             'data' => [
-                'data' => [
-                    '*' => [
-                        'id',
-                        'name',
-                        'email',
-                        'invitation_expires_at',
-                        'roles',
-                    ],
+                '*' => [
+                    'id',
+                    'name',
+                    'email',
+                    'invitation_expires_at',
+                    'roles',
                 ],
+            ],
+            'meta' => [
                 'current_page',
                 'total',
             ],
@@ -203,7 +203,7 @@ class InvitationTest extends TestCase
         DB::enableQueryLog();
 
         $response = $this->actingAs($superadmin)->getJson('/api/v1/invitations');
-        $response->assertStatus(200)->assertJsonCount(5, 'data.data');
+        $response->assertStatus(200)->assertJsonCount(5, 'data');
 
         $queries = DB::getQueryLog();
         DB::disableQueryLog();
@@ -214,7 +214,7 @@ class InvitationTest extends TestCase
         // Pagination adds 1 extra COUNT(*) query.
         // Upper-bound chosen generously; failure here means a relation was
         // accidentally un-eager-loaded (e.g. Spatie role->permissions queried per user).
-        $this->assertCount(5, $response->json('data.data'));
+        $this->assertCount(5, $response->json('data'));
         $this->assertLessThanOrEqual(13, count($queries),
             'Query count scaled with collection size — possible N+1. Queries: '
             .implode("\n", array_column($queries, 'query'))
@@ -236,7 +236,7 @@ class InvitationTest extends TestCase
         $response = $this->actingAs($superadmin)->getJson('/api/v1/invitations');
 
         $response->assertStatus(200);
-        $response->assertJsonCount(1, 'data.data');
+        $response->assertJsonCount(1, 'data');
     }
 
     public function test_regular_user_is_forbidden_from_invitation_index(): void
@@ -795,7 +795,7 @@ class InvitationTest extends TestCase
             ->deleteJson("/api/v1/invitations/{$pending->id}");
 
         $response = $this->actingAs($superadmin)->getJson('/api/v1/invitations');
-        $response->assertJsonCount(0, 'data.data');
+        $response->assertJsonCount(0, 'data');
     }
 
     public function test_revoke_returns_422_if_invitation_already_accepted(): void
@@ -1178,7 +1178,7 @@ class InvitationTest extends TestCase
 
         // 6. Invitation no longer appears in pending list
         $indexResp = $this->actingAs($adminSm)->getJson('/api/v1/invitations');
-        $indexResp->assertJsonCount(0, 'data.data');
+        $indexResp->assertJsonCount(0, 'data');
     }
 
     // ===========================================================================
@@ -1214,8 +1214,8 @@ class InvitationTest extends TestCase
         $response = $this->actingAs($adminSm)->getJson('/api/v1/invitations');
 
         $response->assertStatus(200);
-        $response->assertJsonCount(1, 'data.data');
-        $response->assertJsonPath('data.data.0.email', 'own@test.com');
+        $response->assertJsonCount(1, 'data');
+        $response->assertJsonPath('data.0.email', 'own@test.com');
     }
 
     public function test_superadmin_sees_all_invitations_across_franchises(): void
@@ -1230,7 +1230,7 @@ class InvitationTest extends TestCase
         $response = $this->actingAs($superadmin)->getJson('/api/v1/invitations');
 
         $response->assertStatus(200);
-        $response->assertJsonCount(2, 'data.data');
+        $response->assertJsonCount(2, 'data');
     }
 
     // ===========================================================================
