@@ -6,6 +6,7 @@ use App\Enums\Role;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Invitation\AcceptInvitationRequest;
 use App\Http\Requests\Invitation\SendInvitationRequest;
+use App\Http\Resources\InvitationResource;
 use App\Models\User;
 use App\Services\InvitationService;
 use Illuminate\Http\JsonResponse;
@@ -43,7 +44,21 @@ class InvitationController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $pending,
+            'data'    => [
+                'data'  => InvitationResource::collection($pending)->resolve(),
+                'meta'  => [
+                    'current_page' => $pending->currentPage(),
+                    'last_page'    => $pending->lastPage(),
+                    'per_page'     => $pending->perPage(),
+                    'total'        => $pending->total(),
+                ],
+                'links' => [
+                    'first' => $pending->url(1),
+                    'last'  => $pending->url($pending->lastPage()),
+                    'prev'  => $pending->previousPageUrl(),
+                    'next'  => $pending->nextPageUrl(),
+                ],
+            ],
         ]);
     }
 
@@ -58,7 +73,10 @@ class InvitationController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $result,
+            'data' => [
+                'user'           => new InvitationResource($result['user']),
+                'activation_url' => $result['activation_url'],
+            ],
             'message' => 'invitation.sent_success',
         ], 201);
     }
@@ -74,7 +92,10 @@ class InvitationController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $result,
+            'data' => [
+                'user'           => new InvitationResource($result['user']),
+                'activation_url' => $result['activation_url'],
+            ],
             'message' => 'invitation.resent_success',
         ]);
     }

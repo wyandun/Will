@@ -187,11 +187,13 @@ class InvitationTest extends TestCase
                         'name',
                         'email',
                         'invitation_expires_at',
-                        'roles',
+                        'role',
                     ],
                 ],
-                'current_page',
-                'total',
+                'meta' => [
+                    'current_page',
+                    'total',
+                ],
             ],
         ]);
     }
