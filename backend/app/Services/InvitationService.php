@@ -65,6 +65,8 @@ class InvitationService
         }
 
         // Brand-new user
+        // CSPRNG via random_bytes(): 64 base-62 chars ≈ 381 bits entropy.
+        // Rate-limited by throttle:invitation (10/min per IP).
         $token = Str::random(64);
 
         try {
@@ -101,8 +103,8 @@ class InvitationService
      */
     public function resendById(User $user, User $invitedBy): array
     {
-        if ($user->invitation_accepted_at) {
-            abort(422, 'invitation.already_accepted_cannot_resend');
+        if ($user->invitation_accepted_at || ! $user->invitation_token) {
+            abort(422, 'invitation.not_pending');
         }
 
         return $this->regenerateAndNotify($user, $invitedBy);
@@ -203,8 +205,8 @@ class InvitationService
      */
     public function revoke(User $user): void
     {
-        if ($user->invitation_accepted_at) {
-            abort(422, 'invitation.already_accepted_cannot_revoke');
+        if ($user->invitation_accepted_at || ! $user->invitation_token) {
+            abort(422, 'invitation.not_pending');
         }
 
         $user->update([
@@ -224,6 +226,7 @@ class InvitationService
      */
     private function regenerateAndNotify(User $user, User $invitedBy, ?string $role = null): array
     {
+        // CSPRNG via random_bytes(): 64 base-62 chars ≈ 381 bits entropy.
         $token = Str::random(64);
 
         $user->update([

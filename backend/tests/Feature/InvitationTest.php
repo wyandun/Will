@@ -10,6 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role as SpatieRole;
@@ -65,6 +66,11 @@ class InvitationTest extends TestCase
 
         // Reset rate limiter cache so throttle:invitation doesn't accumulate across tests.
         Cache::flush();
+
+        // Fake HIBP API calls so ->uncompromised() always passes in tests.
+        // This prevents network dependency and lets us use any well-formatted
+        // test password without risking a real breach-database hit.
+        Http::fake(['api.pwnedpasswords.com/*' => Http::response('', 200)]);
     }
 
     // ---------------------------------------------------------------------------
@@ -253,6 +259,17 @@ class InvitationTest extends TestCase
         $admin = $this->createSystemAdmin();
 
         $response = $this->actingAs($admin)->getJson('/api/v1/invitations');
+
+        $response->assertStatus(403);
+    }
+
+    public function test_index_returns_403_if_user_has_null_franchise(): void
+    {
+        // A non-superadmin with sm_franchise_id = null would produce
+        // WHERE sm_franchise_id IS NULL, potentially leaking cross-tenant rows.
+        $adminSm = $this->createAdminSm(['sm_franchise_id' => null]);
+
+        $response = $this->actingAs($adminSm)->getJson('/api/v1/invitations');
 
         $response->assertStatus(403);
     }
@@ -724,6 +741,23 @@ class InvitationTest extends TestCase
         $response->assertStatus(422);
     }
 
+    public function test_resend_returns_422_if_user_has_no_invitation_token(): void
+    {
+        // Edge case: invitation_accepted_at is null but invitation_token is also null
+        // (e.g. a user that was revoked then un-soft-deleted manually).
+        $superadmin = $this->createSuperadmin();
+        $user = User::factory()->create([
+            'email' => 'no_token@test.com',
+            'invitation_token' => null,
+            'invitation_accepted_at' => null,
+        ]);
+
+        $response = $this->actingAs($superadmin)
+            ->postJson("/api/v1/invitations/{$user->id}/resend");
+
+        $response->assertStatus(422);
+    }
+
     public function test_regular_user_cannot_resend_invitation(): void
     {
         $user = $this->createRegularUser();
@@ -809,6 +843,22 @@ class InvitationTest extends TestCase
 
         $response = $this->actingAs($superadmin)
             ->deleteJson("/api/v1/invitations/{$accepted->id}");
+
+        $response->assertStatus(422);
+    }
+
+    public function test_revoke_returns_422_if_user_has_no_invitation_token(): void
+    {
+        // Edge case: invitation_accepted_at is null but invitation_token is also null.
+        $superadmin = $this->createSuperadmin();
+        $user = User::factory()->create([
+            'email' => 'no_token_revoke@test.com',
+            'invitation_token' => null,
+            'invitation_accepted_at' => null,
+        ]);
+
+        $response = $this->actingAs($superadmin)
+            ->deleteJson("/api/v1/invitations/{$user->id}");
 
         $response->assertStatus(422);
     }
@@ -1100,9 +1150,10 @@ class InvitationTest extends TestCase
         $pending = $this->createPendingInvitation(['invitation_token' => 'val_pw_exact8']);
         $pending->assignRole(Role::SB_OWNER);
 
+        // Password must be 8+ chars, mixed case, and contain numbers (Password rule).
         $response = $this->postJson('/api/v1/invitations/val_pw_exact8/accept', [
-            'password' => '12345678',
-            'password_confirmation' => '12345678',
+            'password' => 'Abc1defg',
+            'password_confirmation' => 'Abc1defg',
         ]);
 
         $response->assertStatus(200);
@@ -1144,7 +1195,8 @@ class InvitationTest extends TestCase
         Notification::fake();
 
         // 1. Admin sends invitation
-        $adminSm = $this->createAdminSm(['email' => 'admin_sender@test.com']);
+        $franchise = $this->createFranchise();
+        $adminSm = $this->createAdminSm(['email' => 'admin_sender@test.com', 'sm_franchise_id' => $franchise->id]);
         $sendResp = $this->actingAs($adminSm)
             ->postJson('/api/v1/invitations', [
                 'name' => 'Nuevo Usuario',

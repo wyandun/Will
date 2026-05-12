@@ -14,7 +14,9 @@ class InvitationController extends Controller
 {
     public function __construct(private readonly InvitationService $service) {}
 
-    // ─── Protected endpoints (auth:sanctum + inviteUsers policy) ─────────────
+    // ─── Protected endpoints ──────────────────────────────────────────────────
+    // index()/store()  → class-level policy: 'inviteUsers' on User::class
+    // resend()/destroy() → instance-level policy: 'manageInvitation' on $user
 
     /**
      * List all pending (not yet accepted) invitations.
@@ -31,6 +33,9 @@ class InvitationController extends Controller
             ->orderByDesc('created_at');
 
         if (! $authUser->hasRole(Role::SUPERADMIN)) {
+            // Guard against null franchise: WHERE sm_franchise_id = NULL would
+            // silently match other null-franchise rows (cross-tenant data leak).
+            abort_if(is_null($authUser->sm_franchise_id), 403, 'invitation.no_franchise_context');
             $query->where('sm_franchise_id', $authUser->sm_franchise_id);
         }
 
