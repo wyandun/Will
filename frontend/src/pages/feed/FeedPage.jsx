@@ -186,9 +186,9 @@ function CommentPanel({ postId, onToast }) {
           {comments.map((c) => (
             <li key={c.id} className="flex items-start gap-2 group">
               {c.author_avatar_url ? (
-                <img src={c.author_avatar_url} alt={c.author_name} className="w-6 h-6 rounded-full object-cover flex-shrink-0 mt-0.5" />
+                <img src={c.author_avatar_url} alt={c.author_name} className="w-7 h-7 rounded-full object-cover flex-shrink-0 mt-0.5" />
               ) : (
-                <div className="w-6 h-6 rounded-full bg-slate-200 text-slate-600 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                <div className="w-7 h-7 rounded-full bg-slate-200 text-slate-600 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
                   {(c.author_name ?? '?')[0].toUpperCase()}
                 </div>
               )}
@@ -390,9 +390,9 @@ function PostCard({ post, currentUser, role, onEdit, onDelete, onToast }) {
       {/* Author row */}
       <div className="flex items-center gap-2">
         {post.author_avatar ? (
-          <img src={post.author_avatar} alt={post.author_name} className="w-6 h-6 rounded-full object-cover flex-shrink-0" />
+          <img src={post.author_avatar} alt={post.author_name} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
         ) : (
-          <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
             {initial}
           </div>
         )}
@@ -502,10 +502,10 @@ function ComposeBar({ currentUser, role, onOpenCreate }) {
         <img
           src={currentUser.avatar_url}
           alt={currentUser.name}
-          className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+          className="w-9 h-9 rounded-full object-cover flex-shrink-0"
         />
       ) : (
-        <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
+        <div className="w-9 h-9 rounded-full bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
           {initial}
         </div>
       )}
@@ -828,7 +828,7 @@ export default function FeedPage() {
       </div>
 
       {/* Right column — presence panels */}
-      <div className="w-72 flex-shrink-0 flex flex-col gap-4">
+      <div className="w-72 flex-shrink-0 flex flex-col gap-4 sticky top-20 self-start">
         <OnlineNowPanel users={presence.online ?? []} loading={presenceLoading} />
         <RecentlyActivePanel users={presence.recently_active ?? []} loading={presenceLoading} />
       </div>

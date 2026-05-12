@@ -96,8 +96,12 @@ function UserDropdown() {
         aria-haspopup="true"
         aria-expanded={open}
       >
-        <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
-          <span className="text-white text-xs font-bold leading-none">{initials}</span>
+        <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0 overflow-hidden">
+          {user?.avatar_url ? (
+            <img src={user.avatar_url} alt={user.name} className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-white text-xs font-bold leading-none">{initials}</span>
+          )}
         </div>
         <div className="hidden sm:flex flex-col items-start leading-none max-w-[120px]">
           <span className="text-sm font-medium text-slate-700 truncate w-full">{user?.name ?? 'User'}</span>

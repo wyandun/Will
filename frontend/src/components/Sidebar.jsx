@@ -99,13 +99,17 @@ export default function Sidebar() {
         <NavLink
           to="/profile"
           title={t('nav.profile')}
-          className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center shrink-0 hover:bg-blue-500 transition-colors"
+          className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shrink-0 hover:bg-blue-500 transition-colors overflow-hidden"
         >
-          <span className="text-white text-xs font-bold leading-none uppercase">
-            {user?.name
-              ? user.name.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('')
-              : '?'}
-          </span>
+          {user?.avatar_url ? (
+            <img src={user.avatar_url} alt={user.name} className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-white text-xs font-bold leading-none uppercase">
+              {user?.name
+                ? user.name.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('')
+                : '?'}
+            </span>
+          )}
         </NavLink>
 
         {/* Name + role */}

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
+import Cropper from 'react-easy-crop';
 import { useAuthStore } from '../../store/authStore';
 import { profileApi } from '../../api/profile';
 
@@ -13,6 +14,112 @@ const ROLE_BADGE = {
   bb:                   { label: 'Business Bishop',        classes: 'bg-purple-100 text-purple-700' },
   sub_franchise_owner:  { label: 'Sub-Franchise Owner',   classes: 'bg-green-100 text-green-700' },
   sub_franchise_admin:  { label: 'Sub-Franchise Admin',   classes: 'bg-teal-100 text-teal-700' },
+};
+
+// ─── Crop helper ──────────────────────────────────────────────────────────────
+
+async function getCroppedImg(imageSrc, pixelCrop) {
+  const image = await createImageBitmap(await fetch(imageSrc).then(r => r.blob()));
+  const canvas = document.createElement('canvas');
+  const size = Math.min(pixelCrop.width, pixelCrop.height);
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(image, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, size, size);
+  return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.92));
+}
+
+// ─── Avatar Crop Modal ────────────────────────────────────────────────────────
+
+function AvatarCropModal({ imageSrc, onConfirm, onCancel, saving }) {
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+
+  function handleCropComplete(_, pixels) {
+    setCroppedAreaPixels(pixels);
+  }
+
+  async function handleConfirm() {
+    if (!croppedAreaPixels) return;
+    const blob = await getCroppedImg(imageSrc, croppedAreaPixels);
+    onConfirm(blob);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-slate-200">
+          <h3 className="text-base font-semibold text-slate-800">Adjust your photo</h3>
+          <p className="text-xs text-slate-500 mt-0.5">Drag to reposition. Use the slider to zoom.</p>
+        </div>
+
+        {/* Crop area */}
+        <div className="relative w-full bg-slate-900" style={{ height: 380 }}>
+          <Cropper
+            image={imageSrc}
+            crop={crop}
+            zoom={zoom}
+            aspect={1}
+            cropShape="round"
+            showGrid={false}
+            onCropChange={setCrop}
+            onZoomChange={setZoom}
+            onCropComplete={handleCropComplete}
+          />
+        </div>
+
+        {/* Zoom slider */}
+        <div className="px-6 py-4 flex items-center gap-3">
+          <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
+          </svg>
+          <input
+            type="range"
+            min={0.5}
+            max={3}
+            step={0.05}
+            value={zoom}
+            onChange={e => setZoom(Number(e.target.value))}
+            className="flex-1 accent-blue-600"
+            aria-label="Zoom"
+          />
+          <svg className="w-5 h-5 text-slate-400 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0zM11 8v6M8 11h6" />
+          </svg>
+        </div>
+
+        {/* Actions */}
+        <div className="px-6 pb-5 flex justify-end gap-3">
+          <button
+            type="button"
+            disabled={saving}
+            onClick={onCancel}
+            className="px-5 py-2 rounded-lg text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 disabled:opacity-60 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={saving}
+            onClick={handleConfirm}
+            className="inline-flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-60 transition-colors"
+          >
+            {saving && <Spinner />}
+            {saving ? 'Saving...' : 'Crop & Save'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+AvatarCropModal.propTypes = {
+  imageSrc: PropTypes.string.isRequired,
+  onConfirm: PropTypes.func.isRequired,
+  onCancel: PropTypes.func.isRequired,
+  saving: PropTypes.bool,
 };
 
 // ─── Spinner ──────────────────────────────────────────────────────────────────
@@ -384,6 +491,10 @@ export default function ProfilePage() {
   const [uploading, setUploading] = useState(false);
   const [avatarError, setAvatarError] = useState('');
 
+  // Crop modal state
+  const [cropSrc, setCropSrc] = useState(null);
+  const cropObjectUrl = useRef(null);
+
   const loadProfile = useCallback(async () => {
     setLoadError('');
     try {
@@ -398,17 +509,39 @@ export default function ProfilePage() {
     loadProfile();
   }, [loadProfile]);
 
-  async function handleAvatarSelect(file) {
+  // Step 1: user picks a file → open crop modal
+  function handleAvatarSelect(file) {
     setAvatarError('');
+    // Revoke previous object URL to avoid memory leaks
+    if (cropObjectUrl.current) {
+      URL.revokeObjectURL(cropObjectUrl.current);
+    }
+    const url = URL.createObjectURL(file);
+    cropObjectUrl.current = url;
+    setCropSrc(url);
+  }
+
+  // Step 2: user confirms crop → upload the blob
+  async function handleCropConfirm(blob) {
     setUploading(true);
     try {
-      const updated = await profileApi.uploadAvatar(file);
+      const updated = await profileApi.uploadAvatar(blob);
       setProfile(prev => ({ ...prev, avatar_url: updated.avatar_url }));
       updateUser({ avatar_url: updated.avatar_url });
+      closeCropModal();
     } catch (err) {
       setAvatarError(err?.response?.data?.message ?? 'Avatar upload failed.');
+      // Keep modal open so the user can retry or cancel
     } finally {
       setUploading(false);
+    }
+  }
+
+  function closeCropModal() {
+    setCropSrc(null);
+    if (cropObjectUrl.current) {
+      URL.revokeObjectURL(cropObjectUrl.current);
+      cropObjectUrl.current = null;
     }
   }
 
@@ -466,6 +599,16 @@ export default function ProfilePage() {
         </div>
         {avatarError && <p className="mt-3 text-sm text-red-600">{avatarError}</p>}
       </div>
+
+      {/* Avatar crop modal */}
+      {cropSrc && (
+        <AvatarCropModal
+          imageSrc={cropSrc}
+          onConfirm={handleCropConfirm}
+          onCancel={closeCropModal}
+          saving={uploading}
+        />
+      )}
 
       {/* Tabs + content card */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
