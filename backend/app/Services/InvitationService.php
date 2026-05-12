@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\UserPermission;
 use App\Notifications\UserInvitationNotification;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -66,16 +67,29 @@ class InvitationService
         // Brand-new user
         $token = Str::random(64);
 
-        $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            // Placeholder password — overwritten when the user accepts the invitation.
-            'password' => Hash::make(Str::random(32)),
-            'invitation_token' => $token,
-            'invitation_expires_at' => now()->addDays(self::EXPIRY_DAYS),
-            'inviter_id' => $invitedBy->id,
-            'sm_franchise_id' => $invitedBy->sm_franchise_id,
-        ]);
+        try {
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                // Placeholder password — overwritten when the user accepts the invitation.
+                'password' => Hash::make(Str::random(32)),
+                'invitation_token' => $token,
+                'invitation_expires_at' => now()->addDays(self::EXPIRY_DAYS),
+                'inviter_id' => $invitedBy->id,
+                'sm_franchise_id' => $invitedBy->sm_franchise_id,
+            ]);
+        } catch (QueryException $e) {
+            // Race condition: another request created an active user with the same email
+            // between validation and this write. Detect duplicate key errors (23000 for SQLite,
+            // 23505 for Postgres) and convert to a user-facing validation error.
+            $code = $e->errorInfo[0] ?? '';
+            if (in_array($code, ['23000', '23505'], true)) {
+                throw ValidationException::withMessages([
+                    'email' => ['invitation.email_already_active'],
+                ]);
+            }
+            throw $e;
+        }
 
         $user->assignRole($data['role']);
 
@@ -97,7 +111,11 @@ class InvitationService
     /**
      * Verify that a token exists, belongs to a pending invitation, and has not expired.
      *
-     * @throws HttpException 404 | 410
+     * Both failure paths (invalid or expired token) return 404 with the same message
+     * to prevent enumeration attacks that could distinguish between "never existed"
+     * and "once existed but expired."
+     *
+     * @throws HttpException 404
      */
     public function verify(string $token): User
     {
@@ -110,7 +128,7 @@ class InvitationService
         }
 
         if ($user->invitation_expires_at && $user->invitation_expires_at->isPast()) {
-            abort(410, 'invitation.link_expired');
+            abort(404, 'invitation.invalid_link');
         }
 
         return $user;
@@ -177,12 +195,22 @@ class InvitationService
 
     /**
      * Revoke a pending invitation by soft-deleting the placeholder user record.
+     *
+     * Explicitly nulls the invitation_token before soft-delete (defense-in-depth).
+     * While Eloquent's SoftDeletes trait automatically scopes queries to exclude
+     * soft-deleted rows, explicitly nullifying the token prevents any latent leakage
+     * if the row is ever examined directly.
      */
     public function revoke(User $user): void
     {
         if ($user->invitation_accepted_at) {
             abort(422, 'invitation.already_accepted_cannot_revoke');
         }
+
+        $user->update([
+            'invitation_token' => null,
+            'invitation_expires_at' => null,
+        ]);
 
         $user->tokens()->delete();
         $user->delete();

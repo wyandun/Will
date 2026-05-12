@@ -94,7 +94,7 @@ class InvitationController extends Controller
 
     /**
      * Verify that an invitation token is valid and not expired.
-     * Returns safe user info for the activation form (name, email, role).
+     * Returns safe user info for the activation form (name, email only).
      */
     public function verify(string $token): JsonResponse
     {
@@ -105,7 +105,6 @@ class InvitationController extends Controller
             'data' => [
                 'name' => $user->name,
                 'email' => $user->email,
-                'role' => $user->getRoleNames()->first() ?? '',
             ],
         ]);
     }

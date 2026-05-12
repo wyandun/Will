@@ -824,6 +824,24 @@ class InvitationTest extends TestCase
         $response->assertStatus(403);
     }
 
+    public function test_revoke_nulls_invitation_token(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $pending = $this->createPendingInvitation([
+            'email' => 'token_null_check@test.com',
+            'invitation_token' => 'token_to_be_nulled',
+        ]);
+        $pendingId = $pending->id;
+
+        $this->actingAs($superadmin)
+            ->deleteJson("/api/v1/invitations/{$pendingId}");
+
+        // Verify the soft-deleted record has token nullified (defense-in-depth)
+        $softDeletedUser = User::withTrashed()->findOrFail($pendingId);
+        $this->assertNull($softDeletedUser->invitation_token);
+        $this->assertNull($softDeletedUser->invitation_expires_at);
+    }
+
     // ===========================================================================
     // GET /api/v1/invitations/{token}/verify  (public — no auth)
     // ===========================================================================
@@ -843,7 +861,7 @@ class InvitationTest extends TestCase
         $response->assertJsonPath('success', true);
         $response->assertJsonPath('data.name', 'María Pérez');
         $response->assertJsonPath('data.email', 'maria@test.com');
-        $response->assertJsonPath('data.role', Role::SB_OWNER);
+        $response->assertJsonMissingPath('data.role');
     }
 
     public function test_verify_returns_correct_json_structure(): void
@@ -855,8 +873,9 @@ class InvitationTest extends TestCase
         $response->assertStatus(200);
         $response->assertJsonStructure([
             'success',
-            'data' => ['name', 'email', 'role'],
+            'data' => ['name', 'email'],
         ]);
+        $response->assertJsonMissingPath('data.role');
     }
 
     public function test_verify_returns_404_for_nonexistent_token(): void
@@ -880,7 +899,7 @@ class InvitationTest extends TestCase
         $response->assertStatus(404);
     }
 
-    public function test_verify_returns_410_for_expired_token(): void
+    public function test_verify_returns_404_for_expired_token(): void
     {
         $pending = $this->createPendingInvitation([
             'invitation_token' => 'expired_token_abc',
@@ -889,7 +908,7 @@ class InvitationTest extends TestCase
 
         $response = $this->getJson('/api/v1/invitations/expired_token_abc/verify');
 
-        $response->assertStatus(410);
+        $response->assertStatus(404);
     }
 
     // ===========================================================================
@@ -1149,7 +1168,7 @@ class InvitationTest extends TestCase
         $verifyResp->assertStatus(200);
         $verifyResp->assertJsonPath('data.name', 'Nuevo Usuario');
         $verifyResp->assertJsonPath('data.email', 'nuevo@test.com');
-        $verifyResp->assertJsonPath('data.role', Role::SB_OWNER);
+        $verifyResp->assertJsonMissingPath('data.role');
 
         // 3. Invited user sets their password (public endpoint, no auth)
         $acceptResp = $this->postJson("/api/v1/invitations/{$token}/accept", [
