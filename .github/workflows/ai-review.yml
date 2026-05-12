@@ -39,6 +39,8 @@ jobs:
 
       - name: Install backend dependencies
         working-directory: backend
+        env:
+          COMPOSER_AUTH: '{}'
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Pint — formatting check

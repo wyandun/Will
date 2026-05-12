@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Feed\ListCommentsRequest;
 use App\Http\Requests\Feed\ReactPostRequest;
 use App\Http\Requests\Feed\StoreCommentRequest;
 use App\Http\Requests\Feed\StorePostRequest;
@@ -352,7 +353,7 @@ class FeedController extends Controller
     )]
     public function react(ReactPostRequest $request, int $postId): JsonResponse
     {
-        $result = $this->feedService->react($postId, $request->user(), $request->validated()['emoji']);
+        $result = $this->feedService->react($postId, $request->user(), $request->validated('emoji'));
 
         $message = $result['user_reaction'] !== null ? 'Reacción registrada.' : 'Reacción eliminada.';
 
@@ -429,10 +430,10 @@ class FeedController extends Controller
             new OA\Response(response: 404, description: 'Post no encontrado'),
         ]
     )]
-    public function comments(Request $request, int $postId): JsonResponse
+    public function comments(ListCommentsRequest $request, int $postId): JsonResponse
     {
-        $page = max(1, (int) $request->query('page', 1));
-        $perPage = min(50, max(5, (int) $request->query('per_page', 10)));
+        $page = $request->integer('page', 1);
+        $perPage = $request->integer('per_page', 10);
 
         $data = $this->feedService->getComments($postId, $request->user(), $page, $perPage);
 
@@ -479,7 +480,7 @@ class FeedController extends Controller
     )]
     public function addComment(StoreCommentRequest $request, int $postId): JsonResponse
     {
-        $comment = $this->feedService->addComment($postId, $request->user(), $request->validated()['content']);
+        $comment = $this->feedService->addComment($postId, $request->user(), $request->validated('content'));
 
         return response()->json([
             'success' => true,
@@ -498,15 +499,7 @@ class FeedController extends Controller
             new OA\Parameter(name: 'commentId', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
         ],
         responses: [
-            new OA\Response(
-                response: 200,
-                description: 'Comentario eliminado correctamente',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'success', type: 'boolean', example: true),
-                    ]
-                )
-            ),
+            new OA\Response(response: 204, description: 'Comentario eliminado correctamente'),
             new OA\Response(response: 403, description: 'Sin permiso para eliminar este comentario'),
             new OA\Response(response: 404, description: 'Comentario no encontrado'),
         ]
@@ -515,6 +508,6 @@ class FeedController extends Controller
     {
         $this->feedService->deleteComment($commentId, $request->user());
 
-        return response()->json(['success' => true]);
+        return response()->json(null, 204);
     }
 }
