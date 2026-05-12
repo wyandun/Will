@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Event;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Validation\ValidationException;
 
 class EventService
 {
@@ -89,6 +90,18 @@ class EventService
 
     public function update(Event $event, array $data): Event
     {
+        // Guard: when only end_at is patched, Laravel's after_or_equal:start_at
+        // compares against null (absent from request) and silently passes.
+        // Validate against the persisted start_at to prevent chronological inversion.
+        $effectiveStart = $data['start_at'] ?? $event->start_at;
+        $effectiveEnd = $data['end_at'] ?? $event->end_at;
+
+        if ($effectiveEnd < $effectiveStart) {
+            throw ValidationException::withMessages([
+                'end_at' => ['The end at must be a date after or equal to start at.'],
+            ]);
+        }
+
         $event->update(array_filter([
             'title' => $data['title'] ?? $event->title,
             'description' => array_key_exists('description', $data) ? $data['description'] : $event->description,

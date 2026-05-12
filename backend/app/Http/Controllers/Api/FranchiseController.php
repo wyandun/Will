@@ -173,6 +173,8 @@ class FranchiseController extends Controller
     {
         $this->authorize('view', $franchise);
 
+        // N.B. whereHas('roles') generates a correlated subquery — acceptable for
+        // a single-record show() but must NOT be copied into index() or list queries.
         $franchise->loadCount([
             'users as admins_count' => function ($q) {
                 $q->whereHas('roles', function ($r) {

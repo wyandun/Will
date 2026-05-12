@@ -29,6 +29,8 @@ class EventController extends Controller
 
     public function store(StoreEventRequest $request): EventResource
     {
+        $this->authorize('create', Event::class);
+
         $event = $this->eventService->create($request->user(), $request->validated());
 
         $event->load('user');

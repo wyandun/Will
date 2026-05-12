@@ -38,9 +38,8 @@ class InvitationController extends Controller
 
         $pending = $query->paginate(config('pagination.invitation_per_page', 25));
 
-        return response()->json([
+        return InvitationResource::collection($pending)->additional([
             'success' => true,
-            'data' => InvitationResource::collection($pending),
         ]);
     }
 

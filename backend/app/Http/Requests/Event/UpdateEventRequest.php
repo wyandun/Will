@@ -19,7 +19,7 @@ class UpdateEventRequest extends FormRequest
             'location' => ['nullable', 'string', 'max:255'],
             'start_at' => ['sometimes', 'required', 'date'],
             'end_at' => ['sometimes', 'required', 'date', 'after_or_equal:start_at'],
-            'timezone' => ['nullable', 'string', 'max:60'],
+            'timezone' => ['sometimes', 'timezone'],
             'all_day' => ['boolean'],
             'color' => ['nullable', 'string', 'max:10'],
             'visibility' => ['nullable', 'string', 'in:private,franchise,public'],

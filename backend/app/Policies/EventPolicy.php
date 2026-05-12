@@ -7,6 +7,11 @@ use App\Models\User;
 
 class EventPolicy
 {
+    public function create(User $user): bool
+    {
+        return true;
+    }
+
     public function view(User $user, Event $event): bool
     {
         if ($user->id === $event->user_id) {
