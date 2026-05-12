@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Models\Franchise;
 use App\Models\User;
 use App\Notifications\UserInvitationNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
@@ -60,6 +62,9 @@ class InvitationTest extends TestCase
         foreach ($roles as $role) {
             SpatieRole::firstOrCreate(['name' => $role, 'guard_name' => 'web']);
         }
+
+        // Reset rate limiter cache so throttle:invitation doesn't accumulate across tests.
+        Cache::flush();
     }
 
     // ---------------------------------------------------------------------------
@@ -108,6 +113,11 @@ class InvitationTest extends TestCase
         ], $attributes));
     }
 
+    private function createFranchise(array $attributes = []): Franchise
+    {
+        return Franchise::factory()->create($attributes);
+    }
+
     /** Default valid payload for sending an invitation. */
     private function validInvitePayload(array $overrides = []): array
     {
@@ -139,18 +149,19 @@ class InvitationTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertJsonPath('success', true);
-        $response->assertJsonCount(2, 'data');
+        $response->assertJsonCount(2, 'data.data');
     }
 
     public function test_admin_sm_can_list_pending_invitations(): void
     {
-        $adminSm = $this->createAdminSm();
-        $this->createPendingInvitation(['email' => 'pending@test.com']);
+        $franchise = $this->createFranchise();
+        $adminSm = $this->createAdminSm(['sm_franchise_id' => $franchise->id]);
+        $this->createPendingInvitation(['email' => 'pending@test.com', 'sm_franchise_id' => $franchise->id]);
 
         $response = $this->actingAs($adminSm)->getJson('/api/v1/invitations');
 
         $response->assertStatus(200);
-        $response->assertJsonCount(1, 'data');
+        $response->assertJsonCount(1, 'data.data');
     }
 
     public function test_invitation_index_returns_correct_json_structure(): void
@@ -164,13 +175,17 @@ class InvitationTest extends TestCase
         $response->assertJsonStructure([
             'success',
             'data' => [
-                '*' => [
-                    'id',
-                    'name',
-                    'email',
-                    'invitation_expires_at',
-                    'roles',
+                'data' => [
+                    '*' => [
+                        'id',
+                        'name',
+                        'email',
+                        'invitation_expires_at',
+                        'roles',
+                    ],
                 ],
+                'current_page',
+                'total',
             ],
         ]);
     }
@@ -188,7 +203,7 @@ class InvitationTest extends TestCase
         DB::enableQueryLog();
 
         $response = $this->actingAs($superadmin)->getJson('/api/v1/invitations');
-        $response->assertStatus(200)->assertJsonCount(5, 'data');
+        $response->assertStatus(200)->assertJsonCount(5, 'data.data');
 
         $queries = DB::getQueryLog();
         DB::disableQueryLog();
@@ -196,10 +211,11 @@ class InvitationTest extends TestCase
         // Eager-loading collapses roles + invitedBy into 2 additional queries for
         // the entire collection, not 1 per user.  With auth overhead the total
         // count is small and constant regardless of collection size.
+        // Pagination adds 1 extra COUNT(*) query.
         // Upper-bound chosen generously; failure here means a relation was
         // accidentally un-eager-loaded (e.g. Spatie role->permissions queried per user).
-        $this->assertCount(5, $response->json('data'));
-        $this->assertLessThanOrEqual(12, count($queries),
+        $this->assertCount(5, $response->json('data.data'));
+        $this->assertLessThanOrEqual(13, count($queries),
             'Query count scaled with collection size — possible N+1. Queries: '
             .implode("\n", array_column($queries, 'query'))
         );
@@ -220,7 +236,7 @@ class InvitationTest extends TestCase
         $response = $this->actingAs($superadmin)->getJson('/api/v1/invitations');
 
         $response->assertStatus(200);
-        $response->assertJsonCount(1, 'data');
+        $response->assertJsonCount(1, 'data.data');
     }
 
     public function test_regular_user_is_forbidden_from_invitation_index(): void
@@ -636,8 +652,9 @@ class InvitationTest extends TestCase
     public function test_admin_sm_can_resend_invitation(): void
     {
         Notification::fake();
-        $adminSm = $this->createAdminSm();
-        $pending = $this->createPendingInvitation(['email' => 'resend_by_sm@test.com']);
+        $franchise = $this->createFranchise();
+        $adminSm = $this->createAdminSm(['sm_franchise_id' => $franchise->id]);
+        $pending = $this->createPendingInvitation(['email' => 'resend_by_sm@test.com', 'sm_franchise_id' => $franchise->id]);
 
         $response = $this->actingAs($adminSm)
             ->postJson("/api/v1/invitations/{$pending->id}/resend");
@@ -746,8 +763,9 @@ class InvitationTest extends TestCase
 
     public function test_admin_sm_can_revoke_invitation(): void
     {
-        $adminSm = $this->createAdminSm();
-        $pending = $this->createPendingInvitation(['email' => 'revoke_by_sm@test.com']);
+        $franchise = $this->createFranchise();
+        $adminSm = $this->createAdminSm(['sm_franchise_id' => $franchise->id]);
+        $pending = $this->createPendingInvitation(['email' => 'revoke_by_sm@test.com', 'sm_franchise_id' => $franchise->id]);
 
         $response = $this->actingAs($adminSm)
             ->deleteJson("/api/v1/invitations/{$pending->id}");
@@ -777,7 +795,7 @@ class InvitationTest extends TestCase
             ->deleteJson("/api/v1/invitations/{$pending->id}");
 
         $response = $this->actingAs($superadmin)->getJson('/api/v1/invitations');
-        $response->assertJsonCount(0, 'data');
+        $response->assertJsonCount(0, 'data.data');
     }
 
     public function test_revoke_returns_422_if_invitation_already_accepted(): void
@@ -1159,6 +1177,155 @@ class InvitationTest extends TestCase
 
         // 6. Invitation no longer appears in pending list
         $indexResp = $this->actingAs($adminSm)->getJson('/api/v1/invitations');
-        $indexResp->assertJsonCount(0, 'data');
+        $indexResp->assertJsonCount(0, 'data.data');
+    }
+
+    // ===========================================================================
+    // Tenant isolation — index()
+    // ===========================================================================
+
+    public function test_send_assigns_inviter_franchise_to_new_user(): void
+    {
+        Notification::fake();
+        $franchise = $this->createFranchise();
+        $adminSm = $this->createAdminSm(['sm_franchise_id' => $franchise->id]);
+
+        $this->actingAs($adminSm)
+            ->postJson('/api/v1/invitations', $this->validInvitePayload(['email' => 'franchise_check@test.com']));
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'franchise_check@test.com',
+            'sm_franchise_id' => $franchise->id,
+        ]);
+    }
+
+    public function test_admin_sm_only_sees_own_franchise_invitations(): void
+    {
+        $franchiseA = $this->createFranchise();
+        $franchiseB = $this->createFranchise();
+        $adminSm = $this->createAdminSm(['sm_franchise_id' => $franchiseA->id]);
+
+        // Own franchise
+        $this->createPendingInvitation(['email' => 'own@test.com', 'sm_franchise_id' => $franchiseA->id]);
+        // Other franchise
+        $this->createPendingInvitation(['email' => 'other@test.com', 'sm_franchise_id' => $franchiseB->id]);
+
+        $response = $this->actingAs($adminSm)->getJson('/api/v1/invitations');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(1, 'data.data');
+        $response->assertJsonPath('data.data.0.email', 'own@test.com');
+    }
+
+    public function test_superadmin_sees_all_invitations_across_franchises(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchiseA = $this->createFranchise();
+        $franchiseB = $this->createFranchise();
+
+        $this->createPendingInvitation(['email' => 'franchise_a@test.com', 'sm_franchise_id' => $franchiseA->id]);
+        $this->createPendingInvitation(['email' => 'franchise_b@test.com', 'sm_franchise_id' => $franchiseB->id]);
+
+        $response = $this->actingAs($superadmin)->getJson('/api/v1/invitations');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(2, 'data.data');
+    }
+
+    // ===========================================================================
+    // Tenant isolation — resend() and destroy()
+    // ===========================================================================
+
+    public function test_admin_sm_cannot_resend_other_franchise_invitation(): void
+    {
+        Notification::fake();
+        $franchiseA = $this->createFranchise();
+        $franchiseB = $this->createFranchise();
+        $adminSm = $this->createAdminSm(['sm_franchise_id' => $franchiseA->id]);
+        $pending = $this->createPendingInvitation([
+            'email' => 'other_resend@test.com',
+            'sm_franchise_id' => $franchiseB->id,
+        ]);
+
+        $response = $this->actingAs($adminSm)
+            ->postJson("/api/v1/invitations/{$pending->id}/resend");
+
+        $response->assertStatus(403);
+    }
+
+    public function test_admin_sm_cannot_revoke_other_franchise_invitation(): void
+    {
+        $franchiseA = $this->createFranchise();
+        $franchiseB = $this->createFranchise();
+        $adminSm = $this->createAdminSm(['sm_franchise_id' => $franchiseA->id]);
+        $pending = $this->createPendingInvitation([
+            'email' => 'other_revoke@test.com',
+            'sm_franchise_id' => $franchiseB->id,
+        ]);
+
+        $response = $this->actingAs($adminSm)
+            ->deleteJson("/api/v1/invitations/{$pending->id}");
+
+        $response->assertStatus(403);
+    }
+
+    // ===========================================================================
+    // Token revocation on accept and revoke
+    // ===========================================================================
+
+    public function test_accept_revokes_preexisting_sanctum_tokens(): void
+    {
+        $pending = $this->createPendingInvitation(['invitation_token' => 'revoke_old_tokens']);
+        $pending->assignRole(Role::SB_OWNER);
+
+        // Create a stale token for this user (simulates a previous partial accept)
+        $pending->createToken('stale');
+
+        $this->postJson('/api/v1/invitations/revoke_old_tokens/accept', [
+            'password' => 'MySecure123!',
+            'password_confirmation' => 'MySecure123!',
+        ]);
+
+        // Only the newly issued token should remain
+        $this->assertDatabaseCount('personal_access_tokens', 1);
+    }
+
+    public function test_revoke_deletes_sanctum_tokens(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $pending = $this->createPendingInvitation(['email' => 'token_revoke@test.com']);
+
+        // Give the pending user a token
+        $pending->createToken('test-token');
+        $this->assertDatabaseCount('personal_access_tokens', 1);
+
+        $this->actingAs($superadmin)
+            ->deleteJson("/api/v1/invitations/{$pending->id}");
+
+        $this->assertDatabaseCount('personal_access_tokens', 0);
+    }
+
+    // ===========================================================================
+    // Role::invitable()
+    // ===========================================================================
+
+    public function test_role_invitable_excludes_superadmin(): void
+    {
+        $this->assertNotContains(Role::SUPERADMIN, Role::invitable());
+    }
+
+    public function test_role_invitable_includes_all_non_superadmin_roles(): void
+    {
+        $invitable = Role::invitable();
+
+        $this->assertContains(Role::SYSTEM_ADMIN, $invitable);
+        $this->assertContains(Role::SYSTEM_ADMIN_READONLY, $invitable);
+        $this->assertContains(Role::ADMIN_SM, $invitable);
+        $this->assertContains(Role::SB_OWNER, $invitable);
+        $this->assertContains(Role::SB_EMPLOYEE, $invitable);
+        $this->assertContains(Role::BB_EMPLOYEE, $invitable);
+        $this->assertContains(Role::SUB_FRANCHISE_OWNER, $invitable);
+        $this->assertContains(Role::SUB_FRANCHISE_ADMIN, $invitable);
+        $this->assertCount(8, $invitable);
     }
 }

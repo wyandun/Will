@@ -41,7 +41,7 @@ Route::prefix('auth')->group(function () {
 // Invitations — public (no auth required)
 // Verify token validity and accept an invitation (set password + auto-login).
 // ---------------------------------------------------------------------------
-Route::prefix('invitations')->group(function () {
+Route::prefix('invitations')->middleware('throttle:invitation')->group(function () {
     Route::get('/{token}/verify', [InvitationController::class, 'verify']);
     Route::post('/{token}/accept', [InvitationController::class, 'accept']);
 });

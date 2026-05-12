@@ -44,16 +44,7 @@ class SendInvitationRequest extends FormRequest
             'role' => [
                 'required',
                 'string',
-                Rule::in([
-                    Role::SYSTEM_ADMIN,
-                    Role::SYSTEM_ADMIN_READONLY,
-                    Role::ADMIN_SM,
-                    Role::SB_OWNER,
-                    Role::SB_EMPLOYEE,
-                    Role::BB_EMPLOYEE,
-                    Role::SUB_FRANCHISE_OWNER,
-                    Role::SUB_FRANCHISE_ADMIN,
-                ]),
+                Rule::in(Role::invitable()),
             ],
         ];
     }
@@ -61,7 +52,7 @@ class SendInvitationRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'email.unique' => 'Este correo ya pertenece a un usuario activo en el portal.',
+            'email.unique' => 'invitation.email_already_active',
         ];
     }
 }

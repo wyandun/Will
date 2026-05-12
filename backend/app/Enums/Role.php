@@ -26,4 +26,24 @@ final class Role
     public const SUB_FRANCHISE_OWNER = 'sub_franchise_owner';
 
     public const SUB_FRANCHISE_ADMIN = 'sub_franchise_admin';
+
+    /**
+     * All roles that may be assigned via an invitation.
+     * SUPERADMIN is excluded — it is never assigned through the invitation flow.
+     *
+     * @return list<string>
+     */
+    public static function invitable(): array
+    {
+        return [
+            self::SYSTEM_ADMIN,
+            self::SYSTEM_ADMIN_READONLY,
+            self::ADMIN_SM,
+            self::SB_OWNER,
+            self::SB_EMPLOYEE,
+            self::BB_EMPLOYEE,
+            self::SUB_FRANCHISE_OWNER,
+            self::SUB_FRANCHISE_ADMIN,
+        ];
+    }
 }

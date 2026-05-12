@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\Role;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Invitation\AcceptInvitationRequest;
 use App\Http\Requests\Invitation\SendInvitationRequest;
@@ -22,10 +23,18 @@ class InvitationController extends Controller
     {
         $this->authorize('inviteUsers', User::class);
 
-        $pending = User::pendingInvitation()
+        /** @var User $authUser */
+        $authUser = auth()->user();
+
+        $query = User::pendingInvitation()
             ->with(['roles', 'invitedBy:id,name'])
-            ->orderByDesc('created_at')
-            ->get();
+            ->orderByDesc('created_at');
+
+        if (! $authUser->hasRole(Role::SUPERADMIN)) {
+            $query->where('sm_franchise_id', $authUser->sm_franchise_id);
+        }
+
+        $pending = $query->paginate(config('pagination.invitation_per_page', 25));
 
         return response()->json([
             'success' => true,
@@ -54,7 +63,7 @@ class InvitationController extends Controller
      */
     public function resend(User $user): JsonResponse
     {
-        $this->authorize('inviteUsers', User::class);
+        $this->authorize('manageInvitation', $user);
 
         $result = $this->service->resendById($user, auth()->user());
 
@@ -70,7 +79,7 @@ class InvitationController extends Controller
      */
     public function destroy(User $user): JsonResponse
     {
-        $this->authorize('inviteUsers', User::class);
+        $this->authorize('manageInvitation', $user);
 
         $this->service->revoke($user);
 

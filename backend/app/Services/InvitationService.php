@@ -12,6 +12,18 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
+/**
+ * Handles the full invitation lifecycle: send, resend, verify, accept, revoke.
+ *
+ * SECURITY NOTES:
+ *  - invitation_token is stored in plaintext. Given the 64-char entropy and
+ *    rate limiting on public endpoints (throttle:invitation), the brute-force
+ *    risk is low. If token hashing is ever required, store hash($token) in
+ *    send()/regenerateAndNotify() and use Hash::check() in verify()/accept().
+ *  - The Sanctum token is returned in the JSON response body (stored in
+ *    localStorage by the frontend). This is an intentional design decision
+ *    for SPA compatibility — do not also set a cookie (double-issuance).
+ */
 class InvitationService
 {
     private const EXPIRY_DAYS = 7;
@@ -37,13 +49,13 @@ class InvitationService
         if ($existing) {
             if ($existing->invitation_accepted_at) {
                 throw ValidationException::withMessages([
-                    'email' => ['Este correo ya pertenece a un usuario activo en el portal.'],
+                    'email' => ['invitation.email_already_active'],
                 ]);
             }
 
             if ($existing->trashed()) {
                 throw ValidationException::withMessages([
-                    'email' => ['Este correo pertenece a una cuenta eliminada. Contacta a soporte para reactivarla.'],
+                    'email' => ['invitation.email_deleted_account'],
                 ]);
             }
 
@@ -62,6 +74,7 @@ class InvitationService
             'invitation_token' => $token,
             'invitation_expires_at' => now()->addDays(self::EXPIRY_DAYS),
             'inviter_id' => $invitedBy->id,
+            'sm_franchise_id' => $invitedBy->sm_franchise_id,
         ]);
 
         $user->assignRole($data['role']);
@@ -75,7 +88,7 @@ class InvitationService
     public function resendById(User $user, User $invitedBy): array
     {
         if ($user->invitation_accepted_at) {
-            abort(422, 'La invitación ya fue aceptada; no es posible reenviarla.');
+            abort(422, 'invitation.already_accepted_cannot_resend');
         }
 
         return $this->regenerateAndNotify($user, $invitedBy);
@@ -93,11 +106,11 @@ class InvitationService
             ->first();
 
         if (! $user) {
-            abort(404, 'El enlace de invitación no es válido.');
+            abort(404, 'invitation.invalid_link');
         }
 
         if ($user->invitation_expires_at && $user->invitation_expires_at->isPast()) {
-            abort(410, 'El enlace de invitación ha expirado. Pedí que te reenvíen la invitación.');
+            abort(410, 'invitation.link_expired');
         }
 
         return $user;
@@ -126,11 +139,11 @@ class InvitationService
                 ->first();
 
             if (! $user) {
-                abort(404, 'El enlace de invitación no es válido.');
+                abort(404, 'invitation.invalid_link');
             }
 
             if ($user->invitation_expires_at && $user->invitation_expires_at->isPast()) {
-                abort(410, 'El enlace de invitación ha expirado. Pide que te reenvíen la invitación.');
+                abort(410, 'invitation.link_expired');
             }
 
             $user->update([
@@ -144,6 +157,10 @@ class InvitationService
             // so we set it directly and persist with save().
             $user->email_verified_at = now();
             $user->save();
+
+            // Revoke any stale tokens (e.g. from a previous partial accept attempt)
+            // before issuing a fresh one.
+            $user->tokens()->delete();
 
             $plainToken = $user->createToken('portal')->plainTextToken;
             $role = $user->getRoleNames()->first() ?? '';
@@ -164,9 +181,10 @@ class InvitationService
     public function revoke(User $user): void
     {
         if ($user->invitation_accepted_at) {
-            abort(422, 'No se puede revocar una invitación que ya fue aceptada.');
+            abort(422, 'invitation.already_accepted_cannot_revoke');
         }
 
+        $user->tokens()->delete();
         $user->delete();
     }
 

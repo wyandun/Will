@@ -12,4 +12,6 @@ return [
     */
 
     'franchise_per_page' => (int) env('FRANCHISE_PER_PAGE', 25),
+
+    'invitation_per_page' => (int) env('INVITATION_PER_PAGE', 25),
 ];
