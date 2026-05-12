@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureModulePermission;
+use App\Http\Middleware\TrackUserPresence;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'module.permission' => EnsureModulePermission::class,
         ]);
+        $middleware->appendToGroup('api', TrackUserPresence::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

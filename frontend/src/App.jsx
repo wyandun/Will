@@ -7,6 +7,7 @@ import AuthenticatedLayout from './components/AuthenticatedLayout';
 import FranchisesPage from './pages/franchises/FranchisesPage';
 import CompaniesPage from './pages/companies/CompaniesPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
+import FeedPage from './pages/feed/FeedPage';
 import ProfilePage from './pages/profile/ProfilePage';
 import SystemAdminsPage from './pages/system_admins/SystemAdminsPage';
 import { useAuthStore } from './store/authStore';
@@ -107,7 +108,7 @@ export default function App() {
               </RoleRoute>
             }
           />
-          <Route path="/feed"        element={<StubPage title={t('nav.feed')} />} />
+          <Route path="/feed"        element={<FeedPage />} />
           <Route path="/contracts"   element={<StubPage title={t('nav.contracts')} />} />
           <Route path="/repository"  element={<StubPage title={t('nav.repository')} />} />
           <Route path="/processes"   element={<StubPage title={t('nav.process_maps')} />} />

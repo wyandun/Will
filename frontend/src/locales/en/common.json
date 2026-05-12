@@ -104,6 +104,28 @@
     "signed": "Signed",
     "read_more": "Read"
   },
+  "feed": {
+    "title": "Feed",
+    "search_placeholder": "Search by title, content or author…",
+    "online_now": "Online Now",
+    "recently_active": "Recently Active",
+    "you": "You",
+    "no_posts": "No posts found.",
+    "no_posts_search": "No posts match your search.",
+    "no_online": "No one online right now.",
+    "no_recent": "No recent activity.",
+    "type_announcement": "Announcement",
+    "type_news": "News",
+    "type_training": "Training",
+    "type_alert": "Alert",
+    "pinned": "Pinned",
+    "load_error": "Failed to load feed. Please try again.",
+    "presence_error": "Failed to load presence data.",
+    "page_info": "Page {{current}} of {{total}}",
+    "posts_total": "{{count}} posts",
+    "prev": "Previous",
+    "next": "Next"
+  },
   "franchises": {
     "title": "Franchises",
     "subtitle": "Manage SM regional franchises.",

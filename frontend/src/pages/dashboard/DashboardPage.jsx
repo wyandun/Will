@@ -291,6 +291,7 @@ function KpiGrid({ kpis, loading }) {
 
 function PostCard({ post }) {
   const { t } = useTranslation('common');
+  const navigate = useNavigate();
   const ago = daysAgo(post.created_at);
   const initial = (post.author_name ?? '?')[0].toUpperCase();
 
@@ -320,7 +321,7 @@ function PostCard({ post }) {
             {post.comments_count ?? 0}
           </span>
         </div>
-        <button className="text-xs text-amber-600 hover:text-amber-700 font-medium">
+        <button className="text-xs text-amber-600 hover:text-amber-700 font-medium" onClick={() => navigate('/feed')}>
           {t('dashboard.read_more')} ›
         </button>
       </div>

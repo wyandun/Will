@@ -18,6 +18,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property int|null $sub_franchise_id
  * @property string|null $avatar_path
  * @property Carbon|null $birth_date
+ * @property Carbon|null $last_seen_at
  * @property-read string|null $avatar_url
  */
 class User extends Authenticatable
@@ -62,6 +63,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'birth_date' => 'date',
+            'last_seen_at' => 'datetime',
             'sm_franchise_id' => 'integer',
             'company_id' => 'integer',
             'sub_franchise_id' => 'integer',

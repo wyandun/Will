@@ -147,25 +147,36 @@ class DashboardService
 
     public function getFeed(User $user): array
     {
-        $scope = $this->resolveCompanyScope($user);
-
         $query = DB::table('posts')
-            ->join('users', 'users.id', '=', 'posts.user_id')
+            ->join('users as authors', 'authors.id', '=', 'posts.author_id')
+            ->whereNull('posts.deleted_at')
+            ->where(function ($q) {
+                $q->whereNull('posts.published_at')
+                    ->orWhere('posts.published_at', '<=', now());
+            })
             ->select([
                 'posts.id',
-                'users.name as author_name',
-                'users.avatar_path as author_avatar',
-                'posts.content',
-                'posts.image_path',
+                'posts.title',
+                'posts.body',
+                'posts.image_url',
                 'posts.created_at',
+                'authors.name as author_name',
+                'authors.avatar_path as author_avatar',
             ])
+            ->orderByDesc('posts.is_pinned')
             ->orderByDesc('posts.created_at')
             ->limit(5);
 
-        if ($scope !== null && ! empty($scope)) {
-            $query->whereIn('posts.company_id', $scope);
-        } elseif (empty($scope)) {
-            return [];
+        // Visibility scoping — mirrors FeedService::getPosts
+        if (! $user->hasRole('superadmin')) {
+            $franchiseId = $user->sm_franchise_id;
+            $query->where(function ($q) use ($franchiseId) {
+                $q->where('posts.visibility', 'global')
+                    ->orWhere(function ($q2) use ($franchiseId) {
+                        $q2->where('posts.visibility', 'franchise')
+                            ->where('posts.franchise_id', $franchiseId);
+                    });
+            });
         }
 
         $posts = $query->get();
@@ -194,10 +205,11 @@ class DashboardService
         return $posts->map(function ($post) use ($likes, $comments) {
             return [
                 'id' => $post->id,
+                'title' => $post->title,
                 'author_name' => $post->author_name,
                 'author_avatar' => $post->author_avatar,
-                'content' => $post->content,
-                'image_path' => $post->image_path,
+                'content' => $post->body,
+                'image_path' => $post->image_url,
                 'likes_count' => (int) ($likes[$post->id] ?? 0),
                 'comments_count' => (int) ($comments[$post->id] ?? 0),
                 'created_at' => $post->created_at,
