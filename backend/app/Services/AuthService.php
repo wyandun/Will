@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class AuthService
@@ -57,7 +58,7 @@ class AuthService
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'avatar_path' => $user->avatar_path ?? null,
+                'avatar_url' => $user->avatar_path ? Storage::disk('public')->url($user->avatar_path) : null,
                 // Needed by the frontend to pre-fill the franchise dropdown for admin_sm.
                 'sm_franchise_id' => $user->sm_franchise_id ?? null,
             ],
@@ -93,7 +94,7 @@ class AuthService
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'avatar_path' => $user->avatar_path ?? null,
+                'avatar_url' => $user->avatar_path ? Storage::disk('public')->url($user->avatar_path) : null,
                 // Needed by the frontend to pre-fill the franchise dropdown for admin_sm.
                 'sm_franchise_id' => $user->sm_franchise_id ?? null,
             ],

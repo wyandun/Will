@@ -185,9 +185,13 @@ function CommentPanel({ postId, onToast }) {
         <ul className="flex flex-col gap-2">
           {comments.map((c) => (
             <li key={c.id} className="flex items-start gap-2 group">
-              <div className="w-6 h-6 rounded-full bg-slate-200 text-slate-600 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
-                {(c.author_name ?? '?')[0].toUpperCase()}
-              </div>
+              {c.author_avatar_url ? (
+                <img src={c.author_avatar_url} alt={c.author_name} className="w-6 h-6 rounded-full object-cover flex-shrink-0 mt-0.5" />
+              ) : (
+                <div className="w-6 h-6 rounded-full bg-slate-200 text-slate-600 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                  {(c.author_name ?? '?')[0].toUpperCase()}
+                </div>
+              )}
               <div className="flex-1 min-w-0 bg-slate-50 rounded-xl px-3 py-1.5">
                 <p className="text-xs font-semibold text-slate-700">{c.author_name}</p>
                 <p className="text-xs text-slate-600 break-words">
