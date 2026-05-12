@@ -915,7 +915,7 @@ class InvitationTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertJsonPath('success', true);
-        $response->assertJsonPath('data.email', 'm****@test.com');
+        $response->assertJsonPath('data.email', 'm***@test.com');
         $response->assertJsonMissingPath('data.role');
     }
 
@@ -1223,7 +1223,7 @@ class InvitationTest extends TestCase
         $verifyResp = $this->getJson("/api/v1/invitations/{$token}/verify");
 
         $verifyResp->assertStatus(200);
-        $verifyResp->assertJsonPath('data.email', 'n****@test.com');
+        $verifyResp->assertJsonPath('data.email', 'n***@test.com');
         $verifyResp->assertJsonMissingPath('data.role');
 
         // 3. Invited user sets their password (public endpoint, no auth)
@@ -1389,18 +1389,17 @@ class InvitationTest extends TestCase
         $this->assertNotContains(Role::SUPERADMIN, Role::invitable());
     }
 
-    public function test_role_invitable_includes_all_non_superadmin_roles(): void
+    public function test_role_invitable_covers_all_non_superadmin_constants(): void
     {
-        $invitable = Role::invitable();
+        $constants = (new \ReflectionClass(Role::class))->getConstants();
+        $expected = array_values(array_filter($constants, fn ($v) => $v !== Role::SUPERADMIN));
+        sort($expected);
+        $actual = Role::invitable();
+        sort($actual);
 
-        $this->assertContains(Role::SYSTEM_ADMIN, $invitable);
-        $this->assertContains(Role::SYSTEM_ADMIN_READONLY, $invitable);
-        $this->assertContains(Role::ADMIN_SM, $invitable);
-        $this->assertContains(Role::SB_OWNER, $invitable);
-        $this->assertContains(Role::SB_EMPLOYEE, $invitable);
-        $this->assertContains(Role::BB_EMPLOYEE, $invitable);
-        $this->assertContains(Role::SUB_FRANCHISE_OWNER, $invitable);
-        $this->assertContains(Role::SUB_FRANCHISE_ADMIN, $invitable);
-        $this->assertCount(8, $invitable);
+        $this->assertSame($expected, $actual,
+            'Role::invitable() is out of sync with the class constants. '
+            .'Add the missing role(s) to invitable().'
+        );
     }
 }

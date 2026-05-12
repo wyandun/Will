@@ -40,9 +40,15 @@ final class Role
      */
     public static function invitable(): array
     {
-        return array_values(array_filter(
-            (new \ReflectionClass(self::class))->getConstants(),
-            fn (string $value) => $value !== self::SUPERADMIN
-        ));
+        return [
+            self::SYSTEM_ADMIN,
+            self::SYSTEM_ADMIN_READONLY,
+            self::ADMIN_SM,
+            self::SB_OWNER,
+            self::SB_EMPLOYEE,
+            self::BB_EMPLOYEE,
+            self::SUB_FRANCHISE_OWNER,
+            self::SUB_FRANCHISE_ADMIN,
+        ];
     }
 }

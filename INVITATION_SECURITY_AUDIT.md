@@ -434,4 +434,20 @@ Esta ronda se enfocó en endurecer las defensas anti-enumeración de usuarios, a
 | **F3** | No hay rate-limiting en `verify()` y `accept()` | **Falso Positivo (Duplicado 3x)**: Ya está protegido por `throttle:invitation` (implementado desde R4). Se añadió a la documentación de decisiones de seguridad. | `CLAUDE.md` |
 | **F4** | `inviter_id` es mass-assignable | **Resuelto**: Al igual que `invitation_token` en rondas previas, se removió `inviter_id` de la propiedad `$fillable` del modelo `User` y ahora se asigna de manera estrictamente explícita (`$user->inviter_id = ...`) en la capa de servicios. | `User.php` y `InvitationService.php` |
 
+---
+
+## Round 8: Análisis Forense y Prevención de Flip-Flops (RESOLVED ✓)
+
+Esta ronda se originó por una regresión introducida durante el R7 (el uso de reflection sugerido por el agente) y varios reportes crónicos (falsos positivos) repetidos hasta 5 veces en la bitácora. La estrategia se centró en blindar el código contra sugerencias contradictorias usando Unit Tests arquitectónicos y delegación en helpers.
+
+### Análisis de Hallazgos
+
+| # | Issue | Fix / Rationale | File / Status |
+|---|-------|-----------------|---------------|
+| **F1** | `Role::invitable()` falla en runtime por callback typado (`string`) | **Resuelto (Regresión de R7)**: Se revirtió el uso de reflection sugerido en la ronda previa (flip-flop del agente). Para no perder la seguridad auto-descubrible, se introdujo el test unitario `test_role_invitable_covers_all_non_superadmin_constants` que usa reflection en tiempo de *testing* para forzar a los desarrolladores a añadir nuevas constantes a la lista estática. | `Role.php` y `InvitationTest.php` |
+| **F2** | `verify()` leaks timing | **Falso Positivo (Duplicado 5x)**: Rate Limiting de 10/min hace inviable explotar micro-diferencias en latencia SQL. El Token es CSPRNG 64 chars base-62. Ambos paths retornan `abort(404)`. Documentado expresamente en `CLAUDE.md`. | N/A |
+| **F3** | `maskEmail()` está en el Controller — wrong layer | **Mejora Aplicada**: Se extrajo el ofuscador al nuevo helper global `StringHelper::maskEmail()` asegurando que siempre retorne exactamente 3 asteriscos para mitigar el edge-case de correos con parte local de 1 solo caracter (ej. `a@b.com` -> `a***@b.com`). | `StringHelper.php` |
+| **F4** | TOCTOU race condition en `SendInvitationRequest` | **Falso Positivo (Duplicado 3x)**: Operación protegida atómicamente con transacciones y `lockForUpdate()` en el método accept. Ya resuelto y documentado. | N/A |
+| **F5** | Blast radius de `SoftDeletes` en modelo `User` | **Auditoría Completa (Duplicado 3x)**: Se auditaron todas las consultas crudas `DB::table('users')` (`TrackUserPresence` y `FeedService`) confirmando que la lógica ya incluye `->whereNull('deleted_at')` o solo opera sobre usuarios logueados. El behavior del inviter soft-deleted es correcto (desaparece). | N/A |
+
 **Status: Ready for production merge.**

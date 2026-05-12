@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\Role;
+use App\Helpers\StringHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Invitation\AcceptInvitationRequest;
 use App\Http\Requests\Invitation\SendInvitationRequest;
@@ -113,22 +114,9 @@ class InvitationController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'email' => $this->maskEmail($user->email),
+                'email' => StringHelper::maskEmail($user->email),
             ],
         ]);
-    }
-
-    /**
-     * Mask an email address to prevent enumeration.
-     *
-     * e.g., john@example.com -> j***@example.com
-     */
-    private function maskEmail(string $email): string
-    {
-        [$local, $domain] = explode('@', $email);
-        $masked = substr($local, 0, 1).str_repeat('*', max(strlen($local) - 1, 3));
-
-        return "{$masked}@{$domain}";
     }
 
     /**
