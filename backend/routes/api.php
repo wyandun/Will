@@ -77,9 +77,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/posts', [FeedController::class, 'store']);
         Route::put('/posts/{id}', [FeedController::class, 'update']);
         Route::delete('/posts/{id}', [FeedController::class, 'destroy']);
-        Route::post('/posts/{postId}/react', [FeedController::class, 'react']);
+        Route::post('/posts/{postId}/react', [FeedController::class, 'react'])->middleware('throttle:60,1');
         Route::get('/posts/{postId}/comments', [FeedController::class, 'comments']);
-        Route::post('/posts/{postId}/comments', [FeedController::class, 'addComment']);
+        Route::post('/posts/{postId}/comments', [FeedController::class, 'addComment'])->middleware('throttle:30,1');
         Route::delete('/comments/{commentId}', [FeedController::class, 'deleteComment']);
     });
 
