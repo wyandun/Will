@@ -11,6 +11,7 @@ use App\Http\Requests\Feed\UpdatePostRequest;
 use App\Services\FeedService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use OpenApi\Attributes as OA;
 
 class FeedController extends Controller
@@ -432,8 +433,9 @@ class FeedController extends Controller
     )]
     public function comments(ListCommentsRequest $request, int $postId): JsonResponse
     {
-        $page = $request->integer('page', 1);
-        $perPage = $request->integer('per_page', 10);
+        $validated = $request->validated();
+        $page = (int) ($validated['page'] ?? 1);
+        $perPage = (int) ($validated['per_page'] ?? 10);
 
         $data = $this->feedService->getComments($postId, $request->user(), $page, $perPage);
 
@@ -504,10 +506,10 @@ class FeedController extends Controller
             new OA\Response(response: 404, description: 'Comentario no encontrado'),
         ]
     )]
-    public function deleteComment(Request $request, int $commentId): JsonResponse
+    public function deleteComment(Request $request, int $commentId): Response
     {
         $this->feedService->deleteComment($commentId, $request->user());
 
-        return response()->json(null, 204);
+        return response()->noContent();
     }
 }

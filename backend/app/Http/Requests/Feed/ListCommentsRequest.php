@@ -2,15 +2,13 @@
 
 namespace App\Http\Requests\Feed;
 
-use Illuminate\Foundation\Http\FormRequest;
+use App\Http\Requests\AuthenticatedRequest;
 
-class ListCommentsRequest extends FormRequest
+class ListCommentsRequest extends AuthenticatedRequest
 {
-    public function authorize(): bool
-    {
-        return $this->user() !== null;
-    }
-
+    /**
+     * @return array<string, mixed>
+     */
     public function rules(): array
     {
         return [

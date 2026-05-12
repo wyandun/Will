@@ -2,15 +2,10 @@
 
 namespace App\Http\Requests\Feed;
 
-use Illuminate\Foundation\Http\FormRequest;
+use App\Http\Requests\AuthenticatedRequest;
 
-class StoreCommentRequest extends FormRequest
+class StoreCommentRequest extends AuthenticatedRequest
 {
-    public function authorize(): bool
-    {
-        return $this->user() !== null;
-    }
-
     /**
      * @return array<string, mixed>
      */

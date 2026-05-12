@@ -3,16 +3,11 @@
 namespace App\Http\Requests\Feed;
 
 use App\Enums\ReactionEmoji;
-use Illuminate\Foundation\Http\FormRequest;
+use App\Http\Requests\AuthenticatedRequest;
 use Illuminate\Validation\Rule;
 
-class ReactPostRequest extends FormRequest
+class ReactPostRequest extends AuthenticatedRequest
 {
-    public function authorize(): bool
-    {
-        return $this->user() !== null;
-    }
-
     /**
      * @return array<string, mixed>
      */
