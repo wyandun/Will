@@ -450,4 +450,19 @@ Esta ronda se originó por una regresión introducida durante el R7 (el uso de r
 | **F4** | TOCTOU race condition en `SendInvitationRequest` | **Falso Positivo (Duplicado 3x)**: Operación protegida atómicamente con transacciones y `lockForUpdate()` en el método accept. Ya resuelto y documentado. | N/A |
 | **F5** | Blast radius de `SoftDeletes` en modelo `User` | **Auditoría Completa (Duplicado 3x)**: Se auditaron todas las consultas crudas `DB::table('users')` (`TrackUserPresence` y `FeedService`) confirmando que la lógica ya incluye `->whereNull('deleted_at')` o solo opera sobre usuarios logueados. El behavior del inviter soft-deleted es correcto (desaparece). | N/A |
 
+---
+
+## Round 9: Alineación Estructural y Mitigación de Fugas (RESOLVED ✓)
+
+Esta ronda abordó una filtración genuina de datos en el endpoint `accept()` que fue descubierta en revisiones profundas, al tiempo que documentó múltiples quejas de falsos positivos de auditorías estáticas.
+
+### Análisis de Hallazgos
+
+| # | Issue | Fix / Rationale | File / Status |
+|---|-------|-----------------|---------------|
+| **F1** | `accept()` retorna `$user->fresh()` provocando filtración masiva | **Resuelto (Bug Genuino)**: Al retornar el modelo entero, campos internos como `inviter_id`, `phone`, `bio`, `last_seen_at` se filtraban en JSON. Se refactorizó la respuesta para que la llave `user` retorne estrictamente la misma estructura segura y agnóstica que utiliza `AuthService::login()` (solo exponiendo ID, nombre, email, avatar, y sm_franchise_id). | `InvitationService.php` y `InvitationTest.php` |
+| **F2** | SoftDeletes en modelo User no tiene migración visible | **Falso Positivo (Duplicado 4x)**: La migración `2026_04_28_000003_add_columns_to_users_table` sí incluye `$table->softDeletes()`. No se requiere acción. | N/A |
+| **F3** | Tenant IDs (franchise, company) están en `$fillable` | **Aceptación de Riesgo Controlado**: Estos campos están explícitamente diseñados para asignación masiva en módulos administrativos (`CompanyController`, `BbAssignmentController`). Quitarlo rompería el sistema. El payload solo pasa cuando las validaciones `FormRequest` (vía traits estrictos) lo autorizan. Añadido el punto 10 a `CLAUDE.md`. | `CLAUDE.md` |
+| **F4** | Sin rate limiting en `verify()` y `accept()` | **Falso Positivo (Duplicado 6x)**: Protegidos por `throttle:invitation` (implementado en R4). La IA repetidamente pierde contexto del archivo de rutas. | N/A |
+
 **Status: Ready for production merge.**

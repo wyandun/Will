@@ -1002,7 +1002,13 @@ class InvitationTest extends TestCase
         $response->assertStatus(200);
         $response->assertJsonStructure([
             'data' => [
-                'user',
+                'user' => [
+                    'id',
+                    'name',
+                    'email',
+                    'avatar_path',
+                    'sm_franchise_id',
+                ],
                 'token',
                 'role',
                 'permissions',

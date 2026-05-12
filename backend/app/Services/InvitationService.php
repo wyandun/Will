@@ -194,7 +194,13 @@ class InvitationService
             $permissions = UserPermission::where('user_id', $user->id)->get();
 
             return [
-                'user' => $user->fresh(),
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'avatar_path' => $user->avatar_path ?? null,
+                    'sm_franchise_id' => $user->sm_franchise_id ?? null,
+                ],
                 'token' => $plainToken,
                 'role' => $role,
                 'permissions' => $permissions,
