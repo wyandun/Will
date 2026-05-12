@@ -53,7 +53,11 @@ class BbAssignmentController extends Controller
             ),
             new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
             new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
-            new OA\Response(response: 422, description: 'Error de validación (usuario no tiene rol bb, empresa fuera de scope, etc.)'),
+            new OA\Response(
+                response: 422,
+                description: 'Error de validación',
+                content: new OA\JsonContent(ref: '#/components/schemas/ValidationError')
+            ),
         ]
     )]
     public function store(StoreBbAssignmentRequest $request): JsonResponse

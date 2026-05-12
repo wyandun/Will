@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { feedApi } from '../../api/feed';
 import { useAuthStore } from '../../store/authStore';
+import PostFormModal from './PostFormModal';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -42,7 +43,6 @@ function IconComment({ className = 'w-4 h-4' }) {
 
 function timeAgo(dateStr) {
   if (!dateStr) return '';
-  // Append 'Z' if no timezone info so the browser treats it as UTC, not local time
   const normalized = /[Z+-]\d*$/.test(dateStr) ? dateStr : dateStr.replace(' ', 'T') + 'Z';
   const diff = Math.floor((Date.now() - new Date(normalized).getTime()) / 1000);
   if (diff <= 0) return 'just now';
@@ -71,14 +71,35 @@ function Skeleton({ className }) {
 
 // ─── PostCard ─────────────────────────────────────────────────────────────────
 
-function PostCard({ post }) {
+function PostCard({ post, currentUser, role, onEdit, onDelete }) {
   const { t } = useTranslation('common');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
   const initial = (post.author_name ?? '?')[0].toUpperCase();
   const typeKey = `feed.type_${post.type}`;
 
+  const canManage =
+    currentUser &&
+    (currentUser.id === post.author_id ||
+      role === 'superadmin' ||
+      role === 'admin_sm');
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleOutside(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [menuOpen]);
+
   return (
     <div className="flex flex-col gap-3 p-5 bg-white rounded-2xl border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all">
-      {/* Header: type badge + pin */}
+      {/* Header: type badge + pin + menu */}
       <div className="flex items-center gap-2">
         {post.type && (
           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${typeBadgeClass(post.type)}`}>
@@ -92,6 +113,37 @@ function PostCard({ post }) {
           </span>
         )}
         <span className="ml-auto text-xs text-slate-400">{timeAgo(post.created_at)}</span>
+
+        {canManage && (
+          <div className="relative" ref={menuRef}>
+            <button
+              type="button"
+              onClick={() => setMenuOpen((prev) => !prev)}
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors leading-none"
+              aria-label="Post menu"
+            >
+              ···
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 top-7 z-20 w-36 bg-white border border-slate-200 rounded-xl shadow-lg py-1">
+                <button
+                  type="button"
+                  onClick={() => { setMenuOpen(false); onEdit(post); }}
+                  className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  {t('feed.menu_edit')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setMenuOpen(false); onDelete(post); }}
+                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  {t('feed.menu_delete')}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Image */}
@@ -154,6 +206,55 @@ function UserAvatar({ user }) {
   );
 }
 
+// ─── ComposeBar ───────────────────────────────────────────────────────────────
+
+function ComposeBar({ currentUser, role, onOpenCreate }) {
+  const { t } = useTranslation('common');
+
+  const canCompose = role === 'superadmin' || role === 'admin_sm';
+
+  if (!canCompose) return null;
+
+  const initial = (currentUser.name ?? '?')[0].toUpperCase();
+
+  return (
+    <div className="flex items-center gap-3 p-4 bg-white rounded-2xl border border-slate-100">
+      {currentUser.avatar_url ? (
+        <img
+          src={currentUser.avatar_url}
+          alt={currentUser.name}
+          className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+        />
+      ) : (
+        <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
+          {initial}
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={onOpenCreate}
+        className="flex-1 text-left text-sm text-slate-400 bg-slate-50 hover:bg-slate-100 rounded-xl px-4 py-2.5 transition-colors"
+      >
+        {t('feed.compose_placeholder')}
+      </button>
+      <button
+        type="button"
+        onClick={onOpenCreate}
+        className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors flex-shrink-0"
+      >
+        {t('feed.new_post')}
+      </button>
+      <button
+        type="button"
+        onClick={() => alert(t('common.coming_soon'))}
+        className="px-4 py-2 rounded-xl text-sm font-semibold text-amber-700 bg-amber-100 hover:bg-amber-200 transition-colors flex-shrink-0"
+      >
+        {t('feed.news_btn')}
+      </button>
+    </div>
+  );
+}
+
 // ─── OnlineNowPanel ───────────────────────────────────────────────────────────
 
 function OnlineNowPanel({ users, loading }) {
@@ -210,7 +311,6 @@ function OnlineNowPanel({ users, loading }) {
 function RecentlyActivePanel({ users, loading }) {
   const { t } = useTranslation('common');
 
-  // Build a short role badge: first letter of each word in the role name
   function roleBadge(role) {
     if (!role) return '?';
     return role.split('_').map((w) => w[0].toUpperCase()).join('');
@@ -295,11 +395,27 @@ function Pagination({ meta, onPageChange, loading }) {
   );
 }
 
+// ─── Toast ────────────────────────────────────────────────────────────────────
+
+function Toast({ message, onDismiss }) {
+  useEffect(() => {
+    const timer = setTimeout(onDismiss, 3000);
+    return () => clearTimeout(timer);
+  }, [onDismiss]);
+
+  return (
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-800 text-white text-sm px-5 py-3 rounded-xl shadow-lg">
+      {message}
+    </div>
+  );
+}
+
 // ─── FeedPage ─────────────────────────────────────────────────────────────────
 
 export default function FeedPage() {
   const { t } = useTranslation('common');
-  const currentUserId = useAuthStore((s) => s.user?.id);
+  const authUser = useAuthStore((s) => s.user);
+  const role = useAuthStore((s) => s.role);
 
   const [posts, setPosts] = useState([]);
   const [meta, setMeta] = useState(null);
@@ -311,6 +427,10 @@ export default function FeedPage() {
 
   const [search, setSearch] = useState('');
   const debounceRef = useRef(null);
+
+  // Modal state
+  const [modalPost, setModalPost] = useState(undefined); // undefined=closed, null=create, object=edit
+  const [toast, setToast] = useState('');
 
   const fetchPosts = (term, pageNum) => {
     setPostsLoading(true);
@@ -353,10 +473,29 @@ export default function FeedPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  function handlePostSaved(message) {
+    setModalPost(undefined);
+    setToast(message);
+    fetchPosts(search, meta?.current_page ?? 1);
+  }
+
+  function handleDeletePost(post) {
+    if (!window.confirm(t('feed.delete_post_confirm'))) return;
+    feedApi.deletePost(post.id)
+      .then(() => {
+        setToast(t('feed.post_deleted'));
+        fetchPosts(search, meta?.current_page ?? 1);
+      })
+      .catch(() => setToast(t('common.unexpected_error')));
+  }
+
   return (
     <div className="flex gap-5">
-      {/* Left column — search + posts */}
+      {/* Left column — compose + search + posts */}
       <div className="flex-1 min-w-0 flex flex-col gap-5">
+        {/* Compose bar */}
+        <ComposeBar currentUser={authUser} role={role} onOpenCreate={() => setModalPost(null)} />
+
         {/* Search bar */}
         <div className="relative">
           <span className="absolute inset-y-0 left-3.5 flex items-center text-slate-400 pointer-events-none">
@@ -392,7 +531,14 @@ export default function FeedPage() {
           <>
             <div className="flex flex-col gap-4">
               {posts.map((post) => (
-                <PostCard key={post.id} post={post} currentUserId={currentUserId} />
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  currentUser={authUser}
+                  role={role}
+                  onEdit={(p) => setModalPost(p)}
+                  onDelete={handleDeletePost}
+                />
               ))}
             </div>
 
@@ -406,6 +552,18 @@ export default function FeedPage() {
         <OnlineNowPanel users={presence.online ?? []} loading={presenceLoading} />
         <RecentlyActivePanel users={presence.recently_active ?? []} loading={presenceLoading} />
       </div>
+
+      {/* Post create/edit modal */}
+      {modalPost !== undefined && (
+        <PostFormModal
+          post={modalPost}
+          onClose={() => setModalPost(undefined)}
+          onSaved={handlePostSaved}
+        />
+      )}
+
+      {/* Toast notification */}
+      {toast && <Toast message={toast} onDismiss={() => setToast('')} />}
     </div>
   );
 }
@@ -445,6 +603,7 @@ const userShape = PropTypes.shape({
 PostCard.propTypes = {
   post: PropTypes.shape({
     id: PropTypes.number.isRequired,
+    author_id: PropTypes.number,
     title: PropTypes.string,
     body: PropTypes.string,
     type: PropTypes.string,
@@ -456,11 +615,28 @@ PostCard.propTypes = {
     comments_count: PropTypes.number,
     created_at: PropTypes.string,
   }).isRequired,
-  currentUserId: PropTypes.number,
+  currentUser: PropTypes.shape({
+    id: PropTypes.number,
+    name: PropTypes.string,
+    avatar_url: PropTypes.string,
+  }),
+  role: PropTypes.string,
+  onEdit: PropTypes.func.isRequired,
+  onDelete: PropTypes.func.isRequired,
 };
 
 UserAvatar.propTypes = {
   user: userShape.isRequired,
+};
+
+ComposeBar.propTypes = {
+  currentUser: PropTypes.shape({
+    id: PropTypes.number,
+    name: PropTypes.string,
+    avatar_url: PropTypes.string,
+  }),
+  role: PropTypes.string,
+  onOpenCreate: PropTypes.func.isRequired,
 };
 
 OnlineNowPanel.propTypes = {
@@ -471,4 +647,9 @@ OnlineNowPanel.propTypes = {
 RecentlyActivePanel.propTypes = {
   users: PropTypes.arrayOf(userShape).isRequired,
   loading: PropTypes.bool.isRequired,
+};
+
+Toast.propTypes = {
+  message: PropTypes.string.isRequired,
+  onDismiss: PropTypes.func.isRequired,
 };

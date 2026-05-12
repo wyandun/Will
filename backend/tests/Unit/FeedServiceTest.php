@@ -9,7 +9,11 @@ use App\Models\PostInteraction;
 use App\Models\User;
 use App\Services\FeedService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Tests\TestCase;
 
 class FeedServiceTest extends TestCase
@@ -641,5 +645,207 @@ class FeedServiceTest extends TestCase
         $this->assertArrayHasKey('recently_active', $result);
         $this->assertIsArray($result['online']);
         $this->assertIsArray($result['recently_active']);
+    }
+
+    // -------------------------------------------------------------------------
+    // createPost
+    // -------------------------------------------------------------------------
+
+    public function test_create_post_inserts_record_with_correct_fields(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('superadmin');
+
+        $data = [
+            'title' => 'Test Post',
+            'body' => 'Body content.',
+            'type' => 'announcement',
+            'visibility' => 'global',
+            'is_pinned' => false,
+        ];
+
+        $post = $this->service->createPost($user, $data);
+
+        $this->assertDatabaseHas('posts', [
+            'id' => $post['id'],
+            'title' => 'Test Post',
+            'body' => 'Body content.',
+            'type' => 'announcement',
+            'visibility' => 'global',
+            'author_id' => $user->id,
+        ]);
+    }
+
+    public function test_create_post_stores_image_and_saves_image_url(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create();
+        $user->assignRole('superadmin');
+
+        $image = UploadedFile::fake()->image('cover.jpg');
+
+        $data = [
+            'title' => 'Image Post',
+            'body' => 'Body.',
+            'type' => 'news',
+            'visibility' => 'global',
+        ];
+
+        $post = $this->service->createPost($user, $data, $image);
+
+        $this->assertNotNull($post['image_url']);
+        $this->assertStringContainsString('posts', $post['image_url']);
+    }
+
+    public function test_create_post_stores_attachment_and_saves_file_url(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create();
+        $user->assignRole('superadmin');
+
+        $attachment = UploadedFile::fake()->create('report.pdf', 1024, 'application/pdf');
+
+        $data = [
+            'title' => 'Attachment Post',
+            'body' => 'Body.',
+            'type' => 'training',
+            'visibility' => 'global',
+        ];
+
+        $post = $this->service->createPost($user, $data, null, $attachment);
+
+        $this->assertNotNull($post['file_url']);
+        $this->assertEquals('report.pdf', $post['file_name']);
+    }
+
+    // -------------------------------------------------------------------------
+    // updatePost
+    // -------------------------------------------------------------------------
+
+    public function test_update_post_modifies_fields(): void
+    {
+        $author = User::factory()->create();
+        $author->assignRole('admin_sm');
+
+        $original = Post::factory()->create([
+            'author_id' => $author->id,
+            'title' => 'Original Title',
+            'body' => 'Original body.',
+            'type' => 'news',
+            'visibility' => 'global',
+        ]);
+
+        $result = $this->service->updatePost($original->id, $author, [
+            'title' => 'Updated Title',
+            'body' => 'Updated body.',
+        ]);
+
+        $this->assertEquals('Updated Title', $result['title']);
+        $this->assertEquals('Updated body.', $result['body']);
+    }
+
+    public function test_update_post_throws_403_when_not_author_or_superadmin(): void
+    {
+        $author = User::factory()->create();
+        $author->assignRole('admin_sm');
+
+        $otherUser = User::factory()->create();
+        $otherUser->assignRole('sb_owner');
+
+        $post = Post::factory()->create(['author_id' => $author->id]);
+
+        $this->expectException(AccessDeniedHttpException::class);
+
+        $this->service->updatePost($post->id, $otherUser, ['title' => 'Hacked']);
+    }
+
+    public function test_update_post_throws_404_when_post_not_found(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('superadmin');
+
+        $this->expectException(NotFoundHttpException::class);
+
+        $this->service->updatePost(9999, $user, ['title' => 'Test']);
+    }
+
+    public function test_superadmin_can_update_post_by_another_author(): void
+    {
+        $author = User::factory()->create();
+        $author->assignRole('admin_sm');
+
+        $superadmin = User::factory()->create();
+        $superadmin->assignRole('superadmin');
+
+        $post = Post::factory()->create([
+            'author_id' => $author->id,
+            'title' => 'Original',
+        ]);
+
+        $result = $this->service->updatePost($post->id, $superadmin, ['title' => 'By Superadmin']);
+
+        $this->assertEquals('By Superadmin', $result['title']);
+    }
+
+    // -------------------------------------------------------------------------
+    // deletePost
+    // -------------------------------------------------------------------------
+
+    public function test_delete_post_sets_deleted_at(): void
+    {
+        $author = User::factory()->create();
+        $author->assignRole('admin_sm');
+
+        $post = Post::factory()->create(['author_id' => $author->id]);
+
+        $this->service->deletePost($post->id, $author);
+
+        $this->assertNotNull(
+            DB::table('posts')->where('id', $post->id)->value('deleted_at')
+        );
+    }
+
+    public function test_delete_post_throws_403_when_not_author_or_superadmin(): void
+    {
+        $author = User::factory()->create();
+        $author->assignRole('admin_sm');
+
+        $otherUser = User::factory()->create();
+        $otherUser->assignRole('sb_owner');
+
+        $post = Post::factory()->create(['author_id' => $author->id]);
+
+        $this->expectException(AccessDeniedHttpException::class);
+
+        $this->service->deletePost($post->id, $otherUser);
+    }
+
+    public function test_delete_post_throws_404_when_post_not_found(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('superadmin');
+
+        $this->expectException(NotFoundHttpException::class);
+
+        $this->service->deletePost(9999, $user);
+    }
+
+    public function test_superadmin_can_delete_post_by_another_author(): void
+    {
+        $author = User::factory()->create();
+        $author->assignRole('admin_sm');
+
+        $superadmin = User::factory()->create();
+        $superadmin->assignRole('superadmin');
+
+        $post = Post::factory()->create(['author_id' => $author->id]);
+
+        $this->service->deletePost($post->id, $superadmin);
+
+        $this->assertNotNull(
+            DB::table('posts')->where('id', $post->id)->value('deleted_at')
+        );
     }
 }

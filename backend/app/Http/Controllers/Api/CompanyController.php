@@ -35,14 +35,34 @@ class CompanyController extends Controller
         responses: [
             new OA\Response(
                 response: 200,
-                description: 'Lista de empresas',
+                description: 'Lista paginada de empresas',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'success', type: 'boolean', example: true),
                         new OA\Property(
                             property: 'data',
                             type: 'array',
                             items: new OA\Items(ref: '#/components/schemas/CompanyResource')
+                        ),
+                        new OA\Property(
+                            property: 'links',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'first', type: 'string', nullable: true, example: 'http://example.com/api/v1/companies?page=1'),
+                                new OA\Property(property: 'last', type: 'string', nullable: true, example: 'http://example.com/api/v1/companies?page=5'),
+                                new OA\Property(property: 'prev', type: 'string', nullable: true, example: null),
+                                new OA\Property(property: 'next', type: 'string', nullable: true, example: 'http://example.com/api/v1/companies?page=2'),
+                            ]
+                        ),
+                        new OA\Property(
+                            property: 'meta',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'current_page', type: 'integer', example: 1),
+                                new OA\Property(property: 'last_page', type: 'integer', example: 5),
+                                new OA\Property(property: 'per_page', type: 'integer', example: 15),
+                                new OA\Property(property: 'total', type: 'integer', example: 73),
+                                new OA\Property(property: 'path', type: 'string', example: 'http://example.com/api/v1/companies'),
+                            ]
                         ),
                     ]
                 )
