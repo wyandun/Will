@@ -5,9 +5,10 @@
 #   1. Ensure all required Laravel storage subdirectories exist
 #   2. Create the public/storage symlink (idempotent)
 #   3. Clear stale Laravel framework caches
-#   4. Generate the Swagger/OpenAPI docs (storage is ephemeral on Railway)
-#   5. Launch PHP-FPM as a background daemon
-#   6. Substitute $PORT into the Nginx config and launch Nginx in the foreground
+#   4. Reset the Spatie permission cache (php artisan permission:cache-reset)
+#   5. Generate the Swagger/OpenAPI docs (storage is ephemeral on Railway)
+#   6. Launch PHP-FPM as a background daemon
+#   7. Substitute $PORT into the Nginx config and launch Nginx in the foreground
 
 set -e
 
@@ -51,7 +52,16 @@ php "${WORKDIR}/artisan" view:clear    2>/dev/null || true
 php "${WORKDIR}/artisan" cache:clear   2>/dev/null || true
 
 # ---------------------------------------------------------------------------
-# 4. Generate Swagger/OpenAPI documentation.
+# 4. Reset the Spatie permission cache so fresh permissions are loaded on
+#    every deploy. Runs after cache:clear to avoid immediately re-caching
+#    stale data. Allow failure with || true so a missing permission table
+#    during a first-run migration does not abort the deploy.
+# ---------------------------------------------------------------------------
+echo "[railway-start] Resetting permission cache..."
+php "${WORKDIR}/artisan" permission:cache-reset 2>/dev/null || true
+
+# ---------------------------------------------------------------------------
+# 5. Generate Swagger/OpenAPI documentation.
 #    storage/api-docs/api-docs.json is NOT committed to the repo — it is an
 #    ephemeral artifact regenerated on every deploy from the source annotations.
 #    Allow failure with || true: a broken annotation must not abort the deploy;
@@ -61,13 +71,13 @@ echo "[railway-start] Generating Swagger docs..."
 php "${WORKDIR}/artisan" l5-swagger:generate || echo "[railway-start] WARNING: Swagger generation failed — /api/documentation may return 404 until fixed"
 
 # ---------------------------------------------------------------------------
-# 5. Start PHP-FPM as a background daemon (TCP on 127.0.0.1:9000).
+# 6. Start PHP-FPM as a background daemon (TCP on 127.0.0.1:9000).
 # ---------------------------------------------------------------------------
 echo "[railway-start] Starting PHP-FPM..."
 php-fpm -D
 
 # ---------------------------------------------------------------------------
-# 6. Inject $PORT into the Nginx config and start in the foreground.
+# 7. Inject $PORT into the Nginx config and start in the foreground.
 #    Nginx does not read env vars directly — envsubst replaces $PORT before launch.
 #    Single quotes around '$PORT' are intentional: they prevent the shell from
 #    expanding $PORT, passing the literal string to envsubst so it scopes
