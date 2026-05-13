@@ -10,8 +10,13 @@ dockerBuildTarget = "railway"
 
 [deploy]
 # Override the CMD from the railway stage: run the queue worker instead of the web server.
-startCommand = "mkdir -p /var/www/html/storage/framework/views /var/www/html/storage/framework/cache/data /var/www/html/storage/framework/sessions /var/www/html/storage/logs /var/www/html/bootstrap/cache && chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache && echo '[queue] Worker starting...' && php artisan queue:work --sleep=3 --tries=3 --max-time=3600 --verbose"
+# IMPORTANT: ENTRYPOINT is [] (empty exec array) in the railway stage, so Railway passes
+# startCommand directly as the Docker CMD in exec form — no shell is injected automatically.
+# The && chain requires an explicit /bin/sh -c wrapper, exactly like preDeployCommand in railway.toml.
+startCommand = "/bin/sh /usr/local/bin/railway-worker.sh"
 # Workers have no HTTP interface — disable the healthcheck entirely.
 healthcheckPath = ""
+# Restart on failure so transient DB/Redis blips recover automatically.
+# ON_FAILURE only triggers on non-zero exit — queue:work exits non-zero on fatal errors.
 restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 3
+restartPolicyMaxRetries = 10
