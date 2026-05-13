@@ -60,13 +60,33 @@ class DatabaseSeeder extends Seeder
         $email = env('SUPERADMIN_EMAIL', 'admin@smportal.com');
         $password = env('SUPERADMIN_PASSWORD', 'password');
 
-        $user = User::updateOrCreate(
-            ['email' => $email],
-            [
+        // withTrashed() ensures a soft-deleted superadmin row is found and
+        // restored rather than silently creating a second row with a new id.
+        // A drifted superadmin id would invalidate all existing Sanctum tokens
+        // and corrupt inviter_id FK references on previously invited users.
+        $user = User::withTrashed()->where('email', $email)->first();
+
+        if ($user) {
+            $user->restore();
+            $user->fill([
                 'name' => 'Super Admin',
                 'password' => Hash::make($password),
-            ]
-        );
+            ]);
+        } else {
+            $user = new User([
+                'name' => 'Super Admin',
+                'email' => $email,
+                'password' => Hash::make($password),
+            ]);
+        }
+
+        // Ensure the superadmin is never treated as a pending invitation.
+        // Without this, scopePendingInvitation (whereNull invitation_accepted_at)
+        // would include the superadmin record in the pending invitations list
+        // if invitation_token were ever accidentally set on this row.
+        $user->invitation_token = null;
+        $user->invitation_accepted_at = $user->invitation_accepted_at ?? now();
+        $user->save();
 
         $user->syncRoles([Role::SUPERADMIN]);
 

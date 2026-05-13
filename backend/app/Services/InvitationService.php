@@ -35,7 +35,7 @@ class InvitationService
      * Decision tree:
      *  1. Email already has an accepted account → validation error.
      *  2. Email has a soft-deleted account      → validation error (support needed).
-     *  3. Email has a pending invitation        → regenerate token & resend.
+     *  3. Email has a pending invitation        → validation error (already pending).
      *  4. Email is brand new                    → create user, assign role, notify.
      *
      * @param  array{name: string, email: string, role: string}  $data
@@ -60,8 +60,13 @@ class InvitationService
                 ]);
             }
 
-            // Pending invitation → regenerate and resend
-            return $this->regenerateAndNotify($existing, $invitedBy, $data['role']);
+            // Pending invitation already exists — surface a clear error so the
+            // caller knows to use the resend endpoint instead of re-POSTing.
+            // This also prevents duplicate pending rows for the same email when
+            // the FormRequest unique() rule passes (it only blocks accepted users).
+            throw ValidationException::withMessages([
+                'email' => ['invitation.email_already_pending'],
+            ]);
         }
 
         // Brand-new user
