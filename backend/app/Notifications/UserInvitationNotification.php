@@ -19,7 +19,7 @@ use Illuminate\Notifications\Notification;
  * the mail transport is contacted. The Redis queue worker (sm_queue)
  * will process it in the background.
  */
-class UserInvitationNotification extends Notification
+class UserInvitationNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
