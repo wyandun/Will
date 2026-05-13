@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Franchise;
 
+use App\Models\Franchise;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Password;
 
@@ -9,7 +10,10 @@ abstract class StoreFranchiseMemberRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $franchise = $this->route('franchise');
+
+        return $franchise instanceof Franchise
+            && $this->user()->can('addMember', $franchise);
     }
 
     protected function baseRules(): array

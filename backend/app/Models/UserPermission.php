@@ -8,8 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class UserPermission extends Model
 {
     /**
-     * Module keys: feed, contracts, repository, processes, accounting,
-     *              inventory, tracking, catalog, calendar
+     * The `module` column should contain values defined in \App\Enums\Module.
      */
     protected $fillable = [
         'user_id',

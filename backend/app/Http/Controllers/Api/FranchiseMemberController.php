@@ -41,8 +41,6 @@ class FranchiseMemberController extends Controller
      */
     public function storeAdmin(StoreFranchiseAdminRequest $request, Franchise $franchise): JsonResponse
     {
-        $this->authorize('addMember', $franchise);
-
         $user = $this->service->createAdmin($franchise, $request->validated(), $request->user());
 
         return response()->json([
@@ -59,8 +57,6 @@ class FranchiseMemberController extends Controller
      */
     public function storeClient(StoreFranchiseClientRequest $request, Franchise $franchise): JsonResponse
     {
-        $this->authorize('addMember', $franchise);
-
         $user = $this->service->createClient($franchise, $request->validated(), $request->user());
 
         return response()->json([
