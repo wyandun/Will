@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Enums\Role;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Franchise\StoreFranchiseRequest;
 use App\Http\Requests\Franchise\UpdateFranchiseRequest;
@@ -173,13 +172,13 @@ class FranchiseController extends Controller
     {
         $this->authorize('view', $franchise);
 
-        if ($request->query('with_counts') === '1') {
+        $validated = $request->validate([
+            'with_counts' => ['nullable', 'boolean'],
+        ]);
+
+        if (! empty($validated['with_counts'])) {
             $franchise->loadCount([
-                'users as admins_count' => function ($q) {
-                    $q->whereHas('roles', function ($r) {
-                        $r->where('name', Role::ADMIN_SM);
-                    });
-                },
+                'admins',
                 'companies as clients_count',
             ]);
         }

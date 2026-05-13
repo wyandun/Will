@@ -41,6 +41,10 @@ class FranchiseMemberController extends Controller
      */
     public function storeAdmin(StoreFranchiseAdminRequest $request, Franchise $franchise): JsonResponse
     {
+        // SECURITY: Authorization is enforced here at the controller level
+        // rather than in the FormRequest to prevent programmatic bypasses.
+        $this->authorize('addMember', $franchise);
+
         $user = $this->service->createAdmin($franchise, $request->validated(), $request->user());
 
         return response()->json([
@@ -57,6 +61,10 @@ class FranchiseMemberController extends Controller
      */
     public function storeClient(StoreFranchiseClientRequest $request, Franchise $franchise): JsonResponse
     {
+        // SECURITY: Authorization is enforced here at the controller level
+        // rather than in the FormRequest to prevent programmatic bypasses.
+        $this->authorize('addMember', $franchise);
+
         $user = $this->service->createClient($franchise, $request->validated(), $request->user());
 
         return response()->json([

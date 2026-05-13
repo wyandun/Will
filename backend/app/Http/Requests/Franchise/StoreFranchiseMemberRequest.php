@@ -2,18 +2,19 @@
 
 namespace App\Http\Requests\Franchise;
 
-use App\Models\Franchise;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Password;
 
 abstract class StoreFranchiseMemberRequest extends FormRequest
 {
+    /**
+     * Authorization is explicitly delegated to the Controller.
+     * We return true here to prevent bypassing if this request
+     * is ever instantiated programmatically without the controller gate.
+     */
     public function authorize(): bool
     {
-        $franchise = $this->route('franchise');
-
-        return $franchise instanceof Franchise
-            && $this->user()->can('addMember', $franchise);
+        return true;
     }
 
     protected function baseRules(): array

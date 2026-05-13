@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Role;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -79,6 +80,16 @@ class Franchise extends Model
     public function users(): HasMany
     {
         return $this->hasMany(User::class, 'sm_franchise_id');
+    }
+
+    /**
+     * Users who act as administrators for this franchise.
+     */
+    public function admins(): HasMany
+    {
+        return $this->users()->whereHas('roles', function ($q) {
+            $q->where('name', Role::ADMIN_SM);
+        });
     }
 
     /**
