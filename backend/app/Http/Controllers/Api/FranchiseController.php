@@ -169,18 +169,20 @@ class FranchiseController extends Controller
             new OA\Response(response: 404, ref: '#/components/responses/NotFound'),
         ]
     )]
-    public function show(Franchise $franchise): JsonResponse
+    public function show(Request $request, Franchise $franchise): JsonResponse
     {
         $this->authorize('view', $franchise);
 
-        $franchise->loadCount([
-            'users as admins_count' => function ($q) {
-                $q->whereHas('roles', function ($r) {
-                    $r->where('name', Role::ADMIN_SM);
-                });
-            },
-            'companies as clients_count',
-        ]);
+        if ($request->query('with_counts') === '1') {
+            $franchise->loadCount([
+                'users as admins_count' => function ($q) {
+                    $q->whereHas('roles', function ($r) {
+                        $r->where('name', Role::ADMIN_SM);
+                    });
+                },
+                'companies as clients_count',
+            ]);
+        }
 
         return response()->json([
             'success' => true,

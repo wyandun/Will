@@ -7,6 +7,7 @@ use App\Models\Franchise;
 use App\Models\User;
 use App\Models\UserPermission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Spatie\Permission\Models\Role as SpatieRole;
 use Tests\TestCase;
 
@@ -21,6 +22,9 @@ class FranchiseMemberTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Fake HIBP API calls so ->uncompromised() always passes in tests.
+        Http::fake(['api.pwnedpasswords.com/*' => Http::response('', 200)]);
 
         // FranchiseMemberService::getMembers() uses ->role() scope which does a
         // DB lookup. If the role record doesn't exist it throws RoleDoesNotExist

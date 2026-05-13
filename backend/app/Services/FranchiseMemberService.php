@@ -2,24 +2,20 @@
 
 namespace App\Services;
 
+use App\Enums\Area;
+use App\Enums\ClientType;
+use App\Enums\Module;
 use App\Enums\Role;
 use App\Models\Franchise;
 use App\Models\User;
 use App\Models\UserPermission;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 
 class FranchiseMemberService
 {
-    /**
-     * All permission modules available on the platform.
-     */
-    private const ALL_MODULES = [
-        'feed', 'contracts', 'repository', 'processes', 'accounting',
-        'inventory', 'tracking', 'catalog', 'calendar', 'applications',
-    ];
-
     /**
      * Modules granted (read + write) per area.
      * null means all modules (full_access).
@@ -58,15 +54,7 @@ class FranchiseMemberService
             ->with('roles:id,name')
             ->select(['id', 'name', 'email', 'phone', 'job_title', 'created_at'])
             ->orderBy('name')
-            ->get()
-            ->map(static function (User $u): User {
-                // Flatten the first role name for easy frontend consumption.
-                /** @var \Spatie\Permission\Models\Role|null $firstRole */
-                $firstRole = $u->roles->first();
-                $u->setAttribute('role', $firstRole?->name);
-
-                return $u;
-            });
+            ->get();
 
         return compact('admins', 'clients');
     }
@@ -83,42 +71,57 @@ class FranchiseMemberService
      */
     public function createAdmin(Franchise $franchise, array $data, User $inviter): User
     {
-        $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
-            'phone' => $data['phone'] ?? null,
-            'job_title' => $data['position'] ?? null,
-            'area' => $data['area'],
-            'sm_franchise_id' => $franchise->id,
-            'inviter_id' => $inviter->id,
-            'invitation_accepted_at' => now(),
-        ]);
+        return DB::transaction(function () use ($franchise, $data, $inviter): User {
+            $user = $this->buildUser($franchise, $data, $inviter);
+            $user->area = $data['area'];
+            $user->save();
 
-        $user->assignRole(Role::ADMIN_SM);
+            $user->assignRole(Role::ADMIN_SM);
 
-        $this->assignAreaPermissions($user, $data['area']);
+            $this->assignAreaPermissions($user, $data['area']);
 
-        Log::info('Franchise admin created', [
-            'franchise_id' => $franchise->id,
-            'user_id' => $user->id,
-            'area' => $data['area'],
-        ]);
+            Log::info('Franchise admin created', [
+                'franchise_id' => $franchise->id,
+                'user_id' => $user->id,
+                'area' => $data['area'],
+            ]);
 
-        return $user->load('roles');
+            return $user->load('roles');
+        });
     }
 
     /**
      * Create a new client user (sb_owner or bb_employee) for a franchise.
-     * client_type: 'owner' → sb_owner | 'investor' → bb_employee
      *
      * @param  array<string, mixed>  $data
      */
     public function createClient(Franchise $franchise, array $data, User $inviter): User
     {
-        $role = $data['client_type'] === 'investor' ? Role::BB_EMPLOYEE : Role::SB_OWNER;
+        return DB::transaction(function () use ($franchise, $data, $inviter): User {
+            $clientType = ClientType::from($data['client_type']);
 
-        $user = User::create([
+            $user = $this->buildUser($franchise, $data, $inviter);
+            $user->save();
+
+            $user->assignRole($clientType->role());
+
+            Log::info('Franchise client created', [
+                'franchise_id' => $franchise->id,
+                'user_id' => $user->id,
+                'role' => $clientType->role(),
+            ]);
+
+            return $user->load('roles');
+        });
+    }
+
+    // ---------------------------------------------------------------------------
+    // Helpers
+    // ---------------------------------------------------------------------------
+
+    private function buildUser(Franchise $franchise, array $data, User $inviter): User
+    {
+        return new User([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
@@ -128,21 +131,7 @@ class FranchiseMemberService
             'inviter_id' => $inviter->id,
             'invitation_accepted_at' => now(),
         ]);
-
-        $user->assignRole($role);
-
-        Log::info('Franchise client created', [
-            'franchise_id' => $franchise->id,
-            'user_id' => $user->id,
-            'role' => $role,
-        ]);
-
-        return $user->load('roles');
     }
-
-    // ---------------------------------------------------------------------------
-    // Helpers
-    // ---------------------------------------------------------------------------
 
     /**
      * Grant read+write permissions on the modules defined for the given area.
@@ -151,7 +140,7 @@ class FranchiseMemberService
     private function assignAreaPermissions(User $user, string $area): void
     {
         $modules = self::AREA_MODULES[$area] ?? null;
-        $granted = $modules ?? self::ALL_MODULES;
+        $granted = $modules ?? Module::values();
 
         foreach ($granted as $module) {
             UserPermission::create([
