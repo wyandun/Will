@@ -242,8 +242,8 @@ class DashboardService
         return $query->get()->map(fn ($e) => [
             'id' => $e->id,
             'title' => $e->title,
-            'start_at' => $e->start_at,
-            'end_at' => $e->end_at,
+            'start' => $e->start_at,
+            'end' => $e->end_at,
             'all_day' => (bool) $e->all_day,
             'color' => $e->color,
         ])->all();
@@ -278,9 +278,9 @@ class DashboardService
         return $query->get()->map(fn ($t) => [
             'id' => $t->id,
             'company_name' => $t->company_name,
-            'item_name' => $t->item_name,
+            'name' => $t->item_name,
             'status' => $t->status,
-            'progress_percent' => (int) $t->progress_percent,
+            'progress' => (int) $t->progress_percent,
         ])->all();
     }
 
@@ -365,10 +365,10 @@ class DashboardService
 
         return $query->get()->map(fn ($d) => [
             'id' => $d->id,
-            'title' => $d->title,
+            'file_name' => $d->title,
             'source' => 'Repository',
             'file_type' => $d->file_type,
-            'days_ago' => (int) $now->diffInDays($d->created_at),
+            'created_at' => $d->created_at,
         ])->all();
     }
 
