@@ -894,6 +894,7 @@ const userShape = PropTypes.shape({
 CommentPanel.propTypes = {
   postId: PropTypes.number.isRequired,
   onToast: PropTypes.func.isRequired,
+  onCommentCountChange: PropTypes.func,
 };
 
 PostCard.propTypes = {
