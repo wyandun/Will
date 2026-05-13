@@ -12,7 +12,7 @@ class StoreCommentRequest extends AuthenticatedRequest
     public function rules(): array
     {
         return [
-            'content' => ['required', 'string', 'max:2000'],
+            'content' => ['required', 'string', 'min:1', 'max:2000'],
         ];
     }
 }

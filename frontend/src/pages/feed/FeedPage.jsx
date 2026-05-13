@@ -114,7 +114,7 @@ function Skeleton({ className }) {
 
 // ─── CommentPanel ─────────────────────────────────────────────────────────────
 
-function CommentPanel({ postId, onToast }) {
+function CommentPanel({ postId, onToast, onCommentCountChange }) {
   const { t } = useTranslation('common');
   const [comments, setComments] = useState([]);
   const [meta, setMeta] = useState(null);
@@ -150,6 +150,7 @@ function CommentPanel({ postId, onToast }) {
         if (comment) setComments((prev) => [...prev, comment]);
         setText('');
         if (meta) setMeta((m) => m ? { ...m, total: m.total + 1 } : m);
+        onCommentCountChange?.(1);
       })
       .catch(() => onToast(t('feed.comment_error')))
       .finally(() => setSending(false));
@@ -168,6 +169,7 @@ function CommentPanel({ postId, onToast }) {
       .then(() => {
         setComments((prev) => prev.filter((c) => c.id !== commentId));
         onToast(t('feed.comment_deleted'));
+        onCommentCountChange?.(-1);
       })
       .catch(() => onToast(t('common.unexpected_error')));
   }
@@ -259,6 +261,7 @@ function PostCard({ post, currentUser, role, onEdit, onDelete, onToast }) {
   const [commentOpen, setCommentOpen] = useState(false);
   const [likesCount, setLikesCount] = useState(post.likes_count ?? 0);
   const [userReaction, setUserReaction] = useState(post.user_reaction ?? null);
+  const [commentsCount, setCommentsCount] = useState(post.comments_count ?? 0);
   const menuRef = useRef(null);
   const emojiRef = useRef(null);
 
@@ -310,8 +313,8 @@ function PostCard({ post, currentUser, role, onEdit, onDelete, onToast }) {
     { count: likesCount }
   );
   const commentsLabel = t(
-    (post.comments_count ?? 0) === 1 ? 'feed.comments_count_one' : 'feed.comments_count_other',
-    { count: post.comments_count ?? 0 }
+    commentsCount === 1 ? 'feed.comments_count_one' : 'feed.comments_count_other',
+    { count: commentsCount }
   );
 
   return (
@@ -461,7 +464,11 @@ function PostCard({ post, currentUser, role, onEdit, onDelete, onToast }) {
 
       {/* Inline comment panel */}
       {commentOpen && (
-        <CommentPanel postId={post.id} onToast={onToast} />
+        <CommentPanel
+          postId={post.id}
+          onToast={onToast}
+          onCommentCountChange={(delta) => setCommentsCount((c) => c + delta)}
+        />
       )}
     </div>
   );
