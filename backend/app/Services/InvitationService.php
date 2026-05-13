@@ -188,7 +188,7 @@ class InvitationService
             $plainToken = $user->createToken(
                 'portal',
                 ['*'],
-                now()->addMinutes((int) config('sanctum.expiration', 1440))
+                now()->addMinutes((int) (config('sanctum.expiration') ?? 1440))
             )->plainTextToken;
             $role = $user->getRoleNames()->first() ?? '';
             $permissions = UserPermission::where('user_id', $user->id)->get();
