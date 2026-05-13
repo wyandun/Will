@@ -10,7 +10,7 @@ dockerBuildTarget = "railway"
 
 [deploy]
 # Override the CMD from the railway stage: run the queue worker instead of the web server.
-startCommand = "php artisan queue:work --sleep=3 --tries=3 --max-time=3600"
+startCommand = "mkdir -p /var/www/html/storage/framework/views /var/www/html/storage/framework/cache/data /var/www/html/storage/framework/sessions /var/www/html/storage/logs /var/www/html/bootstrap/cache && chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache && php artisan queue:work --sleep=3 --tries=3 --max-time=3600"
 # Workers have no HTTP interface — disable the healthcheck entirely.
 healthcheckPath = ""
 restartPolicyType = "ON_FAILURE"
