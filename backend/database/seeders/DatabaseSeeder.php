@@ -9,14 +9,12 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role as SpatieRole;
+use Spatie\Permission\PermissionRegistrar;
 
 class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
 
-    /**
-     * All portal module keys that can be granted to a user.
-     */
     private const ALL_MODULES = [
         'feed',
         'contracts',
@@ -36,11 +34,10 @@ class DatabaseSeeder extends Seeder
         $this->call(FeedSeeder::class);
     }
 
-    /**
-     * Ensure all application roles exist in the database.
-     */
     private function seedRoles(): void
     {
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
         $roles = [
             Role::SUPERADMIN,
             Role::SYSTEM_ADMIN,
@@ -58,14 +55,8 @@ class DatabaseSeeder extends Seeder
         }
     }
 
-    /**
-     * Create the default superadmin account used for initial access.
-     * Credentials are read from .env (SUPERADMIN_EMAIL / SUPERADMIN_PASSWORD)
-     * or fall back to safe defaults suitable only for local dev.
-     */
     private function createSuperAdmin(): void
     {
-
         $email = env('SUPERADMIN_EMAIL', 'admin@smportal.com');
         $password = env('SUPERADMIN_PASSWORD', 'password');
 
@@ -77,10 +68,8 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // Assign Spatie role (idempotent — syncRoles replaces any previous role).
         $user->syncRoles([Role::SUPERADMIN]);
 
-        // Grant full read + write access to every module.
         foreach (self::ALL_MODULES as $module) {
             UserPermission::updateOrCreate(
                 ['user_id' => $user->id, 'module' => $module],
