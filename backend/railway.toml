@@ -16,7 +16,7 @@ dockerBuildTarget = "railway"
 #
 # optimize:clear is intentionally omitted — Railway's ephemeral filesystem
 # never has stale compiled caches from a previous deploy.
-php artisan migrate --force && php artisan db:seed --force && php artisan permission:cache-reset
+preDeployCommand = "php artisan migrate --force && php artisan db:seed --force && php artisan permission:cache-reset"
 # Railway injects $PORT at runtime. The CMD in the railway stage reads it.
 # Do NOT define PORT manually in Railway variables — let Railway inject it.
 healthcheckPath = "/api/v1/ping"
