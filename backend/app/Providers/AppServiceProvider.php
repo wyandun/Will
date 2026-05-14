@@ -2,16 +2,20 @@
 
 namespace App\Providers;
 
+use App\Jobs\MarkInvitationEmailSent;
 use App\Models\BbAssignment;
 use App\Models\Company;
 use App\Models\Franchise;
 use App\Models\User;
+use App\Notifications\UserInvitationNotification;
 use App\Policies\BbAssignmentPolicy;
 use App\Policies\CompanyPolicy;
 use App\Policies\FranchisePolicy;
 use App\Policies\UserPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\Events\NotificationSent;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
@@ -36,6 +40,20 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Franchise::class, FranchisePolicy::class);
         Gate::policy(Company::class, CompanyPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
+
+        // When the mail channel successfully hands off a UserInvitationNotification,
+        // dispatch a job to stamp email_sent_at on the user. Using a job (rather than
+        // a synchronous write here) keeps the listener fast and consistent with the
+        // rest of the notification pipeline, which is already queued.
+        Event::listen(NotificationSent::class, function (NotificationSent $event): void {
+            if (
+                $event->channel === 'mail'
+                && $event->notification instanceof UserInvitationNotification
+                && $event->notifiable instanceof User
+            ) {
+                MarkInvitationEmailSent::dispatch($event->notifiable)->onQueue('sm_queue');
+            }
+        });
 
         if ($this->app->environment('production')) {
             URL::forceScheme('https');

@@ -255,6 +255,8 @@ class InvitationService
         $user->invitation_token = $token;
         $user->invitation_expires_at = now()->addDays(self::EXPIRY_DAYS);
         $user->inviter_id = $invitedBy->id;
+        // Reset sent status: a resend is a new delivery attempt.
+        $user->email_sent_at = null;
         $user->save();
 
         if ($role && ! $user->hasRole($role)) {
