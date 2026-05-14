@@ -204,7 +204,7 @@ export default function InvitationsPage() {
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
               {invitations.map((user) => {
-                const role      = user.roles?.[0]?.name ?? '';
+                const role      = user.role ?? '';
                 const isActing  = actionLoading === user.id;
 
                 return (
