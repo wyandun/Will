@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 
@@ -366,7 +367,7 @@ class DashboardService
             'file_name' => $d->title,
             'source' => 'Repository',
             'file_type' => $d->file_type,
-            'created_at' => $d->created_at ? \Carbon\Carbon::parse($d->created_at)->toIso8601String() : null,
+            'created_at' => $d->created_at ? Carbon::parse($d->created_at)->toIso8601String() : null,
         ])->all();
     }
 
