@@ -120,6 +120,7 @@ export default function InvitationsPage() {
       await invitationsApi.resendInvitation(user.id);
       flash(t('invitation.resent_success'));
       fetchInvitations();
+      setTimeout(fetchInvitations, 5000);
     } catch {
       setActionError(t('invitation.resend_error'));
     } finally {
@@ -280,7 +281,10 @@ export default function InvitationsPage() {
       <InviteUserModal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
-        onSuccess={() => fetchInvitations()}
+        onSuccess={() => {
+          fetchInvitations();
+          setTimeout(fetchInvitations, 5000);
+        }}
       />
     </div>
   );
