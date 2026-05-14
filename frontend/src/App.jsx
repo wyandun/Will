@@ -10,6 +10,8 @@ import DashboardPage from './pages/dashboard/DashboardPage';
 import FeedPage from './pages/feed/FeedPage';
 import ProfilePage from './pages/profile/ProfilePage';
 import SystemAdminsPage from './pages/system_admins/SystemAdminsPage';
+import InvitationsPage from './pages/users/InvitationsPage';
+import AcceptInvitationPage from './pages/invitations/AcceptInvitationPage';
 import { useAuthStore } from './store/authStore';
 
 /**
@@ -66,6 +68,7 @@ export default function App() {
       <Routes>
         {/* Public routes */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/invite/:token" element={<AcceptInvitationPage />} />
 
         {/* Protected routes — all share AuthenticatedLayout */}
         <Route
@@ -96,7 +99,7 @@ export default function App() {
             path="/users"
             element={
               <RoleRoute roles={ADMIN_ROLES}>
-                <StubPage title={t('nav.users')} />
+                <InvitationsPage />
               </RoleRoute>
             }
           />

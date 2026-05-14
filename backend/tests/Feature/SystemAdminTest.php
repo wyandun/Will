@@ -612,7 +612,7 @@ class SystemAdminTest extends TestCase
         $response->assertJsonPath('success', true);
         $response->assertJsonPath('message', 'system_admin.deleted_success');
 
-        $this->assertDatabaseMissing('users', ['id' => $adminId]);
+        $this->assertSoftDeleted('users', ['id' => $adminId]);
     }
 
     public function test_delete_also_removes_user_permissions(): void

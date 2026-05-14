@@ -67,6 +67,7 @@ jobs:
           SESSION_DRIVER=array
           QUEUE_CONNECTION=sync
           MAIL_MAILER=array
+          INVITATION_EXPOSE_URL=true
           EOF
           php artisan test --env=testing --testsuite=Feature
 
@@ -156,13 +157,22 @@ jobs:
               }]
             }')
 
-          RESPONSE=$(curl -sf https://api.anthropic.com/v1/messages \
+          # Use -s (silent) but NOT -f (fail-on-error) so the curl exit code is
+          # always 0. We inspect the HTTP status and body ourselves to degrade
+          # gracefully when the API is unavailable or rate-limited.
+          HTTP_CODE=$(curl -s -o response.json -w "%{http_code}" \
+            https://api.anthropic.com/v1/messages \
             -H "x-api-key: $ANTHROPIC_API_KEY" \
             -H "anthropic-version: 2023-06-01" \
             -H "content-type: application/json" \
             -d "$PAYLOAD")
 
-          REVIEW=$(echo "$RESPONSE" | jq -r '.content[0].text // "⚠️ Claude review unavailable."')
+          if [ "$HTTP_CODE" -eq 200 ]; then
+            REVIEW=$(jq -r '.content[0].text // "⚠️ Claude review unavailable."' response.json)
+          else
+            ERROR=$(jq -r '.error.message // "Unknown error"' response.json 2>/dev/null || echo "Unknown error")
+            REVIEW="⚠️ Claude review unavailable (HTTP $HTTP_CODE: $ERROR). The diff has been reviewed by static analysis only."
+          fi
 
           echo "review<<REVIEW_EOF" >> $GITHUB_OUTPUT
           echo "$REVIEW" >> $GITHUB_OUTPUT
