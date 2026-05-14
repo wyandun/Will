@@ -315,6 +315,8 @@
     "expires_in": "in {{count}} day",
     "expires_in_other": "in {{count}} days",
     "expired_label": "Expired",
+    "email_not_sent": "Email not sent",
+    "email_not_sent_tooltip": "The invitation email could not be delivered. Use Resend to try again.",
     "count_one": "pending invitation",
     "count_other": "pending invitations",
     "form": {

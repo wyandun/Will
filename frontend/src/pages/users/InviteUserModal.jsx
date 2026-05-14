@@ -227,7 +227,7 @@ export default function InviteUserModal({ isOpen, onClose, onSuccess }) {
             <input
               type="email"
               value={form.email}
-              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value.toLowerCase() }))}
               placeholder={t('invitation.form.email_placeholder')}
               className={`w-full rounded-lg border px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200 ${
                 errors.email ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-white focus:border-slate-400'

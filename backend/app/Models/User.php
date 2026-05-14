@@ -25,6 +25,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $birth_date
  * @property Carbon|null $invitation_accepted_at
  * @property Carbon|null $invitation_expires_at
+ * @property Carbon|null $email_sent_at
  * @property Carbon|null $last_seen_at
  * @property-read string|null $avatar_url
  */
@@ -81,6 +82,7 @@ class User extends Authenticatable
             'birth_date' => 'date',
             'invitation_accepted_at' => 'datetime',
             'invitation_expires_at' => 'datetime',
+            'email_sent_at' => 'datetime',
             'last_seen_at' => 'datetime',
             'sm_franchise_id' => 'integer',
             'company_id' => 'integer',

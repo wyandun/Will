@@ -31,6 +31,28 @@ RoleBadge.propTypes = {
   role: PropTypes.string.isRequired,
 };
 
+// ─── Email sent indicator ─────────────────────────────────────────────────────
+
+function EmailSentBadge({ sent }) {
+  const { t } = useTranslation('common');
+  if (sent) return null;
+  return (
+    <span
+      title={t('invitation.email_not_sent_tooltip')}
+      className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs font-medium text-amber-700"
+    >
+      <svg className="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+      </svg>
+      {t('invitation.email_not_sent')}
+    </span>
+  );
+}
+
+EmailSentBadge.propTypes = {
+  sent: PropTypes.bool.isRequired,
+};
+
 // ─── Expiry indicator ─────────────────────────────────────────────────────────
 
 function ExpiryBadge({ expiresAt }) {
@@ -78,7 +100,14 @@ export default function InvitationsPage() {
     setLoadError('');
     try {
       const { data } = await invitationsApi.getInvitations();
-      setInvitations(data);
+      // Rows created within the last 30 s are still waiting for the queue job —
+      // treat them as email_sent: true so the warning badge doesn't flash briefly.
+      const cutoff = Date.now() - 30_000;
+      setInvitations(data.map(inv =>
+        !inv.email_sent && new Date(inv.created_at) > cutoff
+          ? { ...inv, email_sent: true }
+          : inv
+      ));
     } catch {
       setLoadError(t('invitation.load_error'));
     } finally {
@@ -97,7 +126,12 @@ export default function InvitationsPage() {
     try {
       await invitationsApi.resendInvitation(user.id);
       flash(t('invitation.resent_success'));
-      fetchInvitations();
+      // Optimistically mark the row as sent — no need to refetch or use a timer.
+      // The badge will only reappear if a subsequent fetch confirms email_sent: false
+      // after the 30-second queue window has elapsed.
+      setInvitations(prev => prev.map(inv =>
+        inv.id === user.id ? { ...inv, email_sent: true } : inv
+      ));
     } catch {
       setActionError(t('invitation.resend_error'));
     } finally {
@@ -204,13 +238,16 @@ export default function InvitationsPage() {
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
               {invitations.map((user) => {
-                const role      = user.roles?.[0]?.name ?? '';
+                const role      = user.role ?? '';
                 const isActing  = actionLoading === user.id;
 
                 return (
                   <tr key={user.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-5 py-4 text-sm font-medium text-slate-800">{user.name}</td>
-                    <td className="px-5 py-4 text-sm text-slate-500">{user.email}</td>
+                    <td className="px-5 py-4">
+                      <div className="text-sm text-slate-500">{user.email}</div>
+                      <EmailSentBadge sent={user.email_sent ?? true} />
+                    </td>
                     <td className="px-5 py-4"><RoleBadge role={role} /></td>
                     <td className="px-5 py-4 text-sm text-slate-500">
                       {user.invited_by?.name ?? '—'}
@@ -255,7 +292,11 @@ export default function InvitationsPage() {
       <InviteUserModal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
-        onSuccess={() => fetchInvitations()}
+        onSuccess={() => {
+          // One fetch is enough — fetchInvitations already suppresses the badge
+          // for rows created within the last 30 seconds.
+          fetchInvitations();
+        }}
       />
     </div>
   );

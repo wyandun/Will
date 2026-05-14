@@ -35,7 +35,7 @@ class InvitationService
      * Decision tree:
      *  1. Email already has an accepted account → validation error.
      *  2. Email has a soft-deleted account      → validation error (support needed).
-     *  3. Email has a pending invitation        → regenerate token & resend.
+     *  3. Email has a pending invitation        → validation error (already pending).
      *  4. Email is brand new                    → create user, assign role, notify.
      *
      * @param  array{name: string, email: string, role: string}  $data
@@ -48,20 +48,29 @@ class InvitationService
         $existing = User::withTrashed()->where('email', $data['email'])->first();
 
         if ($existing) {
+            if ($existing->trashed()) {
+                if ($existing->invitation_accepted_at) {
+                    // Had an active account that was later deleted — needs manual support.
+                    throw ValidationException::withMessages([
+                        'email' => ['invitation.email_deleted_account'],
+                    ]);
+                }
+                // Was only an invitation placeholder that was revoked — restore and re-invite.
+                $existing->restore();
+
+                return $this->regenerateAndNotify($existing, $invitedBy, $data['role']);
+            }
+
             if ($existing->invitation_accepted_at) {
                 throw ValidationException::withMessages([
                     'email' => ['invitation.email_already_active'],
                 ]);
             }
 
-            if ($existing->trashed()) {
-                throw ValidationException::withMessages([
-                    'email' => ['invitation.email_deleted_account'],
-                ]);
-            }
-
-            // Pending invitation → regenerate and resend
-            return $this->regenerateAndNotify($existing, $invitedBy, $data['role']);
+            // Pending invitation already exists — use the resend endpoint to regenerate.
+            throw ValidationException::withMessages([
+                'email' => ['invitation.email_already_pending'],
+            ]);
         }
 
         // Brand-new user
@@ -188,7 +197,7 @@ class InvitationService
             $plainToken = $user->createToken(
                 'portal',
                 ['*'],
-                now()->addMinutes((int) config('sanctum.expiration', 1440))
+                now()->addMinutes((int) (config('sanctum.expiration') ?? 1440))
             )->plainTextToken;
             $role = $user->getRoleNames()->first() ?? '';
             $permissions = UserPermission::where('user_id', $user->id)->get();
@@ -246,6 +255,8 @@ class InvitationService
         $user->invitation_token = $token;
         $user->invitation_expires_at = now()->addDays(self::EXPIRY_DAYS);
         $user->inviter_id = $invitedBy->id;
+        // Reset sent status: a resend is a new delivery attempt.
+        $user->email_sent_at = null;
         $user->save();
 
         if ($role && ! $user->hasRole($role)) {

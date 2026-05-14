@@ -25,15 +25,10 @@ class SendInvitationRequest extends FormRequest
                 'required',
                 'email',
                 'max:255',
-                // Fail fast if the email already belongs to an active user.
-                //
-                // Conditions are intentionally narrow so that:
-                //  - Pending invitations (invitation_accepted_at IS NULL) pass through
-                //    and let the service regenerate their token.
-                //  - Soft-deleted users (deleted_at IS NOT NULL) also pass through
-                //    so the service can return a user-facing error about the deleted account.
-                //    (Safely handled by `User::withTrashed()->first()` in InvitationService).
-                //  - Only a live, accepted account triggers the 422 at validation time.
+                // Block accepted accounts at the FormRequest layer for a fast 422
+                // before hitting the service. Pending invitations and soft-deleted
+                // users still pass through — the service distinguishes those cases
+                // and returns the appropriate error message for each.
                 Rule::unique('users', 'email')
                     ->whereNotNull('invitation_accepted_at')
                     ->whereNull('deleted_at'),

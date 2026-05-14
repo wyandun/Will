@@ -115,9 +115,13 @@ RUN apt-get update && apt-get install -y nginx gettext-base \
 # Nginx config — proxies to PHP-FPM on 127.0.0.1:9000
 COPY docker/railway/nginx.conf /etc/nginx/sites-enabled/default
 
-# Start script that wires up the filesystem and launches both processes
+# Start script for the web service (Nginx + PHP-FPM)
 COPY docker/railway/start.sh /usr/local/bin/railway-start.sh
 RUN chmod +x /usr/local/bin/railway-start.sh
+
+# Start script for the queue worker service (php artisan queue:work)
+COPY docker/railway/worker.sh /usr/local/bin/railway-worker.sh
+RUN chmod +x /usr/local/bin/railway-worker.sh
 
 # Drop the production entrypoint — permissions are handled in start.sh
 ENTRYPOINT []

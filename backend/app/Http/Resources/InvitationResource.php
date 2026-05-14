@@ -27,6 +27,7 @@ class InvitationResource extends JsonResource
                 'name' => $this->invitedBy->name,
             ]),
             'invitation_expires_at' => $this->invitation_expires_at?->toIso8601String(),
+            'email_sent' => ! is_null($this->email_sent_at),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }
