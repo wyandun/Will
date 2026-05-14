@@ -4,7 +4,7 @@ export const invitationsApi = {
   /** List pending (not yet accepted) invitations. */
   getInvitations: () =>
     apiClient.get('/invitations').then((res) => ({
-      data: res.data.data?.data ?? [],
+      data: res.data.data ?? [],
     })),
 
   /** Send a new invitation (or regenerate if email already has a pending one). */
