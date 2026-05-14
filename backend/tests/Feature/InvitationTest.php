@@ -443,28 +443,25 @@ class InvitationTest extends TestCase
 
     // --- Re-invitation of same pending email --------------------------------
 
-    public function test_re_inviting_a_pending_email_regenerates_token_instead_of_failing(): void
+    public function test_re_inviting_a_pending_email_returns_422(): void
     {
         Notification::fake();
         $superadmin = $this->createSuperadmin();
 
-        $existing = $this->createPendingInvitation([
+        $this->createPendingInvitation([
             'name' => 'Ana García',
             'email' => 'ana@example.com',
             'invitation_token' => 'old_token_abc123',
-        ]);
-        $existing->assignRole(Role::SB_OWNER);
+        ])->assignRole(Role::SB_OWNER);
 
         $response = $this->actingAs($superadmin)
             ->postJson('/api/v1/invitations', $this->validInvitePayload());
 
-        $response->assertStatus(201);
-
-        $existing->refresh();
-        $this->assertNotEquals('old_token_abc123', $existing->invitation_token);
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['email']);
     }
 
-    public function test_re_inviting_pending_email_sends_a_new_notification(): void
+    public function test_re_inviting_pending_email_does_not_send_notification(): void
     {
         Notification::fake();
         $superadmin = $this->createSuperadmin();
@@ -478,7 +475,7 @@ class InvitationTest extends TestCase
         $this->actingAs($superadmin)
             ->postJson('/api/v1/invitations', $this->validInvitePayload());
 
-        Notification::assertSentTo($existing, UserInvitationNotification::class);
+        Notification::assertNotSentTo($existing, UserInvitationNotification::class);
     }
 
     // --- Rejected scenarios -------------------------------------------------
@@ -504,13 +501,35 @@ class InvitationTest extends TestCase
         $response->assertJsonValidationErrors(['email']);
     }
 
-    public function test_inviting_soft_deleted_email_returns_422(): void
+    public function test_inviting_revoked_placeholder_restores_and_re_invites(): void
     {
         Notification::fake();
         $superadmin = $this->createSuperadmin();
 
-        // Soft-deleted user
-        $deleted = User::factory()->create(['email' => 'deleted@test.com']);
+        // Revoked invitation placeholder: soft-deleted, never accepted
+        $revoked = $this->createPendingInvitation(['email' => 'revoked@test.com']);
+        $revoked->delete();
+
+        $response = $this->actingAs($superadmin)
+            ->postJson('/api/v1/invitations', $this->validInvitePayload([
+                'email' => 'revoked@test.com',
+            ]));
+
+        $response->assertStatus(201);
+        Notification::assertSentTo($revoked->fresh(), UserInvitationNotification::class);
+    }
+
+    public function test_inviting_soft_deleted_accepted_user_returns_422(): void
+    {
+        Notification::fake();
+        $superadmin = $this->createSuperadmin();
+
+        // Soft-deleted user who previously accepted their invitation (real account)
+        $deleted = User::factory()->create([
+            'email' => 'deleted@test.com',
+            'invitation_accepted_at' => now()->subMonth(),
+            'invitation_token' => null,
+        ]);
         $deleted->delete();
 
         $response = $this->actingAs($superadmin)
