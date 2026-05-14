@@ -100,7 +100,14 @@ export default function InvitationsPage() {
     setLoadError('');
     try {
       const { data } = await invitationsApi.getInvitations();
-      setInvitations(data);
+      // Rows created within the last 30 s are still waiting for the queue job —
+      // treat them as email_sent: true so the warning badge doesn't flash briefly.
+      const cutoff = Date.now() - 30_000;
+      setInvitations(data.map(inv =>
+        !inv.email_sent && new Date(inv.created_at) > cutoff
+          ? { ...inv, email_sent: true }
+          : inv
+      ));
     } catch {
       setLoadError(t('invitation.load_error'));
     } finally {
@@ -119,8 +126,12 @@ export default function InvitationsPage() {
     try {
       await invitationsApi.resendInvitation(user.id);
       flash(t('invitation.resent_success'));
-      fetchInvitations();
-      setTimeout(fetchInvitations, 5000);
+      // Optimistically mark the row as sent — no need to refetch or use a timer.
+      // The badge will only reappear if a subsequent fetch confirms email_sent: false
+      // after the 30-second queue window has elapsed.
+      setInvitations(prev => prev.map(inv =>
+        inv.id === user.id ? { ...inv, email_sent: true } : inv
+      ));
     } catch {
       setActionError(t('invitation.resend_error'));
     } finally {
@@ -282,8 +293,9 @@ export default function InvitationsPage() {
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         onSuccess={() => {
+          // One fetch is enough — fetchInvitations already suppresses the badge
+          // for rows created within the last 30 seconds.
           fetchInvitations();
-          setTimeout(fetchInvitations, 5000);
         }}
       />
     </div>
