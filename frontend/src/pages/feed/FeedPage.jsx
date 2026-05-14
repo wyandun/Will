@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { feedApi } from '../../api/feed';
 import { useAuthStore } from '../../store/authStore';
+import NewsModal from './NewsModal';
 import PostFormModal from './PostFormModal';
 import { timeAgo } from '../../utils/time';
 
@@ -484,7 +485,7 @@ function UserAvatar({ user }) {
 
 // ─── ComposeBar ───────────────────────────────────────────────────────────────
 
-function ComposeBar({ currentUser, role, onOpenCreate }) {
+function ComposeBar({ currentUser, role, onOpenCreate, onOpenNews }) {
   const { t } = useTranslation('common');
 
   const canCompose = role === 'superadmin' || role === 'admin_sm';
@@ -522,7 +523,7 @@ function ComposeBar({ currentUser, role, onOpenCreate }) {
       </button>
       <button
         type="button"
-        onClick={() => alert(t('common.coming_soon'))}
+        onClick={onOpenNews}
         className="px-4 py-2 rounded-xl text-sm font-semibold text-amber-700 bg-amber-100 hover:bg-amber-200 transition-colors flex-shrink-0"
       >
         {t('feed.news_btn')}
@@ -706,6 +707,7 @@ export default function FeedPage() {
 
   // Modal state
   const [modalPost, setModalPost] = useState(undefined); // undefined=closed, null=create, object=edit
+  const [newsModalOpen, setNewsModalOpen] = useState(false);
   const [toast, setToast] = useState('');
 
   const fetchPosts = (term, pageNum) => {
@@ -770,7 +772,12 @@ export default function FeedPage() {
       {/* Left column — compose + search + posts */}
       <div className="flex-1 min-w-0 flex flex-col gap-5">
         {/* Compose bar */}
-        <ComposeBar currentUser={authUser} role={role} onOpenCreate={() => setModalPost(null)} />
+        <ComposeBar
+          currentUser={authUser}
+          role={role}
+          onOpenCreate={() => setModalPost(null)}
+          onOpenNews={() => setNewsModalOpen(true)}
+        />
 
         {/* Search bar */}
         <div className="relative">
@@ -837,6 +844,11 @@ export default function FeedPage() {
           onClose={() => setModalPost(undefined)}
           onSaved={handlePostSaved}
         />
+      )}
+
+      {/* News modal */}
+      {newsModalOpen && (
+        <NewsModal onClose={() => setNewsModalOpen(false)} />
       )}
 
       {/* Toast notification */}
@@ -927,6 +939,7 @@ ComposeBar.propTypes = {
   }),
   role: PropTypes.string,
   onOpenCreate: PropTypes.func.isRequired,
+  onOpenNews: PropTypes.func.isRequired,
 };
 
 OnlineNowPanel.propTypes = {

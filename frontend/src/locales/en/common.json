@@ -394,5 +394,20 @@
       "password_optional": "Leave blank to keep unchanged",
       "password_min": "Password must be at least 12 characters."
     }
+  },
+  "news": {
+    "modal_title": "AI News",
+    "last_updated": "Last updated",
+    "fetch_btn": "Fetch News",
+    "fetching": "Fetching…",
+    "fetch_queued": "News fetch queued. Articles will appear shortly.",
+    "ai_summary": "AI Summary",
+    "publish_to_feed": "Publish to Feed",
+    "reject": "Reject",
+    "published": "Published",
+    "published_success": "Article published to Feed.",
+    "rejected_success": "Article rejected.",
+    "no_articles": "No articles ready for review.",
+    "no_articles_hint": "Click Fetch News to search for relevant articles from external sources."
   }
 }
