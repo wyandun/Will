@@ -48,22 +48,26 @@ class InvitationService
         $existing = User::withTrashed()->where('email', $data['email'])->first();
 
         if ($existing) {
+            if ($existing->trashed()) {
+                if ($existing->invitation_accepted_at) {
+                    // Had an active account that was later deleted — needs manual support.
+                    throw ValidationException::withMessages([
+                        'email' => ['invitation.email_deleted_account'],
+                    ]);
+                }
+                // Was only an invitation placeholder that was revoked — restore and re-invite.
+                $existing->restore();
+
+                return $this->regenerateAndNotify($existing, $invitedBy, $data['role']);
+            }
+
             if ($existing->invitation_accepted_at) {
                 throw ValidationException::withMessages([
                     'email' => ['invitation.email_already_active'],
                 ]);
             }
 
-            if ($existing->trashed()) {
-                throw ValidationException::withMessages([
-                    'email' => ['invitation.email_deleted_account'],
-                ]);
-            }
-
-            // Pending invitation already exists — surface a clear error so the
-            // caller knows to use the resend endpoint instead of re-POSTing.
-            // This also prevents duplicate pending rows for the same email when
-            // the FormRequest unique() rule passes (it only blocks accepted users).
+            // Pending invitation already exists — use the resend endpoint to regenerate.
             throw ValidationException::withMessages([
                 'email' => ['invitation.email_already_pending'],
             ]);
