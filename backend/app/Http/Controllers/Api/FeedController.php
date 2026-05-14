@@ -3,14 +3,16 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Feed\ListCommentsRequest;
+use App\Http\Requests\Feed\ReactPostRequest;
+use App\Http\Requests\Feed\StoreCommentRequest;
 use App\Http\Requests\Feed\StorePostRequest;
 use App\Http\Requests\Feed\UpdatePostRequest;
 use App\Services\FeedService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use OpenApi\Attributes as OA;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class FeedController extends Controller
 {
@@ -267,19 +269,13 @@ class FeedController extends Controller
     )]
     public function update(UpdatePostRequest $request, int $id): JsonResponse
     {
-        try {
-            $post = $this->feedService->updatePost(
-                $id,
-                $request->user(),
-                $request->validated(),
-                $request->hasFile('image') ? $request->file('image') : null,
-                $request->hasFile('attachment') ? $request->file('attachment') : null,
-            );
-        } catch (NotFoundHttpException $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 404);
-        } catch (AccessDeniedHttpException $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 403);
-        }
+        $post = $this->feedService->updatePost(
+            $id,
+            $request->user(),
+            $request->validated(),
+            $request->hasFile('image') ? $request->file('image') : null,
+            $request->hasFile('attachment') ? $request->file('attachment') : null,
+        );
 
         return response()->json([
             'success' => true,
@@ -311,14 +307,209 @@ class FeedController extends Controller
     )]
     public function destroy(Request $request, int $id): JsonResponse
     {
-        try {
-            $this->feedService->deletePost($id, $request->user());
-        } catch (NotFoundHttpException $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 404);
-        } catch (AccessDeniedHttpException $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 403);
-        }
+        $this->feedService->deletePost($id, $request->user());
 
         return response()->json(['success' => true]);
+    }
+
+    #[OA\Post(
+        path: '/feed/posts/{postId}/react',
+        tags: ['Feed'],
+        summary: 'Reaccionar (toggle) a un post con un emoji',
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(name: 'postId', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['emoji'],
+                properties: [
+                    new OA\Property(property: 'emoji', type: 'string', example: '👍', description: 'Uno de: 👍 ❤️ 😂 🎉 😮'),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Reacción registrada o eliminada (toggle)',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(
+                            property: 'data',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'likes_count', type: 'integer', example: 3),
+                                new OA\Property(property: 'user_reaction', type: 'string', nullable: true, example: '👍'),
+                            ]
+                        ),
+                        new OA\Property(property: 'message', type: 'string', example: 'Reacción registrada.'),
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: 'Post no encontrado'),
+            new OA\Response(response: 422, description: 'Emoji inválido'),
+        ]
+    )]
+    public function react(ReactPostRequest $request, int $postId): JsonResponse
+    {
+        $result = $this->feedService->react($postId, $request->user(), $request->validated('emoji'));
+
+        $message = $result['user_reaction'] !== null ? __('feed.reaction_added') : __('feed.reaction_removed');
+
+        return response()->json([
+            'success' => true,
+            'data' => $result,
+            'message' => $message,
+        ]);
+    }
+
+    #[OA\Get(
+        path: '/feed/posts/{postId}/comments',
+        tags: ['Feed'],
+        summary: 'Listar comentarios de un post (paginado)',
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(name: 'postId', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
+            new OA\Parameter(
+                name: 'page',
+                in: 'query',
+                required: false,
+                description: 'Número de página (empieza en 1)',
+                schema: new OA\Schema(type: 'integer', example: 1, minimum: 1)
+            ),
+            new OA\Parameter(
+                name: 'per_page',
+                in: 'query',
+                required: false,
+                description: 'Resultados por página (5–50, default 10)',
+                schema: new OA\Schema(type: 'integer', example: 10, minimum: 5, maximum: 50)
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Lista paginada de comentarios',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(
+                            property: 'data',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(
+                                    property: 'items',
+                                    type: 'array',
+                                    items: new OA\Items(
+                                        properties: [
+                                            new OA\Property(property: 'id', type: 'integer', example: 1),
+                                            new OA\Property(property: 'content', type: 'string', example: 'Excelente publicación!'),
+                                            new OA\Property(property: 'author_name', type: 'string', example: 'Juan Pérez'),
+                                            new OA\Property(property: 'author_avatar_url', type: 'string', nullable: true),
+                                            new OA\Property(property: 'author_role', type: 'string', nullable: true, example: 'sb_owner'),
+                                            new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
+                                            new OA\Property(property: 'is_own', type: 'boolean', example: false),
+                                        ]
+                                    )
+                                ),
+                                new OA\Property(
+                                    property: 'meta',
+                                    type: 'object',
+                                    properties: [
+                                        new OA\Property(property: 'current_page', type: 'integer', example: 1),
+                                        new OA\Property(property: 'last_page', type: 'integer', example: 2),
+                                        new OA\Property(property: 'per_page', type: 'integer', example: 10),
+                                        new OA\Property(property: 'total', type: 'integer', example: 15),
+                                    ]
+                                ),
+                            ]
+                        ),
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: 'Post no encontrado'),
+        ]
+    )]
+    public function comments(ListCommentsRequest $request, int $postId): JsonResponse
+    {
+        $validated = $request->validated();
+        $page = (int) ($validated['page'] ?? 1);
+        $perPage = (int) ($validated['per_page'] ?? 10);
+
+        $data = $this->feedService->getComments($postId, $request->user(), $page, $perPage);
+
+        return response()->json([
+            'success' => true,
+            'data' => $data,
+        ]);
+    }
+
+    #[OA\Post(
+        path: '/feed/posts/{postId}/comments',
+        tags: ['Feed'],
+        summary: 'Agregar un comentario a un post',
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(name: 'postId', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['content'],
+                properties: [
+                    new OA\Property(property: 'content', type: 'string', maxLength: 2000, example: 'Muy buen contenido!'),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: 'Comentario publicado',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'data', type: 'object', properties: [
+                            new OA\Property(property: 'comment', type: 'object'),
+                        ]),
+                        new OA\Property(property: 'message', type: 'string', example: 'Comentario publicado.'),
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: 'Post no encontrado'),
+            new OA\Response(response: 422, description: 'Validación fallida'),
+        ]
+    )]
+    public function addComment(StoreCommentRequest $request, int $postId): JsonResponse
+    {
+        $comment = $this->feedService->addComment($postId, $request->user(), $request->validated('content'));
+
+        return response()->json([
+            'success' => true,
+            'data' => ['comment' => $comment],
+            'message' => __('feed.comment_created'),
+        ], 201);
+    }
+
+    #[OA\Delete(
+        path: '/feed/comments/{commentId}',
+        tags: ['Feed'],
+        summary: 'Eliminar un comentario (físico)',
+        description: 'Solo el autor del comentario o un superadmin puede eliminarlo. Se realiza borrado físico ya que la tabla no tiene deleted_at.',
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(name: 'commentId', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
+        ],
+        responses: [
+            new OA\Response(response: 204, description: 'Comentario eliminado correctamente'),
+            new OA\Response(response: 403, description: 'Sin permiso para eliminar este comentario'),
+            new OA\Response(response: 404, description: 'Comentario no encontrado'),
+        ]
+    )]
+    public function deleteComment(Request $request, int $commentId): Response
+    {
+        $this->feedService->deleteComment($commentId, $request->user());
+
+        return response()->noContent();
     }
 }

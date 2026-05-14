@@ -57,7 +57,7 @@ class AuthService
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'avatar_path' => $user->avatar_path ?? null,
+                'avatar_url' => $user->avatar_url,
                 // Needed by the frontend to pre-fill the franchise dropdown for admin_sm.
                 'sm_franchise_id' => $user->sm_franchise_id ?? null,
             ],
@@ -93,7 +93,7 @@ class AuthService
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'avatar_path' => $user->avatar_path ?? null,
+                'avatar_url' => $user->avatar_url,
                 // Needed by the frontend to pre-fill the franchise dropdown for admin_sm.
                 'sm_franchise_id' => $user->sm_franchise_id ?? null,
             ],

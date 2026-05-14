@@ -12,4 +12,8 @@ export const feedApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
   deletePost: (id) => apiClient.delete(`/feed/posts/${id}`),
+  reactToPost: (id, emoji) => apiClient.post(`/feed/posts/${id}/react`, { emoji }),
+  getComments: (id, page = 1) => apiClient.get(`/feed/posts/${id}/comments`, { params: { page } }),
+  addComment: (id, content) => apiClient.post(`/feed/posts/${id}/comments`, { content }),
+  deleteComment: (commentId) => apiClient.delete(`/feed/comments/${commentId}`),
 };

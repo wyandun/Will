@@ -2,15 +2,10 @@
 
 namespace App\Http\Requests\Feed;
 
-use Illuminate\Foundation\Http\FormRequest;
+use App\Http\Requests\AuthenticatedRequest;
 
-class UpdatePostRequest extends FormRequest
+class UpdatePostRequest extends AuthenticatedRequest
 {
-    public function authorize(): bool
-    {
-        return true;
-    }
-
     /**
      * @return array<string, mixed>
      */

@@ -36,6 +36,8 @@ jobs:
       run: php -r "file_exists('.env') || copy('.env.example', '.env');"
     - name: Install Dependencies
       working-directory: backend
+      env:
+        COMPOSER_AUTH: '{}'
       run: composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
     - name: Generate key
       working-directory: backend
