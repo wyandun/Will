@@ -216,7 +216,7 @@ class DashboardService
                 'image_path' => $post->image_url,
                 'likes_count' => (int) ($likes[$post->id] ?? 0),
                 'comments_count' => (int) ($comments[$post->id] ?? 0),
-                'created_at' => $post->created_at,
+                'created_at' => $post->created_at ? Carbon::parse($post->created_at)->toIso8601String() : null,
             ];
         })->all();
     }
