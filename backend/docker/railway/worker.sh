@@ -41,6 +41,7 @@ php "${WORKDIR}/artisan" cache:clear   2>/dev/null || true
 
 echo "[worker] Starting queue worker..."
 exec php "${WORKDIR}/artisan" queue:work \
+    --queue=sm_queue,default \
     --sleep=3 \
     --tries=3 \
     --max-time=3600 \
