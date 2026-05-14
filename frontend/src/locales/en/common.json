@@ -102,7 +102,8 @@
     "view_all_maps": "View all maps",
     "pending": "Pending",
     "signed": "Signed",
-    "read_more": "Read"
+    "read_more": "Read",
+    "repository_label": "Repository"
   },
   "feed": {
     "title": "Feed",

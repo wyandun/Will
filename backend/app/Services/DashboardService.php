@@ -361,14 +361,12 @@ class DashboardService
             return [];
         }
 
-        $now = now();
-
         return $query->get()->map(fn ($d) => [
             'id' => $d->id,
             'file_name' => $d->title,
             'source' => 'Repository',
             'file_type' => $d->file_type,
-            'created_at' => $d->created_at,
+            'created_at' => $d->created_at->toIso8601String(),
         ])->all();
     }
 

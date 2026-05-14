@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { dashboardApi } from '../../api/dashboard';
+import { timeAgo } from '../../utils/time';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -116,12 +117,6 @@ function getGreeting(t) {
 function formatDate() {
   const now = new Date();
   return now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
-}
-
-function daysAgo(dateStr) {
-  if (!dateStr) return 0;
-  const diff = Date.now() - new Date(dateStr).getTime();
-  return Math.max(0, Math.floor(diff / 86400000));
 }
 
 function fileIcon(name = '') {
@@ -292,7 +287,7 @@ function KpiGrid({ kpis, loading }) {
 function PostCard({ post }) {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
-  const ago = daysAgo(post.created_at);
+  const ago = timeAgo(post.created_at);
   const initial = (post.author_name ?? '?')[0].toUpperCase();
 
   return (
@@ -306,7 +301,7 @@ function PostCard({ post }) {
           </div>
         )}
         <span className="text-sm font-medium text-slate-700 truncate">{post.author_name}</span>
-        <span className="text-xs text-slate-400 ml-auto flex-shrink-0">{ago}d</span>
+        <span className="text-xs text-slate-400 ml-auto flex-shrink-0">{ago}</span>
       </div>
       <p className="text-sm font-semibold text-slate-800 line-clamp-1">{post.title}</p>
       <p className="text-xs text-slate-500 line-clamp-2">{post.content}</p>
@@ -519,7 +514,7 @@ function DocumentsWidget({ documents }) {
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-slate-700 truncate">{doc.file_name ?? doc.name}</p>
                 <p className="text-xs text-slate-400">
-                  Repository · {daysAgo(doc.created_at)}d
+                  {t('dashboard.repository_label')} · {timeAgo(doc.created_at)}
                 </p>
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
