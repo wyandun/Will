@@ -24,15 +24,22 @@ class FranchiseMemberService
 
         $clients = User::where('sm_franchise_id', $franchise->id)
             ->role([Role::SB_OWNER, Role::BB_EMPLOYEE])
-            ->get(['id', 'name', 'email', 'phone', 'job_title', 'avatar_path', 'last_seen_at', 'invitation_accepted_at']);
+            ->with('roles:name')
+            ->get(['id', 'name', 'email', 'phone', 'job_title', 'avatar_path', 'last_seen_at', 'invitation_accepted_at'])
+            ->each(function ($client) {
+                $client->role = $client->roles->first()?->name;
+                $client->unsetRelation('roles');
+            });
 
         return [
-            'franchise_id' => $franchise->id,
+            'franchise_id'   => $franchise->id,
             'franchise_name' => $franchise->name,
-            'admins_count' => $admins->count(),
-            'clients_count' => $clients->count(),
-            'admins' => $admins,
-            'clients' => $clients,
+            'country'        => $franchise->country,
+            'is_active'      => $franchise->is_active,
+            'admins_count'   => $admins->count(),
+            'clients_count'  => $clients->count(),
+            'admins'         => $admins,
+            'clients'        => $clients,
         ];
     }
 }
