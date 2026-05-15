@@ -27,7 +27,7 @@ class FranchiseMemberService
             ->with('roles:name')
             ->get(['id', 'name', 'email', 'phone', 'job_title', 'avatar_path', 'last_seen_at', 'invitation_accepted_at'])
             ->each(function ($client) {
-                $client->role = $client->roles->first()?->name;
+                $client->setAttribute('role', $client->getRoleNames()->first());
                 $client->unsetRelation('roles');
             });
 
