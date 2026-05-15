@@ -41,6 +41,22 @@ function IconTrash({ className = 'w-3.5 h-3.5' }) {
   );
 }
 
+function IconX({ className = 'w-5 h-5' }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  );
+}
+
+function IconExternalLink({ className = 'w-4 h-4' }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+    </svg>
+  );
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const TYPE_COLORS = {
@@ -243,9 +259,140 @@ function CommentPanel({ postId, onToast, onCommentCountChange }) {
   );
 }
 
+// ─── PostDetailModal ──────────────────────────────────────────────────────────
+
+function PostDetailModal({ post, onClose }) {
+  const { t } = useTranslation('common');
+  const backdropRef = useRef(null);
+  const initial = (post.author_name ?? '?')[0].toUpperCase();
+  const typeKey = `feed.type_${post.type}`;
+  const roleBadge = post.author_role ? ROLE_BADGES[post.author_role] : null;
+
+  const reactionsLabel = t(
+    (post.likes_count ?? 0) === 1 ? 'feed.reactions_count_one' : 'feed.reactions_count_other',
+    { count: post.likes_count ?? 0 }
+  );
+  const commentsLabel = t(
+    (post.comments_count ?? 0) === 1 ? 'feed.comments_count_one' : 'feed.comments_count_other',
+    { count: post.comments_count ?? 0 }
+  );
+
+  // Close on Escape key
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') onClose();
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  function handleBackdrop(e) {
+    if (e.target === backdropRef.current) onClose();
+  }
+
+  return (
+    <div
+      ref={backdropRef}
+      onClick={handleBackdrop}
+      className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+    >
+      <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+        {/* Close button */}
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-4 right-4 z-10 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+          aria-label={t('common.close')}
+        >
+          <IconX />
+        </button>
+
+        {/* Scrollable body — stopPropagation prevents backdrop from closing modal on inner clicks */}
+        <div className="overflow-y-auto flex flex-col gap-4 p-6 pr-12" onClick={(e) => e.stopPropagation()}>
+          {/* Type badge + pin + time */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {post.type && (
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${typeBadgeClass(post.type)}`}>
+                {t(typeKey, post.type)}
+              </span>
+            )}
+            {post.is_pinned && (
+              <span className="flex items-center gap-1 text-xs text-amber-600 font-medium">
+                <IconPin className="w-3 h-3" />
+                {t('feed.pinned')}
+              </span>
+            )}
+            <span className="ml-auto text-xs text-slate-400">{timeAgo(post.created_at)}</span>
+          </div>
+
+          {/* Image */}
+          {post.image_url && (
+            <img
+              src={post.image_url}
+              alt={post.title}
+              referrerPolicy="no-referrer"
+              className="w-full max-h-64 object-cover rounded-xl"
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
+          )}
+
+          {/* Title */}
+          <h2 className="text-lg font-bold text-slate-800 leading-snug">{post.title}</h2>
+
+          {/* Body */}
+          <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">
+            <LinkifiedText text={post.body} />
+          </p>
+
+          {/* Read original article (news posts with article_url) */}
+          {post.article_url && (
+            <a
+              href={post.article_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 self-start px-4 py-2 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+            >
+              {t('feed.read_article')}
+              <IconExternalLink className="w-4 h-4" />
+            </a>
+          )}
+
+          {/* Author row */}
+          <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+            {post.author_avatar ? (
+              <img
+                src={post.author_avatar}
+                alt={post.author_name}
+                referrerPolicy="no-referrer"
+                className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
+                {initial}
+              </div>
+            )}
+            <span className="text-sm text-slate-700 font-medium truncate">{post.author_name}</span>
+            {roleBadge && (
+              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 ${roleBadge.className}`}>
+                {roleBadge.label}
+              </span>
+            )}
+          </div>
+
+          {/* Reaction + comment count */}
+          <p className="text-xs text-slate-400">
+            {reactionsLabel} · {commentsLabel}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── PostCard ─────────────────────────────────────────────────────────────────
 
-function PostCard({ post, currentUser, role, onEdit, onDelete, onToast }) {
+function PostCard({ post, currentUser, role, onEdit, onDelete, onToast, onOpen }) {
   const { t } = useTranslation('common');
   const [menuOpen, setMenuOpen] = useState(false);
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
@@ -309,7 +456,13 @@ function PostCard({ post, currentUser, role, onEdit, onDelete, onToast }) {
   );
 
   return (
-    <div className="flex flex-col gap-3 p-5 bg-white rounded-2xl border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all">
+    <div
+      className="flex flex-col gap-3 p-5 bg-white rounded-2xl border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all cursor-pointer"
+      onClick={onOpen}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter') onOpen(); }}
+    >
       {/* Header: type badge + pin + menu */}
       <div className="flex items-center gap-2">
         {post.type && (
@@ -326,7 +479,7 @@ function PostCard({ post, currentUser, role, onEdit, onDelete, onToast }) {
         <span className="ml-auto text-xs text-slate-400">{timeAgo(post.created_at)}</span>
 
         {canManage && (
-          <div className="relative" ref={menuRef}>
+          <div className="relative" ref={menuRef} onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
               onClick={() => setMenuOpen((prev) => !prev)}
@@ -369,13 +522,17 @@ function PostCard({ post, currentUser, role, onEdit, onDelete, onToast }) {
         <img
           src={post.image_url}
           alt={post.title}
+          referrerPolicy="no-referrer"
           className="w-full h-36 object-cover rounded-xl"
+          onError={(e) => { e.currentTarget.style.display = 'none'; }}
         />
       )}
 
       {/* Title + body */}
       <div>
-        <p className="text-sm font-semibold text-slate-800 line-clamp-1">{post.title}</p>
+        <p className="text-sm font-semibold text-slate-800 line-clamp-1 group-hover:text-blue-600 transition-colors">
+          {post.title}
+        </p>
         <p className="text-xs text-slate-500 mt-1 line-clamp-3">
           <LinkifiedText text={post.body} />
         </p>
@@ -404,7 +561,7 @@ function PostCard({ post, currentUser, role, onEdit, onDelete, onToast }) {
       </div>
 
       {/* Action buttons */}
-      <div className="flex items-center gap-2 pt-1 border-t border-slate-50">
+      <div className="flex items-center gap-2 pt-1 border-t border-slate-50" onClick={(e) => e.stopPropagation()}>
         {/* React button with emoji picker */}
         <div className="relative" ref={emojiRef}>
           <button
@@ -708,6 +865,7 @@ export default function FeedPage() {
   // Modal state
   const [modalPost, setModalPost] = useState(undefined); // undefined=closed, null=create, object=edit
   const [newsModalOpen, setNewsModalOpen] = useState(false);
+  const [detailPost, setDetailPost] = useState(null);
   const [toast, setToast] = useState('');
 
   const fetchPosts = (term, pageNum) => {
@@ -822,6 +980,7 @@ export default function FeedPage() {
                   onEdit={(p) => setModalPost(p)}
                   onDelete={handleDeletePost}
                   onToast={setToast}
+                  onOpen={() => setDetailPost(post)}
                 />
               ))}
             </div>
@@ -837,6 +996,14 @@ export default function FeedPage() {
         <RecentlyActivePanel users={presence.recently_active ?? []} loading={presenceLoading} />
       </div>
 
+      {/* Post detail modal */}
+      {detailPost && (
+        <PostDetailModal
+          post={detailPost}
+          onClose={() => setDetailPost(null)}
+        />
+      )}
+
       {/* Post create/edit modal */}
       {modalPost !== undefined && (
         <PostFormModal
@@ -848,7 +1015,10 @@ export default function FeedPage() {
 
       {/* News modal */}
       {newsModalOpen && (
-        <NewsModal onClose={() => setNewsModalOpen(false)} />
+        <NewsModal
+          onClose={() => setNewsModalOpen(false)}
+          onPublished={() => fetchPosts(search, 1)}
+        />
       )}
 
       {/* Toast notification */}
@@ -864,6 +1034,8 @@ IconSearch.propTypes = classNameProp;
 IconPin.propTypes = classNameProp;
 IconComment.propTypes = classNameProp;
 IconTrash.propTypes = classNameProp;
+IconX.propTypes = classNameProp;
+IconExternalLink.propTypes = classNameProp;
 
 Skeleton.propTypes = {
   className: PropTypes.string,
@@ -899,23 +1071,26 @@ CommentPanel.propTypes = {
   onCommentCountChange: PropTypes.func,
 };
 
+const postShape = PropTypes.shape({
+  id: PropTypes.number.isRequired,
+  author_id: PropTypes.number,
+  author_role: PropTypes.string,
+  title: PropTypes.string,
+  body: PropTypes.string,
+  type: PropTypes.string,
+  is_pinned: PropTypes.bool,
+  image_url: PropTypes.string,
+  article_url: PropTypes.string,
+  author_name: PropTypes.string,
+  author_avatar: PropTypes.string,
+  likes_count: PropTypes.number,
+  comments_count: PropTypes.number,
+  user_reaction: PropTypes.string,
+  created_at: PropTypes.string,
+});
+
 PostCard.propTypes = {
-  post: PropTypes.shape({
-    id: PropTypes.number.isRequired,
-    author_id: PropTypes.number,
-    author_role: PropTypes.string,
-    title: PropTypes.string,
-    body: PropTypes.string,
-    type: PropTypes.string,
-    is_pinned: PropTypes.bool,
-    image_url: PropTypes.string,
-    author_name: PropTypes.string,
-    author_avatar: PropTypes.string,
-    likes_count: PropTypes.number,
-    comments_count: PropTypes.number,
-    user_reaction: PropTypes.string,
-    created_at: PropTypes.string,
-  }).isRequired,
+  post: postShape.isRequired,
   currentUser: PropTypes.shape({
     id: PropTypes.number,
     name: PropTypes.string,
@@ -925,6 +1100,12 @@ PostCard.propTypes = {
   onEdit: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
   onToast: PropTypes.func.isRequired,
+  onOpen: PropTypes.func.isRequired,
+};
+
+PostDetailModal.propTypes = {
+  post: postShape.isRequired,
+  onClose: PropTypes.func.isRequired,
 };
 
 UserAvatar.propTypes = {

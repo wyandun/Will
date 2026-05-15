@@ -12,9 +12,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $article_url
  * @property string $title
  * @property string|null $description
+ * @property string|null $image_url
  * @property Carbon|null $published_at
  * @property array|null $keywords_matched
  * @property string|null $ai_summary
+ * @property string|null $ai_summary_es
  * @property bool $ai_selected
  * @property string $status pending_ai|pending_review|published|rejected
  * @property int|null $post_id
@@ -27,9 +29,11 @@ class NewsArticle extends Model
         'article_url',
         'title',
         'description',
+        'image_url',
         'published_at',
         'keywords_matched',
         'ai_summary',
+        'ai_summary_es',
         'ai_selected',
         'status',
         'post_id',

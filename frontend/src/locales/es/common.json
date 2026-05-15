@@ -170,7 +170,8 @@
     "comment_deleted": "Comentario eliminado.",
     "comment_error": "Error al publicar el comentario. Intentá de nuevo.",
     "no_comments": "Sin comentarios aún. ¡Sé el primero!",
-    "load_comments_error": "Error al cargar los comentarios."
+    "load_comments_error": "Error al cargar los comentarios.",
+    "read_article": "Leer artículo original"
   },
   "franchises": {
     "title": "Franquicias",

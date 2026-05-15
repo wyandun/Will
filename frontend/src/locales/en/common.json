@@ -170,7 +170,8 @@
     "comment_deleted": "Comment deleted.",
     "comment_error": "Failed to post comment. Please try again.",
     "no_comments": "No comments yet. Be the first!",
-    "load_comments_error": "Failed to load comments."
+    "load_comments_error": "Failed to load comments.",
+    "read_article": "Read original article"
   },
   "franchises": {
     "title": "Franchises",

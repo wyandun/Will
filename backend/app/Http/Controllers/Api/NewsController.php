@@ -9,6 +9,7 @@ use App\Models\Post;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
 
 class NewsController extends Controller
 {
@@ -84,7 +85,7 @@ class NewsController extends Controller
             ], 422);
         }
 
-        $post = Post::create([
+        $postData = [
             'author_id' => $request->user()->id,
             'title' => $newsArticle->title,
             'body' => $this->buildPostBody($newsArticle),
@@ -92,7 +93,14 @@ class NewsController extends Controller
             'visibility' => 'global',
             'is_pinned' => false,
             'published_at' => now(),
-        ]);
+        ];
+
+        // Pass the article image to the post if the column exists
+        if ($newsArticle->image_url && Schema::hasColumn('posts', 'image_url')) {
+            $postData['image_url'] = $newsArticle->image_url;
+        }
+
+        $post = Post::create($postData);
 
         $newsArticle->update([
             'status' => 'published',
@@ -134,7 +142,9 @@ class NewsController extends Controller
             'title' => $article->title,
             'article_url' => $article->article_url,
             'description' => $article->description,
+            'image_url' => $article->image_url,
             'ai_summary' => $article->ai_summary,
+            'ai_summary_es' => $article->ai_summary_es,
             'keywords_matched' => $article->keywords_matched ?? [],
             'status' => $article->status,
             'published_at' => $article->published_at?->toIso8601String(),

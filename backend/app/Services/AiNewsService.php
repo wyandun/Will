@@ -20,8 +20,11 @@ class AiNewsService
     }
 
     /**
-     * Send up to 15 articles to Claude Haiku.
-     * Haiku selects the 10 most useful and writes a 3-sentence summary for each.
+     * Process up to 15 articles through Claude Haiku.
+     * Step 1: Send all articles to Claude with the selection prompt → get back
+     *         a JSON array of 1-based indices (up to 10).
+     * Step 2: For each selected article, call Claude with the summarization
+     *         prompt to produce a 3-sentence summary.
      * Updates each NewsArticle in-place and marks them pending_review or rejected.
      *
      * @param  Collection<int, NewsArticle>|list<NewsArticle>  $articles
@@ -34,15 +37,145 @@ class AiNewsService
             return;
         }
 
-        $prompt = $this->buildPrompt($articleList->all());
+        // Step 1: Select the most relevant articles
+        $selectedIndices = $this->selectArticles($articleList->all());
 
+        if (empty($selectedIndices)) {
+            // API call failed — mark all as pending_review without summary
+            foreach ($articleList as $article) {
+                $article->update(['status' => 'pending_review', 'ai_selected' => false]);
+            }
+
+            return;
+        }
+
+        // Step 2: Summarize each selected article individually
+        foreach ($articleList as $i => $article) {
+            $pos = $i + 1; // 1-based index
+            $isSelected = in_array($pos, $selectedIndices, true);
+
+            if (! $isSelected) {
+                $article->update([
+                    'ai_summary' => null,
+                    'ai_selected' => false,
+                    'status' => 'rejected',
+                ]);
+
+                continue;
+            }
+
+            $summary = $this->summarizeArticle($article);
+            $summaryEs = $this->summarizeArticleEs($article);
+
+            $article->update([
+                'ai_summary' => $summary !== null ? $this->stripMarkdown($summary) : null,
+                'ai_summary_es' => $summaryEs !== null ? $this->stripMarkdown($summaryEs) : null,
+                'ai_selected' => true,
+                'status' => 'pending_review',
+            ]);
+        }
+    }
+
+    // ---------------------------------------------------------------------------
+    // Private helpers
+    // ---------------------------------------------------------------------------
+
+    /**
+     * Call Claude with the selection prompt.
+     * Returns an array of 1-based indices of the selected articles.
+     *
+     * @param  list<NewsArticle>  $articles
+     * @return list<int>
+     */
+    private function selectArticles(array $articles): array
+    {
+        $numbered = '';
+        foreach ($articles as $i => $article) {
+            $n = $i + 1;
+            $desc = mb_substr($article->description ?? '', 0, 300);
+            $numbered .= "[{$n}] {$article->title}\n{$desc}\n\n";
+        }
+
+        $prompt = "You are selecting news for Latino small business owners in the USA (construction, roofing, HVAC, restaurants, cleaning, landscaping). Pick the 10 most relevant articles from this list. Return ONLY a JSON array of numbers like [1,3,5,7,8,9,10,12,13,14]. No explanation.\n\n{$numbered}";
+
+        $response = $this->callApi($prompt, 256);
+
+        if ($response === null) {
+            return [];
+        }
+
+        return $this->parseIndexArray($response);
+    }
+
+    /**
+     * Call Claude with the summarization prompt for a single article.
+     * Returns the English summary string, or null on failure.
+     */
+    private function summarizeArticle(NewsArticle $article): ?string
+    {
+        $title = $article->title;
+        $description = mb_substr($article->description ?? '', 0, 600);
+
+        $prompt = <<<PROMPT
+Write a compelling 3-sentence news summary in English for Latino small business owners in the USA. They work in construction, roofing, HVAC, restaurants, cleaning, landscaping. Your summary must: (1) clearly explain what happened, (2) say exactly why it matters to their business or daily life, (3) give a practical takeaway they can act on. Be engaging, warm, and direct — like a trusted advisor talking to a friend. Do not use any markdown formatting. No headers, no bold, no bullet points. Plain text only.
+
+Title: {$title}
+Description: {$description}
+PROMPT;
+
+        return $this->callApi($prompt, 512);
+    }
+
+    /**
+     * Call Claude with the Spanish summarization prompt for a single article.
+     * Returns the Spanish summary string, or null on failure.
+     */
+    private function summarizeArticleEs(NewsArticle $article): ?string
+    {
+        $title = $article->title;
+        $description = mb_substr($article->description ?? '', 0, 600);
+
+        $prompt = <<<PROMPT
+Escribe un resumen de 3 oraciones en español para dueños de pequeños negocios latinos en USA. Trabajan en construcción, techado, HVAC, restaurantes, limpieza y jardinería. Tu resumen debe: (1) explicar claramente qué pasó, (2) decir exactamente por qué importa para su negocio o vida diaria, (3) dar un paso práctico que puedan tomar. Sé directo y cálido — como un asesor de confianza hablando con un amigo. No uses ningún formato markdown. Sin encabezados, sin negritas, sin viñetas. Solo texto plano.
+
+Title: {$title}
+Description: {$description}
+PROMPT;
+
+        return $this->callApi($prompt, 512);
+    }
+
+    /**
+     * Strip common markdown formatting from AI-generated text.
+     * Removes headings, bold, and italic markers while preserving the inner text.
+     */
+    private function stripMarkdown(string $text): string
+    {
+        // Remove heading lines (e.g. "# Title", "## Title")
+        $text = preg_replace('/^#{1,6}\s+/m', '', $text) ?? $text;
+
+        // Remove bold markers (**text** → text)
+        $text = preg_replace('/\*\*(.+?)\*\*/s', '$1', $text) ?? $text;
+
+        // Remove italic markers (*text* → text)
+        $text = preg_replace('/\*(.+?)\*/s', '$1', $text) ?? $text;
+
+        return trim($text);
+    }
+
+    /**
+     * Send a single prompt to the Anthropic Messages API.
+     * Returns the response text, or null on HTTP failure.
+     */
+    private function callApi(string $prompt, int $maxTokens): ?string
+    {
         $response = Http::withHeaders([
             'x-api-key' => $this->apiKey,
             'anthropic-version' => '2023-06-01',
             'content-type' => 'application/json',
         ])->timeout(60)->post('https://api.anthropic.com/v1/messages', [
             'model' => $this->model,
-            'max_tokens' => 2048,
+            'max_tokens' => $maxTokens,
             'messages' => [
                 ['role' => 'user', 'content' => $prompt],
             ],
@@ -54,89 +187,19 @@ class AiNewsService
                 'body' => $response->body(),
             ]);
 
-            // Mark all as pending_review without summary so they still show up
-            foreach ($articleList as $article) {
-                $article->update(['status' => 'pending_review', 'ai_selected' => false]);
-            }
-
-            return;
+            return null;
         }
 
-        $text = $response->json('content.0.text', '');
-        $this->applyResults($articleList->all(), $text);
-    }
-
-    // ---------------------------------------------------------------------------
-    // Private helpers
-    // ---------------------------------------------------------------------------
-
-    /**
-     * @param  list<NewsArticle>  $articles
-     */
-    private function buildPrompt(array $articles): string
-    {
-        $numbered = '';
-        foreach ($articles as $i => $article) {
-            $n = $i + 1;
-            $desc = mb_substr($article->description ?? '', 0, 300);
-            $numbered .= "[{$n}] {$article->title}\nSource: {$article->source}\n{$desc}\n\n";
-        }
-
-        return <<<PROMPT
-You are an editorial assistant for a portal that serves Latino small business owners in the USA.
-Below is a numbered list of news articles (up to 15). Your job is to:
-1. Select the 10 most relevant and actionable articles for small business owners (focus on: taxes, labor, franchises, construction, restaurants, immigration, loans, permits, inflation, tariffs, supply chain).
-2. For each selected article write a 3-sentence summary:
-   - Sentence 1: What happened.
-   - Sentence 2: Why it matters to a small business owner.
-   - Sentence 3: One concrete action they can take.
-
-Return ONLY a JSON array. No extra text. Format:
-[
-  {"index": <number>, "summary": "<3-sentence summary>"},
-  ...
-]
-
-Articles:
-{$numbered}
-PROMPT;
+        return $response->json('content.0.text', '');
     }
 
     /**
-     * Parse Haiku's JSON response and update each article's status + summary.
+     * Parse a JSON array of integers from the selection response.
+     * E.g. "[1,3,5]" → [1, 3, 5]
      *
-     * @param  list<NewsArticle>  $articles
+     * @return list<int>
      */
-    private function applyResults(array $articles, string $rawText): void
-    {
-        $selected = $this->parseJson($rawText);
-
-        // Index the selected results by their 1-based position
-        $byIndex = [];
-        foreach ($selected as $item) {
-            if (isset($item['index'], $item['summary'])) {
-                $byIndex[(int) $item['index']] = (string) $item['summary'];
-            }
-        }
-
-        foreach ($articles as $i => $article) {
-            $pos = $i + 1;
-            $summary = $byIndex[$pos] ?? null;
-
-            $article->update([
-                'ai_summary' => $summary,
-                'ai_selected' => $summary !== null,
-                'status' => $summary !== null ? 'pending_review' : 'rejected',
-            ]);
-        }
-    }
-
-    /**
-     * Extract the first valid JSON array from the model response.
-     *
-     * @return list<array<string, mixed>>
-     */
-    private function parseJson(string $text): array
+    private function parseIndexArray(string $text): array
     {
         // Strip markdown code fences if present
         $clean = preg_replace('/```(?:json)?\s*([\s\S]*?)\s*```/', '$1', $text) ?? $text;
@@ -146,7 +209,7 @@ PROMPT;
         $end = strrpos($clean, ']');
 
         if ($start === false || $end === false) {
-            Log::warning('AiNewsService: no JSON array found in response', ['raw' => mb_substr($text, 0, 500)]);
+            Log::warning('AiNewsService: no JSON array found in selection response', ['raw' => mb_substr($text, 0, 500)]);
 
             return [];
         }
@@ -156,9 +219,16 @@ PROMPT;
         try {
             $decoded = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
 
-            return is_array($decoded) ? $decoded : [];
+            if (! is_array($decoded)) {
+                return [];
+            }
+
+            return array_values(array_filter(array_map('intval', $decoded), fn ($v) => $v > 0));
         } catch (\JsonException $e) {
-            Log::warning('AiNewsService: JSON parse error', ['error' => $e->getMessage(), 'json' => mb_substr($json, 0, 500)]);
+            Log::warning('AiNewsService: JSON parse error in selection response', [
+                'error' => $e->getMessage(),
+                'json' => mb_substr($json, 0, 500),
+            ]);
 
             return [];
         }

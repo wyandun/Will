@@ -52,13 +52,50 @@ function Skeleton({ className }) {
   return <div className={`animate-pulse bg-slate-200 rounded-xl ${className}`} />;
 }
 
+// ─── ArticleImage ──────────────────────────────────────────────────────────────
+
+/**
+ * Renders a news article thumbnail.
+ * Does NOT use referrerPolicy="no-referrer" — that attribute is intended for
+ * external requests and can cause browsers to strip the Referer header in ways
+ * that make Nginx/CDN reject the request even when the image URL is valid.
+ * Falls back to a muted placeholder div if the image fails to load.
+ */
+function ArticleImage({ src, alt }) {
+  const [failed, setFailed] = useState(false);
+
+  if (failed) {
+    return (
+      <div className="w-full h-24 rounded-xl bg-slate-100 flex items-center justify-center">
+        <svg className="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v13.5a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V10.5zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+        </svg>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className="w-full max-h-32 object-cover rounded-xl"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 // ─── ArticleCard ───────────────────────────────────────────────────────────────
 
 function ArticleCard({ article, onPublish, onReject }) {
-  const { t } = useTranslation('common');
+  const { t, i18n } = useTranslation('common');
   const [busy, setBusy] = useState(false);
 
   const isPublished = article.status === 'published';
+
+  // Resolve which summary text to display based on the global app language
+  const summaryText = i18n.language.startsWith('es')
+    ? (article.ai_summary_es ?? article.ai_summary ?? null)
+    : (article.ai_summary ?? null);
 
   function handlePublish() {
     if (busy || isPublished) return;
@@ -102,11 +139,16 @@ function ArticleCard({ article, onPublish, onReject }) {
         <IconExternalLink className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-slate-400 group-hover:text-blue-500 transition-colors" />
       </a>
 
+      {/* Article thumbnail */}
+      {article.image_url && (
+        <ArticleImage src={article.image_url} alt={article.title} />
+      )}
+
       {/* AI Summary */}
-      {article.ai_summary && (
+      {summaryText && (
         <div className="bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5">
-          <p className="text-[11px] font-semibold text-amber-700 mb-1">{t('news.ai_summary')}</p>
-          <p className="text-xs text-slate-600 leading-relaxed">{article.ai_summary}</p>
+          <p className="text-[11px] font-semibold text-amber-700 mb-1.5">{t('news.ai_summary')}</p>
+          <p className="text-xs text-slate-600 leading-relaxed">{summaryText}</p>
         </div>
       )}
 
@@ -150,8 +192,10 @@ function ArticleCard({ article, onPublish, onReject }) {
 
 // ─── NewsModal ─────────────────────────────────────────────────────────────────
 
-export default function NewsModal({ onClose }) {
-  const { t } = useTranslation('common');
+export default function NewsModal({ onClose, onPublished }) {
+  const { t, i18n } = useTranslation('common');
+  const currentLang = i18n.language === 'es' ? 'es' : 'en';
+
   const [articles, setArticles] = useState([]);
   const [meta, setMeta] = useState(null);
   const [lastFetchAt, setLastFetchAt] = useState(null);
@@ -209,8 +253,8 @@ export default function NewsModal({ onClose }) {
   function handlePublish(id) {
     return newsApi.publishArticle(id)
       .then(() => {
-        setToast(t('news.published_success'));
-        setArticles((prev) => prev.map((a) => a.id === id ? { ...a, status: 'published' } : a));
+        onPublished?.();
+        onClose();
       })
       .catch(() => setToast(t('common.unexpected_error')));
   }
@@ -262,6 +306,32 @@ export default function NewsModal({ onClose }) {
             <IconRefresh className={`w-3.5 h-3.5 ${fetching ? 'animate-spin' : ''}`} />
             {fetching ? t('news.fetching') : t('news.fetch_btn')}
           </button>
+
+          {/* Language pill toggle — EN / ES */}
+          <div className="flex items-center rounded-lg border border-slate-200 overflow-hidden flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => { i18n.changeLanguage('en'); localStorage.setItem('language', 'en'); }}
+              className={`px-2.5 py-1 text-xs font-semibold transition-colors ${
+                currentLang === 'en'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-slate-500 hover:bg-slate-100'
+              }`}
+            >
+              EN
+            </button>
+            <button
+              type="button"
+              onClick={() => { i18n.changeLanguage('es'); localStorage.setItem('language', 'es'); }}
+              className={`px-2.5 py-1 text-xs font-semibold transition-colors ${
+                currentLang === 'es'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-slate-500 hover:bg-slate-100'
+              }`}
+            >
+              ES
+            </button>
+          </div>
 
           <button
             type="button"
@@ -352,13 +422,20 @@ IconExternalLink.propTypes = { className: PropTypes.string };
 IconCheck.propTypes = { className: PropTypes.string };
 IconBan.propTypes = { className: PropTypes.string };
 
+ArticleImage.propTypes = {
+  src: PropTypes.string.isRequired,
+  alt: PropTypes.string.isRequired,
+};
+
 ArticleCard.propTypes = {
   article: PropTypes.shape({
     id: PropTypes.number.isRequired,
     source: PropTypes.string.isRequired,
     title: PropTypes.string.isRequired,
     article_url: PropTypes.string.isRequired,
+    image_url: PropTypes.string,
     ai_summary: PropTypes.string,
+    ai_summary_es: PropTypes.string,
     keywords_matched: PropTypes.arrayOf(PropTypes.string),
     status: PropTypes.string.isRequired,
     published_at: PropTypes.string,
@@ -370,4 +447,5 @@ ArticleCard.propTypes = {
 
 NewsModal.propTypes = {
   onClose: PropTypes.func.isRequired,
+  onPublished: PropTypes.func,
 };

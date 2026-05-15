@@ -6,6 +6,7 @@ use App\Models\NewsArticle;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class RssNewsService
 {
@@ -69,15 +70,22 @@ class RssNewsService
                         continue;
                     }
 
-                    $inserted[] = NewsArticle::create([
+                    $newsArticle = NewsArticle::create([
                         'source' => $sourceName,
                         'article_url' => $article['url'],
                         'title' => $article['title'],
                         'description' => $article['description'],
+                        'image_url' => $article['image_url'],
                         'published_at' => $article['published_at'],
                         'keywords_matched' => $matched,
                         'status' => 'pending_ai',
                     ]);
+
+                    if ($article['image_url'] !== null) {
+                        $this->cacheImage($newsArticle, $article['image_url']);
+                    }
+
+                    $inserted[] = $newsArticle;
                 }
             } catch (\Throwable $e) {
                 Log::warning("RssNewsService: failed to parse feed [{$sourceName}]", [
@@ -110,7 +118,7 @@ class RssNewsService
     /**
      * Download an RSS/Atom feed and return a normalized array of articles.
      *
-     * @return list<array{title: string, url: string, description: string, published_at: string|null}>
+     * @return list<array{title: string, url: string, description: string, image_url: string|null, published_at: string|null}>
      */
     private function parseFeed(string $source, string $url): array
     {
@@ -147,7 +155,7 @@ class RssNewsService
         return array_filter($articles, fn ($a) => ! empty($a['url']));
     }
 
-    /** @return array{title: string, url: string, description: string, published_at: string|null} */
+    /** @return array{title: string, url: string, description: string, image_url: string|null, published_at: string|null} */
     private function normalizeItem(\SimpleXMLElement $item): array
     {
         $url = (string) ($item->link ?? '');
@@ -163,11 +171,12 @@ class RssNewsService
             'title' => html_entity_decode(strip_tags((string) ($item->title ?? '')), ENT_QUOTES, 'UTF-8'),
             'url' => $url,
             'description' => html_entity_decode(strip_tags((string) ($item->description ?? '')), ENT_QUOTES, 'UTF-8'),
+            'image_url' => $this->extractImageUrl($item),
             'published_at' => $pubDate,
         ];
     }
 
-    /** @return array{title: string, url: string, description: string, published_at: string|null} */
+    /** @return array{title: string, url: string, description: string, image_url: string|null, published_at: string|null} */
     private function normalizeAtomEntry(\SimpleXMLElement $entry): array
     {
         $url = '';
@@ -192,8 +201,91 @@ class RssNewsService
             'title' => html_entity_decode(strip_tags((string) ($entry->title ?? '')), ENT_QUOTES, 'UTF-8'),
             'url' => $url,
             'description' => html_entity_decode(strip_tags((string) ($entry->summary ?? $entry->content ?? '')), ENT_QUOTES, 'UTF-8'),
+            'image_url' => $this->extractImageUrl($entry),
             'published_at' => $pubDate,
         ];
+    }
+
+    /**
+     * Try to extract an image URL from an RSS/Atom item element.
+     * Checks (in order): media:content, enclosure[image/*], media:thumbnail.
+     */
+    private function extractImageUrl(\SimpleXMLElement $item): ?string
+    {
+        // media:content url="..."
+        $media = $item->children('media', true);
+        if (isset($media->content)) {
+            $mediaUrl = (string) ($media->content->attributes()['url'] ?? '');
+            if (! empty($mediaUrl) && filter_var($mediaUrl, FILTER_VALIDATE_URL)) {
+                return $mediaUrl;
+            }
+        }
+
+        // <enclosure url="..." type="image/...">
+        if (isset($item->enclosure)) {
+            $encType = (string) ($item->enclosure->attributes()['type'] ?? '');
+            $encUrl = (string) ($item->enclosure->attributes()['url'] ?? '');
+            if (str_starts_with($encType, 'image/') && ! empty($encUrl) && filter_var($encUrl, FILTER_VALIDATE_URL)) {
+                return $encUrl;
+            }
+        }
+
+        // media:thumbnail url="..."
+        if (isset($media->thumbnail)) {
+            $thumbUrl = (string) ($media->thumbnail->attributes()['url'] ?? '');
+            if (! empty($thumbUrl) && filter_var($thumbUrl, FILTER_VALIDATE_URL)) {
+                return $thumbUrl;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Download the external image and store it locally under storage/app/public/news/.
+     * Updates $article->image_url to the local /storage/news/{filename} URL.
+     * Silently falls back to keeping the original URL on any failure.
+     */
+    private function cacheImage(NewsArticle $article, string $imageUrl): void
+    {
+        try {
+            $response = Http::timeout(5)->withoutVerifying()->get($imageUrl);
+
+            if (! $response->successful()) {
+                return;
+            }
+
+            $contentType = $response->header('Content-Type');
+
+            // Only cache actual images
+            if (! str_starts_with($contentType, 'image/')) {
+                return;
+            }
+
+            // Derive extension from Content-Type (e.g. "image/jpeg" → "jpg")
+            $mime = strtolower(explode(';', $contentType)[0]);
+            $extension = match ($mime) {
+                'image/jpeg' => 'jpg',
+                'image/png' => 'png',
+                'image/gif' => 'gif',
+                'image/webp' => 'webp',
+                'image/svg+xml' => 'svg',
+                default => 'jpg',
+            };
+
+            $filename = md5($imageUrl).'.'.$extension;
+            $path = "news/{$filename}";
+
+            Storage::disk('public')->put($path, $response->body());
+
+            $article->image_url = Storage::disk('public')->url($path);
+            $article->saveQuietly();
+        } catch (\Throwable $e) {
+            Log::info('RssNewsService: image cache skipped', [
+                'url' => $imageUrl,
+                'reason' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
