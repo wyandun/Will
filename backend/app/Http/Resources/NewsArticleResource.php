@@ -2,9 +2,11 @@
 
 namespace App\Http\Resources;
 
+use App\Models\NewsArticle;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/** @mixin NewsArticle */
 class NewsArticleResource extends JsonResource
 {
     public function toArray(Request $request): array
