@@ -163,10 +163,11 @@ class FranchiseTest extends TestCase
         $superadmin = $this->createSuperadmin();
 
         $payload = [
-            'name' => 'New Franchise',
-            'type' => 'sm',
-            'email' => 'contact@newfranchise.com',
-            'country' => 'Canada',
+            'name'     => 'New Franchise',
+            'country'  => 'Canada',
+            'timezone' => 'America/Toronto',
+            'phone'    => '+1 416-555-0100',
+            'address'  => '100 King St W, Toronto, ON',
         ];
 
         $response = $this->actingAs($superadmin)->postJson('/api/v1/franchises', $payload);
@@ -174,13 +175,12 @@ class FranchiseTest extends TestCase
         $response->assertStatus(201);
         $response->assertJsonPath('success', true);
         $response->assertJsonPath('data.name', 'New Franchise');
-        $response->assertJsonPath('data.email', 'contact@newfranchise.com');
         $response->assertJsonPath('data.country', 'Canada');
 
         $this->assertDatabaseHas('franchises', [
-            'name' => 'New Franchise',
-            'type' => 'sm',
-            'email' => 'contact@newfranchise.com',
+            'name'    => 'New Franchise',
+            'type'    => 'sm',
+            'country' => 'Canada',
         ]);
     }
 
@@ -189,8 +189,11 @@ class FranchiseTest extends TestCase
         $superadmin = $this->createSuperadmin();
 
         $payload = [
-            'name' => 'Active By Default',
-            'type' => 'sm',
+            'name'     => 'Active By Default',
+            'country'  => 'Mexico',
+            'timezone' => 'America/Mexico_City',
+            'phone'    => '+52 55 1234 5678',
+            'address'  => 'Av. Reforma 123, Ciudad de México',
         ];
 
         $response = $this->actingAs($superadmin)->postJson('/api/v1/franchises', $payload);
@@ -199,7 +202,7 @@ class FranchiseTest extends TestCase
 
         // The DB default sets is_active = true even if not sent in the payload
         $this->assertDatabaseHas('franchises', [
-            'name' => 'Active By Default',
+            'name'      => 'Active By Default',
             'is_active' => true,
         ]);
     }
@@ -216,18 +219,6 @@ class FranchiseTest extends TestCase
         $response->assertJsonValidationErrors(['name']);
     }
 
-    public function test_store_franchise_validates_required_type(): void
-    {
-        $superadmin = $this->createSuperadmin();
-
-        $response = $this->actingAs($superadmin)->postJson('/api/v1/franchises', [
-            'name' => 'Some Franchise',
-        ]);
-
-        $response->assertStatus(422);
-        $response->assertJsonValidationErrors(['type']);
-    }
-
     public function test_store_franchise_validates_type_must_be_sm_or_sub(): void
     {
         $superadmin = $this->createSuperadmin();
@@ -241,18 +232,19 @@ class FranchiseTest extends TestCase
         $response->assertJsonValidationErrors(['type']);
     }
 
-    public function test_store_franchise_validates_email_format(): void
+    public function test_store_franchise_validates_required_country(): void
     {
         $superadmin = $this->createSuperadmin();
 
         $response = $this->actingAs($superadmin)->postJson('/api/v1/franchises', [
-            'name' => 'Some Franchise',
-            'type' => 'sm',
-            'email' => 'not-an-email',
+            'name'     => 'Some Franchise',
+            'timezone' => 'America/New_York',
+            'phone'    => '+1 555-0100',
+            'address'  => '123 Main St',
         ]);
 
         $response->assertStatus(422);
-        $response->assertJsonValidationErrors(['email']);
+        $response->assertJsonValidationErrors(['country']);
     }
 
     public function test_store_franchise_validates_timezone_format(): void
@@ -274,14 +266,16 @@ class FranchiseTest extends TestCase
         $superadmin = $this->createSuperadmin();
 
         $response = $this->actingAs($superadmin)->postJson('/api/v1/franchises', [
-            'name' => 'Timezone Franchise',
-            'type' => 'sm',
+            'name'     => 'Timezone Franchise',
+            'country'  => 'United States',
             'timezone' => 'America/New_York',
+            'phone'    => '+1 555-0100',
+            'address'  => '123 Main St, New York, NY',
         ]);
 
         $response->assertStatus(201);
         $this->assertDatabaseHas('franchises', [
-            'name' => 'Timezone Franchise',
+            'name'     => 'Timezone Franchise',
             'timezone' => 'America/New_York',
         ]);
     }
@@ -291,9 +285,13 @@ class FranchiseTest extends TestCase
         $franchise = Franchise::factory()->create();
         $admin = $this->createAdminSm($franchise);
 
+        // Send a valid payload so FormRequest validation passes and the policy is reached.
         $response = $this->actingAs($admin)->postJson('/api/v1/franchises', [
-            'name' => 'Unauthorized',
-            'type' => 'sm',
+            'name'     => 'Unauthorized',
+            'country'  => 'Mexico',
+            'timezone' => 'America/Mexico_City',
+            'phone'    => '+52 55 1234 5678',
+            'address'  => 'Calle Falsa 123',
         ]);
 
         $response->assertStatus(403);
@@ -369,12 +367,15 @@ class FranchiseTest extends TestCase
 
     public function test_superadmin_can_update_franchise(): void
     {
-        $superadmin = $this->createSuperadmin();
+        $superadmin  = $this->createSuperadmin();
         $franchise = Franchise::factory()->create(['name' => 'Original Name']);
 
         $payload = [
-            'name' => 'Updated Name',
-            'email' => 'updated@franchise.com',
+            'name'     => 'Updated Name',
+            'country'  => 'Argentina',
+            'timezone' => 'America/Argentina/Buenos_Aires',
+            'phone'    => '+54 11 5555-0100',
+            'address'  => 'Av. Corrientes 1234, Buenos Aires',
         ];
 
         $response = $this->actingAs($superadmin)
@@ -383,27 +384,25 @@ class FranchiseTest extends TestCase
         $response->assertStatus(200);
         $response->assertJsonPath('success', true);
         $response->assertJsonPath('data.name', 'Updated Name');
-        $response->assertJsonPath('data.email', 'updated@franchise.com');
+        $response->assertJsonPath('data.country', 'Argentina');
 
         $this->assertDatabaseHas('franchises', [
-            'id' => $franchise->id,
-            'name' => 'Updated Name',
-            'email' => 'updated@franchise.com',
+            'id'      => $franchise->id,
+            'name'    => 'Updated Name',
+            'country' => 'Argentina',
         ]);
     }
 
-    public function test_update_franchise_validates_email_format(): void
+    public function test_update_franchise_validates_required_fields(): void
     {
         $superadmin = $this->createSuperadmin();
-        $franchise = Franchise::factory()->create();
+        $franchise  = Franchise::factory()->create();
 
         $response = $this->actingAs($superadmin)
-            ->putJson("/api/v1/franchises/{$franchise->id}", [
-                'email' => 'invalid-email',
-            ]);
+            ->putJson("/api/v1/franchises/{$franchise->id}", []);
 
         $response->assertStatus(422);
-        $response->assertJsonValidationErrors(['email']);
+        $response->assertJsonValidationErrors(['name', 'country', 'timezone', 'phone', 'address']);
     }
 
     public function test_update_franchise_validates_type_must_be_sm_or_sub(): void
@@ -437,11 +436,16 @@ class FranchiseTest extends TestCase
     public function test_admin_sm_cannot_update_franchise(): void
     {
         $franchise = Franchise::factory()->create();
-        $admin = $this->createAdminSm($franchise);
+        $admin     = $this->createAdminSm($franchise);
 
+        // Send a valid payload so FormRequest validation passes and the policy is reached.
         $response = $this->actingAs($admin)
             ->putJson("/api/v1/franchises/{$franchise->id}", [
-                'name' => 'Hacked',
+                'name'     => 'Hacked',
+                'country'  => 'Mexico',
+                'timezone' => 'America/Mexico_City',
+                'phone'    => '+52 55 1234 5678',
+                'address'  => 'Calle Falsa 123',
             ]);
 
         $response->assertStatus(403);
@@ -704,5 +708,59 @@ class FranchiseTest extends TestCase
         $response->assertStatus(200);
         $response->assertJsonCount(5, 'data');
         $response->assertJsonPath('meta.current_page', 2);
+    }
+
+    // ===========================================================================
+    // WILT-71 replanteado — name uniqueness, no email required
+    // ===========================================================================
+
+    public function test_can_create_franchise_without_email(): void
+    {
+        $superadmin = $this->createSuperadmin();
+
+        $response = $this->actingAs($superadmin)->postJson('/api/v1/franchises', [
+            'name'     => 'Test Franchise',
+            'country'  => 'United States',
+            'timezone' => 'America/New_York',
+            'phone'    => '+1 555-0123',
+            'address'  => '123 Main St, New York, NY 10001',
+        ]);
+
+        $response->assertStatus(201);
+
+        $this->assertDatabaseHas('franchises', [
+            'name'    => 'Test Franchise',
+            'country' => 'United States',
+        ]);
+    }
+
+    public function test_cannot_create_duplicate_franchise_name(): void
+    {
+        $superadmin = $this->createSuperadmin();
+
+        Franchise::factory()->create([
+            'name' => 'Duplicate Name',
+        ]);
+
+        $response = $this->actingAs($superadmin)->postJson('/api/v1/franchises', [
+            'name'     => 'Duplicate Name',
+            'country'  => 'Canada',
+            'timezone' => 'America/Toronto',
+            'phone'    => '+1 416-987-6543',
+            'address'  => '456 Oak Ave, Toronto',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['name']);
+    }
+
+    public function test_all_franchise_fields_required(): void
+    {
+        $superadmin = $this->createSuperadmin();
+
+        $response = $this->actingAs($superadmin)->postJson('/api/v1/franchises', []);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['name', 'country', 'timezone', 'phone', 'address']);
     }
 }
