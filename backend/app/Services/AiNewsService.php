@@ -41,12 +41,8 @@ class AiNewsService
         $selectedIndices = $this->selectArticles($articleList->all());
 
         if (empty($selectedIndices)) {
-            // API call failed — mark all as pending_review without summary
-            foreach ($articleList as $article) {
-                $article->update(['status' => 'pending_review', 'ai_selected' => false]);
-            }
-
-            return;
+            Log::error('AiNewsService: selectArticles returned no indices — leaving articles in pending_ai for retry');
+            throw new \RuntimeException('AI selection returned no indices');
         }
 
         // Step 2: Summarize each selected article individually

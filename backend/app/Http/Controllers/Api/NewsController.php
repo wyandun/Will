@@ -9,7 +9,6 @@ use App\Models\Post;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Schema;
 
 class NewsController extends Controller
 {
@@ -52,9 +51,10 @@ class NewsController extends Controller
     {
         $this->authorize('fetch', NewsArticle::class);
 
-        $lastFetch = Cache::get('news_last_fetch_at');
+        // Atomic lock — only one dispatch per hour wins
+        if (! Cache::add('news_fetch_lock', true, now()->addHour())) {
+            $lastFetch = Cache::get('news_last_fetch_at');
 
-        if ($lastFetch && now()->diffInMinutes($lastFetch) < 60) {
             return response()->json([
                 'success' => true,
                 'data' => ['queued' => false, 'last_fetch_at' => $lastFetch],
@@ -66,7 +66,7 @@ class NewsController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => ['queued' => true, 'last_fetch_at' => $lastFetch],
+            'data' => ['queued' => true, 'last_fetch_at' => Cache::get('news_last_fetch_at')],
             'message' => 'News fetch queued. Articles will appear shortly.',
         ]);
     }
@@ -95,8 +95,7 @@ class NewsController extends Controller
             'published_at' => now(),
         ];
 
-        // Pass the article image to the post if the column exists
-        if ($newsArticle->image_url && Schema::hasColumn('posts', 'image_url')) {
+        if ($newsArticle->image_url) {
             $postData['image_url'] = $newsArticle->image_url;
         }
 
@@ -106,6 +105,8 @@ class NewsController extends Controller
             'status' => 'published',
             'post_id' => $post->id,
         ]);
+
+        $newsArticle->refresh();
 
         return response()->json([
             'success' => true,
