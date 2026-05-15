@@ -12,6 +12,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (! Schema::hasTable('news_articles')) {
+            return;
+        }
+
         Schema::table('news_articles', function (Blueprint $table) {
             if (! Schema::hasColumn('news_articles', 'image_url')) {
                 $table->string('image_url', 500)->nullable()->after('description');

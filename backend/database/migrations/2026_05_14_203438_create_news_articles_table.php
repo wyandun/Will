@@ -14,9 +14,11 @@ return new class extends Migration
             $table->text('article_url')->unique();
             $table->string('title');
             $table->text('description')->nullable();
+            $table->string('image_url', 500)->nullable();
             $table->timestamp('published_at')->nullable();
             $table->json('keywords_matched')->nullable();
             $table->text('ai_summary')->nullable();
+            $table->text('ai_summary_es')->nullable();
             $table->boolean('ai_selected')->default(false);
             // pending_ai = waiting for AI | pending_review = ready for superadmin | published | rejected
             $table->string('status')->default('pending_ai');
