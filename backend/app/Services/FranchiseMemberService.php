@@ -32,14 +32,14 @@ class FranchiseMemberService
             });
 
         return [
-            'franchise_id'   => $franchise->id,
+            'franchise_id' => $franchise->id,
             'franchise_name' => $franchise->name,
-            'country'        => $franchise->country,
-            'is_active'      => $franchise->is_active,
-            'admins_count'   => $admins->count(),
-            'clients_count'  => $clients->count(),
-            'admins'         => $admins,
-            'clients'        => $clients,
+            'country' => $franchise->country,
+            'is_active' => $franchise->is_active,
+            'admins_count' => $admins->count(),
+            'clients_count' => $clients->count(),
+            'admins' => $admins,
+            'clients' => $clients,
         ];
     }
 }
