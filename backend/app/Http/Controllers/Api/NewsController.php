@@ -66,7 +66,7 @@ class NewsController extends Controller
         }
 
         try {
-            FetchNewsJob::dispatch();
+            FetchNewsJob::dispatch()->onQueue('news');
         } catch (\Throwable $e) {
             Cache::forget('news_fetch_lock');
             throw $e;
@@ -156,7 +156,7 @@ class NewsController extends Controller
     private function buildPostBody(NewsArticle $article): string
     {
         $summary = strip_tags($article->ai_summary ?? $article->description ?? '');
-        $url = strip_tags($article->article_url);
+        $url = filter_var($article->article_url, FILTER_VALIDATE_URL) ? $article->article_url : '';
         $source = strip_tags($article->source);
 
         return "{$summary}\n\nSource: {$source}\n{$url}";
