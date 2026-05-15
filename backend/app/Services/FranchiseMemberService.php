@@ -15,9 +15,11 @@ class FranchiseMemberService
      */
     public function listMembers(Franchise $franchise): array
     {
+        abort_if(! $franchise->exists || ! $franchise->getKey(), 500, 'listMembers() requires a persisted Franchise model.');
+
         $admins = User::where('sm_franchise_id', $franchise->id)
             ->role(Role::ADMIN_SM)
-            ->with('userPermissions')
+            ->with('userPermissions:id,user_id,module,can_read,can_write')
             ->get(['id', 'name', 'email', 'phone', 'job_title', 'area', 'avatar_path', 'last_seen_at', 'invitation_accepted_at']);
 
         $clients = User::where('sm_franchise_id', $franchise->id)
