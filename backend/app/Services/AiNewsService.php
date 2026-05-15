@@ -16,8 +16,11 @@ class AiNewsService
 
     public function __construct()
     {
-        $this->apiKey = config('services.anthropic.api_key', '');
-        $this->model = config('services.anthropic.model', 'claude-haiku-4-5-20251001');
+        $this->apiKey = config('services.anthropic.api_key')
+            ?? throw new \RuntimeException('services.anthropic.api_key is not configured');
+
+        $this->model = config('services.anthropic.model')
+            ?? throw new \RuntimeException('services.anthropic.model is not configured');
     }
 
     /**
@@ -55,7 +58,7 @@ class AiNewsService
                 $article->update([
                     'ai_summary' => null,
                     'ai_selected' => false,
-                    'status' => NewsArticleStatus::Rejected->value,
+                    'status' => NewsArticleStatus::Rejected,
                 ]);
 
                 continue;
@@ -68,7 +71,7 @@ class AiNewsService
                 'ai_summary' => $summary !== null ? $this->stripMarkdown($summary) : null,
                 'ai_summary_es' => $summaryEs !== null ? $this->stripMarkdown($summaryEs) : null,
                 'ai_selected' => true,
-                'status' => NewsArticleStatus::PendingReview->value,
+                'status' => NewsArticleStatus::PendingReview,
             ]);
         }
     }

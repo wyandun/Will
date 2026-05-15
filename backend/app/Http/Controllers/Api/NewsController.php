@@ -8,6 +8,7 @@ use App\Http\Resources\NewsArticleResource;
 use App\Jobs\FetchNewsJob;
 use App\Models\NewsArticle;
 use App\Models\Post;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -64,7 +65,12 @@ class NewsController extends Controller
             ]);
         }
 
-        FetchNewsJob::dispatch();
+        try {
+            FetchNewsJob::dispatch();
+        } catch (\Throwable $e) {
+            Cache::forget('news_fetch_lock');
+            throw $e;
+        }
 
         return response()->json([
             'success' => true,
@@ -88,28 +94,30 @@ class NewsController extends Controller
             ], 422);
         }
 
-        DB::transaction(function () use ($request, $newsArticle) {
-            $postData = [
-                'author_id' => $request->user()->id,
-                'title' => $newsArticle->title,
-                'body' => $this->buildPostBody($newsArticle),
-                'type' => 'news',
-                'visibility' => 'global',
-                'is_pinned' => false,
-                'published_at' => now(),
-            ];
+        try {
+            $post = DB::transaction(function () use ($request, $newsArticle) {
+                $postData = [
+                    'author_id' => $request->user()->id,
+                    'title' => $newsArticle->title,
+                    'body' => $this->buildPostBody($newsArticle),
+                    'type' => 'news',
+                    'visibility' => 'global',
+                    'is_pinned' => false,
+                    'published_at' => now(),
+                ];
 
-            if ($newsArticle->image_url) {
-                $postData['image_url'] = $newsArticle->image_url;
-            }
+                if ($newsArticle->image_url) {
+                    $postData['image_url'] = $newsArticle->image_url;
+                }
 
-            $post = Post::create($postData);
+                $post = Post::create($postData);
+                $newsArticle->update(['status' => NewsArticleStatus::Published, 'post_id' => $post->id]);
 
-            $newsArticle->update([
-                'status' => NewsArticleStatus::Published->value,
-                'post_id' => $post->id,
-            ]);
-        });
+                return $post;
+            });
+        } catch (QueryException $e) {
+            return response()->json(['success' => false, 'message' => 'Failed to publish article. Please try again.'], 503);
+        }
 
         $newsArticle->refresh();
 
@@ -132,7 +140,7 @@ class NewsController extends Controller
             return response()->json(['success' => false, 'message' => 'Cannot reject this article.'], 422);
         }
 
-        $newsArticle->update(['status' => NewsArticleStatus::Rejected->value]);
+        $newsArticle->update(['status' => NewsArticleStatus::Rejected]);
 
         return response()->json([
             'success' => true,
@@ -147,9 +155,9 @@ class NewsController extends Controller
 
     private function buildPostBody(NewsArticle $article): string
     {
-        $summary = $article->ai_summary ?? $article->description ?? '';
-        $url = $article->article_url;
-        $source = $article->source;
+        $summary = strip_tags($article->ai_summary ?? $article->description ?? '');
+        $url = strip_tags($article->article_url);
+        $source = strip_tags($article->source);
 
         return "{$summary}\n\nSource: {$source}\n{$url}";
     }
