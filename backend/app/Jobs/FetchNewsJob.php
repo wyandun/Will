@@ -29,6 +29,7 @@ class FetchNewsJob implements ShouldQueue
         if ($pending->isEmpty()) {
             Log::info('FetchNewsJob: no articles pending AI processing');
             Cache::put('news_last_fetch_at', now()->toIso8601String(), now()->addHours(12));
+            Cache::forget('news_fetch_lock');
 
             return;
         }
@@ -37,5 +38,12 @@ class FetchNewsJob implements ShouldQueue
         Log::info('FetchNewsJob: AI processing complete', ['processed' => $pending->count()]);
 
         Cache::put('news_last_fetch_at', now()->toIso8601String(), now()->addHours(12));
+        Cache::forget('news_fetch_lock');
+    }
+
+    public function failed(\Throwable $e): void
+    {
+        Log::error('FetchNewsJob: job failed', ['error' => $e->getMessage()]);
+        Cache::forget('news_fetch_lock');
     }
 }

@@ -12,7 +12,7 @@ class NewsArticlePolicy
         return $user->hasRole(['superadmin', 'admin_sm']);
     }
 
-    public function fetch(User $user): bool
+    public function fetchAny(User $user): bool
     {
         return $user->hasRole(['superadmin', 'admin_sm']);
     }

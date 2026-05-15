@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\NewsArticleStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\NewsArticleResource;
 use App\Jobs\FetchNewsJob;
 use App\Models\NewsArticle;
 use App\Models\Post;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class NewsController extends Controller
 {
@@ -21,13 +24,13 @@ class NewsController extends Controller
         $this->authorize('viewAny', NewsArticle::class);
 
         $query = NewsArticle::query()
-            ->where('status', 'pending_review')
+            ->where('status', NewsArticleStatus::PendingReview->value)
             ->where('ai_selected', true)
             ->orderByDesc('fetched_at');
 
         $articles = $query->paginate(20);
 
-        $items = $articles->map(fn (NewsArticle $a) => $this->formatArticle($a));
+        $items = $articles->map(fn (NewsArticle $a) => NewsArticleResource::make($a)->resolve());
 
         return response()->json([
             'success' => true,
@@ -45,20 +48,19 @@ class NewsController extends Controller
 
     /**
      * Dispatch FetchNewsJob to queue.
-     * Throttled: one dispatch per hour to avoid burning API credits.
+     * Lock (5 min TTL) prevents double-dispatch while the job is in flight.
+     * The job sets news_last_fetch_at on completion and releases the lock.
      */
     public function fetch(Request $request): JsonResponse
     {
-        $this->authorize('fetch', NewsArticle::class);
+        $this->authorize('fetchAny', NewsArticle::class);
 
-        // Atomic lock — only one dispatch per hour wins
-        if (! Cache::add('news_fetch_lock', true, now()->addHour())) {
-            $lastFetch = Cache::get('news_last_fetch_at');
-
+        // Atomic lock — only one dispatch wins while a job is in flight
+        if (! Cache::add('news_fetch_lock', true, now()->addMinutes(5))) {
             return response()->json([
                 'success' => true,
-                'data' => ['queued' => false, 'last_fetch_at' => $lastFetch],
-                'message' => 'News was fetched recently. Showing cached results.',
+                'data' => ['queued' => false, 'last_fetch_at' => Cache::get('news_last_fetch_at')],
+                'message' => 'News fetch already in progress.',
             ]);
         }
 
@@ -73,56 +75,64 @@ class NewsController extends Controller
 
     /**
      * Publish an article: create a Feed post with type=news and mark article as published.
+     * Wrapped in a DB transaction so both writes succeed or neither persists.
      */
     public function publish(Request $request, NewsArticle $newsArticle): JsonResponse
     {
         $this->authorize('publish', $newsArticle);
 
-        if ($newsArticle->status === 'published') {
+        if ($newsArticle->status === NewsArticleStatus::Published) {
             return response()->json([
                 'success' => false,
                 'message' => 'Article already published.',
             ], 422);
         }
 
-        $postData = [
-            'author_id' => $request->user()->id,
-            'title' => $newsArticle->title,
-            'body' => $this->buildPostBody($newsArticle),
-            'type' => 'news',
-            'visibility' => 'global',
-            'is_pinned' => false,
-            'published_at' => now(),
-        ];
+        DB::transaction(function () use ($request, $newsArticle) {
+            $postData = [
+                'author_id' => $request->user()->id,
+                'title' => $newsArticle->title,
+                'body' => $this->buildPostBody($newsArticle),
+                'type' => 'news',
+                'visibility' => 'global',
+                'is_pinned' => false,
+                'published_at' => now(),
+            ];
 
-        if ($newsArticle->image_url) {
-            $postData['image_url'] = $newsArticle->image_url;
-        }
+            if ($newsArticle->image_url) {
+                $postData['image_url'] = $newsArticle->image_url;
+            }
 
-        $post = Post::create($postData);
+            $post = Post::create($postData);
 
-        $newsArticle->update([
-            'status' => 'published',
-            'post_id' => $post->id,
-        ]);
+            $newsArticle->update([
+                'status' => NewsArticleStatus::Published->value,
+                'post_id' => $post->id,
+            ]);
+        });
 
         $newsArticle->refresh();
 
         return response()->json([
             'success' => true,
-            'data' => ['article' => $this->formatArticle($newsArticle), 'post_id' => $post->id],
+            'data' => ['article' => NewsArticleResource::make($newsArticle)->resolve(), 'post_id' => $newsArticle->post_id],
             'message' => 'Article published to Feed.',
         ]);
     }
 
     /**
      * Reject an article — removes it from the review queue.
+     * Cannot reject an article that is already published or already rejected.
      */
     public function reject(NewsArticle $newsArticle): JsonResponse
     {
         $this->authorize('reject', $newsArticle);
 
-        $newsArticle->update(['status' => 'rejected']);
+        if (in_array($newsArticle->status, [NewsArticleStatus::Published, NewsArticleStatus::Rejected], true)) {
+            return response()->json(['success' => false, 'message' => 'Cannot reject this article.'], 422);
+        }
+
+        $newsArticle->update(['status' => NewsArticleStatus::Rejected->value]);
 
         return response()->json([
             'success' => true,
@@ -134,25 +144,6 @@ class NewsController extends Controller
     // ---------------------------------------------------------------------------
     // Private helpers
     // ---------------------------------------------------------------------------
-
-    private function formatArticle(NewsArticle $article): array
-    {
-        return [
-            'id' => $article->id,
-            'source' => $article->source,
-            'title' => $article->title,
-            'article_url' => $article->article_url,
-            'description' => $article->description,
-            'image_url' => $article->image_url,
-            'ai_summary' => $article->ai_summary,
-            'ai_summary_es' => $article->ai_summary_es,
-            'keywords_matched' => $article->keywords_matched ?? [],
-            'status' => $article->status,
-            'published_at' => $article->published_at?->toIso8601String(),
-            'fetched_at' => $article->fetched_at->toIso8601String(),
-            'post_id' => $article->post_id,
-        ];
-    }
 
     private function buildPostBody(NewsArticle $article): string
     {

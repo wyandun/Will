@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\NewsArticleStatus;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $ai_summary
  * @property string|null $ai_summary_es
  * @property bool $ai_selected
- * @property string $status pending_ai|pending_review|published|rejected
+ * @property NewsArticleStatus $status
  * @property int|null $post_id
  * @property Carbon $fetched_at
  */
@@ -47,6 +48,7 @@ class NewsArticle extends Model
             'fetched_at' => 'datetime',
             'keywords_matched' => 'array',
             'ai_selected' => 'boolean',
+            'status' => NewsArticleStatus::class,
         ];
     }
 

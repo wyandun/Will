@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\NewsArticleStatus;
 use App\Models\NewsArticle;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Http;
@@ -78,7 +79,7 @@ class RssNewsService
                         'image_url' => $article['image_url'],
                         'published_at' => $article['published_at'],
                         'keywords_matched' => $matched,
-                        'status' => 'pending_ai',
+                        'status' => NewsArticleStatus::PendingAi->value,
                     ]);
 
                     if ($article['image_url'] !== null) {
@@ -105,7 +106,7 @@ class RssNewsService
      */
     public function getPendingForAi(int $limit = 15)
     {
-        return NewsArticle::where('status', 'pending_ai')
+        return NewsArticle::where('status', NewsArticleStatus::PendingAi->value)
             ->orderByDesc('fetched_at')
             ->limit($limit)
             ->get();

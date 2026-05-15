@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\NewsArticleStatus;
 use App\Models\NewsArticle;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Http;
@@ -54,7 +55,7 @@ class AiNewsService
                 $article->update([
                     'ai_summary' => null,
                     'ai_selected' => false,
-                    'status' => 'rejected',
+                    'status' => NewsArticleStatus::Rejected->value,
                 ]);
 
                 continue;
@@ -67,7 +68,7 @@ class AiNewsService
                 'ai_summary' => $summary !== null ? $this->stripMarkdown($summary) : null,
                 'ai_summary_es' => $summaryEs !== null ? $this->stripMarkdown($summaryEs) : null,
                 'ai_selected' => true,
-                'status' => 'pending_review',
+                'status' => NewsArticleStatus::PendingReview->value,
             ]);
         }
     }
