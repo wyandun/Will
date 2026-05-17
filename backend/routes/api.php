@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BbAssignmentController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\FeedController;
 use App\Http\Controllers\Api\FranchiseController;
 use App\Http\Controllers\Api\FranchiseMemberController;
@@ -77,6 +78,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('bb-assignments/{bbAssignment}', [BbAssignmentController::class, 'destroy']);
 
     Route::apiResource('system-admins', SystemAdminController::class)->only(['index', 'store', 'update', 'destroy']);
+
+    Route::apiResource('events', EventController::class);
 
     // Invitations — protected management endpoints
     Route::get('invitations', [InvitationController::class, 'index']);
