@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\Role;
 use App\Models\Event;
+use App\Models\Franchise;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role as SpatieRole;
@@ -27,9 +28,9 @@ class EventTest extends TestCase
         return $user;
     }
 
-    private function createUser(): User
+    private function createUser(array $attrs = []): User
     {
-        return User::factory()->create();
+        return User::factory()->create($attrs);
     }
 
     private function validEventData(array $overrides = []): array
@@ -284,5 +285,105 @@ class EventTest extends TestCase
 
         $response->assertStatus(200);
         $this->assertSoftDeleted('events', ['id' => $event->id]);
+    }
+
+    // ===========================================================================
+    // Visibility Scoping
+    // ===========================================================================
+
+    public function test_user_can_see_public_events_in_index(): void
+    {
+        $user = $this->createUser();
+        Event::factory()->create(['visibility' => 'public']);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(1, 'data');
+    }
+
+    public function test_user_cannot_see_private_events_of_others(): void
+    {
+        $user = $this->createUser();
+        Event::factory()->create(['visibility' => 'private']);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(0, 'data');
+    }
+
+    public function test_user_can_see_own_private_events(): void
+    {
+        $user = $this->createUser();
+        Event::factory()->create(['visibility' => 'private', 'user_id' => $user->id]);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(1, 'data');
+    }
+
+    public function test_user_can_see_franchise_events_in_same_franchise(): void
+    {
+        $franchise = Franchise::factory()->create();
+        $creator = $this->createUser(['sm_franchise_id' => $franchise->id]);
+        $viewer = $this->createUser(['sm_franchise_id' => $franchise->id]);
+        Event::factory()->create(['visibility' => 'franchise', 'user_id' => $creator->id]);
+
+        $response = $this->actingAs($viewer)->getJson('/api/v1/events');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(1, 'data');
+    }
+
+    public function test_user_cannot_see_franchise_events_from_different_franchise(): void
+    {
+        $franchiseA = Franchise::factory()->create();
+        $franchiseB = Franchise::factory()->create();
+        $creator = $this->createUser(['sm_franchise_id' => $franchiseA->id]);
+        $viewer = $this->createUser(['sm_franchise_id' => $franchiseB->id]);
+        Event::factory()->create(['visibility' => 'franchise', 'user_id' => $creator->id]);
+
+        $response = $this->actingAs($viewer)->getJson('/api/v1/events');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(0, 'data');
+    }
+
+    public function test_superadmin_sees_all_events_regardless_of_visibility(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        Event::factory()->create(['visibility' => 'public']);
+        Event::factory()->create(['visibility' => 'private']);
+        Event::factory()->create(['visibility' => 'franchise']);
+
+        $response = $this->actingAs($superadmin)->getJson('/api/v1/events');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(3, 'data');
+    }
+
+    public function test_show_private_event_returns_403_for_non_owner(): void
+    {
+        $viewer = $this->createUser();
+        $event = Event::factory()->create(['visibility' => 'private']);
+
+        $response = $this->actingAs($viewer)->getJson("/api/v1/events/{$event->id}");
+
+        $response->assertStatus(403);
+    }
+
+    public function test_show_franchise_event_visible_to_same_franchise(): void
+    {
+        $franchise = Franchise::factory()->create();
+        $creator = $this->createUser(['sm_franchise_id' => $franchise->id]);
+        $viewer = $this->createUser(['sm_franchise_id' => $franchise->id]);
+        $event = Event::factory()->create(['visibility' => 'franchise', 'user_id' => $creator->id]);
+
+        $response = $this->actingAs($viewer)->getJson("/api/v1/events/{$event->id}");
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.id', $event->id);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\Role;
 use App\Models\Event;
 use App\Models\User;
 use Carbon\Carbon;
@@ -16,6 +17,23 @@ class EventService
     public function list(User $user, ?string $search, int $perPage = 10): LengthAwarePaginator
     {
         $query = Event::with('creator');
+
+        // Superadmin sees all events regardless of visibility
+        if (! $user->hasRole(Role::SUPERADMIN)) {
+            $query->where(function ($q) use ($user) {
+                $q->where('visibility', 'public')
+                    ->orWhere('user_id', $user->id);
+
+                if ($user->sm_franchise_id !== null) {
+                    $q->orWhere(function ($fq) use ($user) {
+                        $fq->where('visibility', 'franchise')
+                            ->whereHas('creator', function ($uq) use ($user) {
+                                $uq->where('sm_franchise_id', $user->sm_franchise_id);
+                            });
+                    });
+                }
+            });
+        }
 
         if ($search) {
             $query->where(function ($q) use ($search) {

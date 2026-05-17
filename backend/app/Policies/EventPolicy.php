@@ -17,11 +17,19 @@ class EventPolicy
     }
 
     /**
-     * All authenticated users can view any event.
+     * Visibility-aware: public events are visible to all, franchise events
+     * to same-franchise users, private events only to the creator or superadmin.
      */
     public function view(User $user, Event $event): bool
     {
-        return true;
+        return match ($event->visibility) {
+            'public' => true,
+            'franchise' => $user->sm_franchise_id !== null
+                && $user->sm_franchise_id === $event->creator->sm_franchise_id,
+            'private' => (int) $user->id === (int) $event->user_id
+                || $user->hasRole(Role::SUPERADMIN),
+            default => false,
+        };
     }
 
     /**
