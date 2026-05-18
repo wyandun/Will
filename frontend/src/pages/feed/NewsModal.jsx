@@ -56,10 +56,12 @@ function Skeleton({ className }) {
 
 /**
  * Renders a news article thumbnail.
- * Does NOT use referrerPolicy="no-referrer" — that attribute is intended for
- * external requests and can cause browsers to strip the Referer header in ways
- * that make Nginx/CDN reject the request even when the image URL is valid.
- * Falls back to a muted placeholder div if the image fails to load.
+ * Uses referrerPolicy="no-referrer" so the browser omits the Referer header
+ * when requesting the external CDN URL — many RSS source CDNs (Entrepreneur,
+ * CNBC, etc.) block hotlinking by checking the Referer header and rejecting
+ * requests that come from a foreign domain such as Railway. With no-referrer
+ * the CDN cannot identify the origin and serves the image normally.
+ * Falls back to a muted placeholder div if the image still fails to load.
  */
 function ArticleImage({ src, alt }) {
   const [failed, setFailed] = useState(false);
@@ -78,6 +80,7 @@ function ArticleImage({ src, alt }) {
     <img
       src={src}
       alt={alt}
+      referrerPolicy="no-referrer"
       className="w-full max-h-32 object-cover rounded-xl"
       onError={() => setFailed(true)}
     />

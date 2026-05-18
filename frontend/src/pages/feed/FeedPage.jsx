@@ -541,7 +541,13 @@ function PostCard({ post, currentUser, role, onEdit, onDelete, onToast, onOpen }
       {/* Author row */}
       <div className="flex items-center gap-2">
         {post.author_avatar ? (
-          <img src={post.author_avatar} alt={post.author_name} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+          <img
+            src={post.author_avatar}
+            alt={post.author_name}
+            referrerPolicy="no-referrer"
+            className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+          />
         ) : (
           <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
             {initial}
