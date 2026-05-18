@@ -120,6 +120,41 @@ services:
     networks:
       - app-network
   # ---------------------------------------------------------------------------
+  # Scheduler — runs php artisan schedule:run every minute (Laravel cron)
+  # Triggers news:fetch automatically every N hours (NEWS_FETCH_INTERVAL_HOURS)
+  # ---------------------------------------------------------------------------
+  scheduler:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: sm_scheduler
+    restart: unless-stopped
+    command: ["sh", "-c", "while true; do php artisan schedule:run --verbose; sleep 60; done"]
+    environment:
+      APP_ENV: ${APP_ENV:-local}
+      APP_KEY: ${APP_KEY}
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      QUEUE_CONNECTION: redis
+      CACHE_STORE: redis
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+    volumes:
+      - ./backend:/var/www/html
+      - /var/www/html/vendor
+    depends_on:
+      - backend
+      - redis
+    networks:
+      - app-network
+
+  # ---------------------------------------------------------------------------
   # Queue Worker
   # Runs Laravel queue:work using the same image as the backend.
   # Supervisor is NOT used here — Docker restart policy handles crashes.
@@ -147,8 +182,10 @@ services:
       QUEUE_CONNECTION: redis
       CACHE_STORE: redis
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
     volumes:
-      - ./backend/storage:/var/www/html/storage
+      - ./backend:/var/www/html
+      - /var/www/html/vendor
     depends_on:
       - backend
       - redis
