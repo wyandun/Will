@@ -17,10 +17,8 @@ class UpdateFranchiseRequest extends FormRequest
 
     public function rules(): array
     {
-        $franchiseId = $this->route('franchise')->id;
-
         return [
-            'name' => ['required', 'string', 'max:255', Rule::unique('franchises')->whereNull('deleted_at')->ignore($franchiseId)],
+            'name' => ['required', 'string', 'max:255', Rule::unique('franchises')->whereNull('deleted_at')->ignore($this->route('franchise'))],
             'type' => ['sometimes', 'string', 'in:sm,sub'],
             'email' => ['nullable', 'email', 'max:255'],
             'country' => ['required', 'string', 'max:255'],
