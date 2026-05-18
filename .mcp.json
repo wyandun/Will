@@ -1,5 +1,10 @@
 {
   "mcpServers": {
+    "laravel-boost": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["mcp-servers/laravel-boost/dist/index.js"]
+    },
     "linear": {
       "type": "http",
       "url": "https://mcp.linear.app/mcp",

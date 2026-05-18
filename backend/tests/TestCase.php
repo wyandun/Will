@@ -23,10 +23,12 @@ abstract class TestCase extends BaseTestCase
     {
         $roles = [
             'superadmin',
+            'system_admin',
+            'system_admin_readonly',
             'admin_sm',
             'sb_owner',
             'sb_employee',
-            'bb',
+            'bb_employee',
             'sub_franchise_owner',
             'sub_franchise_admin',
         ];
