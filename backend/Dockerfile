@@ -1,18 +1,18 @@
 # SM Portal — Backend Dockerfile
 # Multi-stage build:
-#   builder  — installs Composer dependencies
-#   production — lean PHP-FPM runtime image
+#   builder      — installs Composer dependencies (no dev)
+#   builder-dev  — installs Composer dependencies (with dev, for local Docker)
+#   production   — lean PHP-FPM runtime image (Railway + local)
+#   development  — same runtime but with dev vendor (local Docker only)
+#   railway      — production + Nginx for Railway deployment
 
 # ---------------------------------------------------------------------------
-# Stage 1: builder
-# Install Composer dependencies without dev packages.
+# Stage 1a: builder — production vendor (no dev packages)
 # ---------------------------------------------------------------------------
 FROM composer:2.8 AS builder
 
 WORKDIR /app
 
-# Copy only the manifests first to exploit Docker layer caching.
-# The vendor directory is only rebuilt when composer.json / composer.lock change.
 COPY composer.json composer.lock ./
 
 RUN composer install \
@@ -22,18 +22,33 @@ RUN composer install \
     --optimize-autoloader \
     --prefer-dist
 
-# Copy the full application source after dependencies are resolved
 COPY . .
 
-# Run post-install scripts now that the full codebase is present
 RUN composer run-script post-autoload-dump 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
-# Stage 2: production
-# Lean PHP 8.4-FPM image with only the extensions required by Laravel +
-# the SM Portal stack (pgsql, redis, gd, zip, bcmath, opcache, intl).
+# Stage 1b: builder-dev — dev vendor (local Docker only)
 # ---------------------------------------------------------------------------
-FROM php:8.4-fpm AS production
+FROM composer:2.8 AS builder-dev
+
+WORKDIR /app
+
+COPY composer.json composer.lock ./
+
+RUN composer install \
+    --no-interaction \
+    --no-scripts \
+    --prefer-dist
+
+COPY . .
+
+RUN composer run-script post-autoload-dump 2>/dev/null || true
+
+# ---------------------------------------------------------------------------
+# Stage 2: runtime-base
+# Shared PHP-FPM runtime. Both production and development extend this.
+# ---------------------------------------------------------------------------
+FROM php:8.4-fpm AS runtime-base
 
 # Install system dependencies required to compile PHP extensions
 RUN apt-get update && apt-get install -y \
@@ -77,25 +92,42 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 
 WORKDIR /var/www/html
 
-# Copy vendor directory from the builder stage
-COPY --from=builder /app/vendor ./vendor
+# ---------------------------------------------------------------------------
+# Stage 3: production
+# Uses production vendor (no dev packages). Used by Railway and local default.
+# ---------------------------------------------------------------------------
+FROM runtime-base AS production
 
-# Copy the application source
+COPY --from=builder /app/vendor ./vendor
 COPY . .
 
-# Set correct ownership for storage and cache directories.
-# www-data is the user PHP-FPM runs as inside the official image.
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# Expose the PHP-FPM port (Nginx proxies to this)
 EXPOSE 9000
 
 ENTRYPOINT ["entrypoint.sh"]
 CMD ["php-fpm"]
 
 # ---------------------------------------------------------------------------
-# Stage 3: railway
+# Stage 4: development
+# Uses dev vendor (includes phpunit, collision, etc). Local Docker only.
+# ---------------------------------------------------------------------------
+FROM runtime-base AS development
+
+COPY --from=builder-dev /app/vendor ./vendor
+COPY . .
+
+RUN chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
+
+EXPOSE 9000
+
+ENTRYPOINT ["entrypoint.sh"]
+CMD ["php-fpm"]
+
+# ---------------------------------------------------------------------------
+# Stage 5: railway
 # Production HTTP server for Railway deployment.
 # Uses Nginx as a reverse proxy in front of PHP-FPM — same as local Docker.
 #
@@ -129,5 +161,3 @@ ENTRYPOINT []
 EXPOSE 8080
 
 CMD ["/usr/local/bin/railway-start.sh"]
-
-

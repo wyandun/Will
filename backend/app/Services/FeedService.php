@@ -141,7 +141,7 @@ class FeedService
                     ? Storage::disk('public')->url($row->author_avatar_path)
                     : null,
                 'author_role' => $roleMap[$row->user_id] ?? null,
-                'created_at' => $row->created_at,
+                'created_at' => $row->created_at ? Carbon::parse($row->created_at)->toIso8601String() : null,
                 'is_own' => $row->user_id === $user->id,
             ];
         })->all();
@@ -190,7 +190,7 @@ class FeedService
                 ? Storage::disk('public')->url($user->avatar_path)
                 : null,
             'author_role' => $role,
-            'created_at' => now()->toDateTimeString(),
+            'created_at' => Carbon::now()->toIso8601String(),
             'is_own' => true,
         ];
     }
@@ -362,7 +362,7 @@ class FeedService
                 'likes_count' => (int) ($likes[$post->id] ?? 0),
                 'comments_count' => (int) ($comments[$post->id] ?? 0),
                 'user_reaction' => $userReactions[$post->id] ?? null,
-                'created_at' => $post->created_at,
+                'created_at' => $post->created_at ? Carbon::parse($post->created_at)->toIso8601String() : null,
             ];
         })->all();
 
