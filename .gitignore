@@ -50,3 +50,6 @@ agentes/
 docs/Linear/
 docs/Home_Issues_Analysis.md
 docs/guia_base_de_datos_2026-04-18.md
+
+# MCP server (local-only tooling, not part of the project)
+mcp-servers/
