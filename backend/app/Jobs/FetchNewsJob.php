@@ -29,7 +29,7 @@ class FetchNewsJob implements ShouldQueue
         // so the AI has something to work with. This prevents the pool from drying up
         // when all recent RSS content is already in the database.
         if (count($newArticles) === 0) {
-            $requeued = $rss->requeueOldRejected(olderThanDays: 30);
+            $requeued = $rss->requeueOldRejected(olderThanDays: 0);
             Log::info('FetchNewsJob: no new RSS articles — re-queued old rejected', ['requeued' => $requeued]);
         }
 
