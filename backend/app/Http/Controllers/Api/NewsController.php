@@ -43,6 +43,8 @@ class NewsController extends Controller
                     'total' => $articles->total(),
                 ],
                 'last_fetch_at' => Cache::get('news_last_fetch_at'),
+                'last_fetch_result' => Cache::get('news_fetch_result'),
+                'fetch_in_progress' => Cache::has('news_fetch_lock'),
             ],
         ]);
     }
@@ -74,7 +76,11 @@ class NewsController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => ['queued' => true, 'last_fetch_at' => Cache::get('news_last_fetch_at')],
+            'data' => [
+                'queued' => true,
+                'last_fetch_at' => Cache::get('news_last_fetch_at'),
+                'last_fetch_result' => Cache::get('news_fetch_result'),
+            ],
             'message' => 'News fetch queued. Articles will appear shortly.',
         ]);
     }

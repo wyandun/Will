@@ -21,13 +21,29 @@ class FetchNewsJob implements ShouldQueue
     {
         Log::info('FetchNewsJob: starting news fetch');
 
+        // Step 1: Fetch new articles from RSS feeds
         $newArticles = $rss->fetchAndFilter();
         Log::info('FetchNewsJob: fetched from RSS', ['new_articles' => count($newArticles)]);
 
-        $pending = $rss->getPendingForAi(config('services.anthropic.batch_size', 15));
+        // Step 2: When no new articles were found from RSS, re-queue old rejected articles
+        // so the AI has something to work with. This prevents the pool from drying up
+        // when all recent RSS content is already in the database.
+        if (count($newArticles) === 0) {
+            $requeued = $rss->requeueOldRejected(olderThanDays: 30);
+            Log::info('FetchNewsJob: no new RSS articles — re-queued old rejected', ['requeued' => $requeued]);
+        }
+
+        // Step 3: Grab up to batch_size pending_ai articles (both new and re-queued)
+        $batchSize = (int) config('services.anthropic.batch_size', 15);
+        $pending = $rss->getPendingForAi($batchSize);
 
         if ($pending->isEmpty()) {
-            Log::info('FetchNewsJob: no articles pending AI processing');
+            Log::info('FetchNewsJob: no articles pending AI processing — pool is empty');
+            Cache::put('news_fetch_result', [
+                'new_from_rss' => 0,
+                'processed' => 0,
+                'message' => 'All recent articles have already been processed. No new content found.',
+            ], now()->addMinutes(10));
             $this->finalize();
 
             return;
@@ -35,6 +51,12 @@ class FetchNewsJob implements ShouldQueue
 
         $ai->processArticles($pending);
         Log::info('FetchNewsJob: AI processing complete', ['processed' => $pending->count()]);
+
+        Cache::put('news_fetch_result', [
+            'new_from_rss' => count($newArticles),
+            'processed' => $pending->count(),
+            'message' => null,
+        ], now()->addMinutes(10));
 
         $this->finalize();
     }

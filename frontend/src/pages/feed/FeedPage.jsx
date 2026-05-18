@@ -631,15 +631,22 @@ function PostCard({ post, currentUser, role, onEdit, onDelete, onToast, onOpen }
 // ─── UserAvatar ───────────────────────────────────────────────────────────────
 
 function UserAvatar({ user }) {
+  const [imgError, setImgError] = useState(false);
   const initial = (user.name ?? '?')[0].toUpperCase();
 
-  return user.avatar_url ? (
-    <img
-      src={user.avatar_url}
-      alt={user.name}
-      className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-    />
-  ) : (
+  if (user.avatar_url && !imgError) {
+    return (
+      <img
+        src={user.avatar_url}
+        alt={user.name}
+        referrerPolicy="no-referrer"
+        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+        onError={() => setImgError(true)}
+      />
+    );
+  }
+
+  return (
     <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-600 text-xs font-bold flex items-center justify-center flex-shrink-0">
       {initial}
     </div>

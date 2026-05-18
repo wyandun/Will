@@ -16,6 +16,7 @@ class RssNewsService
      * @var array<string, string>
      */
     private const SOURCES = [
+        // Original sources
         'NPR Business' => 'https://feeds.npr.org/1006/rss.xml',
         'New York Times' => 'https://rss.nytimes.com/services/xml/rss/nyt/Business.xml',
         'Fox Business' => 'https://feeds.foxbusiness.com/fox-business/latest',
@@ -24,6 +25,38 @@ class RssNewsService
         'CNBC Small Biz' => 'https://www.cnbc.com/id/10001147/device/rss/rss.html',
         'Reuters Business' => 'https://feeds.reuters.com/reuters/businessNews',
         'NBC News' => 'https://feeds.nbcnews.com/nbcnews/public/news',
+
+        // General business & economy
+        'BBC Business' => 'https://feeds.bbci.co.uk/news/business/rss.xml',
+        'The Guardian Business' => 'https://www.theguardian.com/us/business/rss',
+        'Washington Post Biz' => 'https://feeds.washingtonpost.com/rss/business',
+        'USA Today Money' => 'https://rss.usatoday.com/topics/news/money',
+        'Fast Company' => 'https://www.fastcompany.com/latest/rss',
+        'Forbes Business' => 'https://www.forbes.com/business/feed/',
+        'Kiplinger' => 'https://www.kiplinger.com/rss/',
+        'Small Biz Trends' => 'https://smallbiztrends.com/feed',
+        'Investopedia' => 'https://www.investopedia.com/feedbuilder/feed/getfeed/?feedName=rss_articles',
+
+        // Small business & entrepreneurship
+        'SCORE Blog' => 'https://www.score.org/blog/rss.xml',
+        'SBA News' => 'https://www.sba.gov/rss/all-news-and-updates.xml',
+        'Biz2Credit' => 'https://www.biz2credit.com/blog/feed/',
+        'Nav Small Biz' => 'https://www.nav.com/blog/feed/',
+
+        // Tax & regulation
+        'IRS Newsroom' => 'https://www.irs.gov/newsroom/irs-news.xml',
+        'Tax Foundation' => 'https://taxfoundation.org/feed/',
+
+        // Industry-specific: restaurant, construction, HVAC
+        'Restaurant Business' => 'https://www.restaurantbusinessonline.com/rss.xml',
+        'Nation Restaurant News' => 'https://www.nrn.com/rss.xml',
+        'Construction Dive' => 'https://www.constructiondive.com/feeds/news/',
+        'Roofing Contractor' => 'https://www.roofingcontractor.com/rss/',
+        'ACHR News HVAC' => 'https://www.achrnews.com/rss/',
+
+        // Labor & immigration
+        'DOL News' => 'https://blog.dol.gov/feed',
+        'Immigration Impact' => 'https://immigrationimpact.com/feed/',
     ];
 
     /**
@@ -110,12 +143,34 @@ class RssNewsService
      *
      * @return Collection<int, NewsArticle>
      */
-    public function getPendingForAi(int $limit = 15)
+    public function getPendingForAi(int $limit = 15): Collection
     {
         return NewsArticle::where('status', NewsArticleStatus::PendingAi->value)
             ->orderByDesc('fetched_at')
             ->limit($limit)
             ->get();
+    }
+
+    /**
+     * Re-queue old rejected articles so they can be re-evaluated.
+     *
+     * Rejected articles older than $olderThanDays days are reset to pending_ai.
+     * This prevents the pool from drying up when RSS feeds recycle the same URLs
+     * or when editorial taste changes over time.
+     *
+     * Returns the number of articles re-queued.
+     */
+    public function requeueOldRejected(int $olderThanDays = 30): int
+    {
+        $count = NewsArticle::where('status', NewsArticleStatus::Rejected->value)
+            ->where('fetched_at', '<', now()->subDays($olderThanDays))
+            ->update(['status' => NewsArticleStatus::PendingAi->value]);
+
+        if ($count > 0) {
+            Log::info("RssNewsService: re-queued {$count} old rejected articles for AI re-evaluation");
+        }
+
+        return $count;
     }
 
     // ---------------------------------------------------------------------------
