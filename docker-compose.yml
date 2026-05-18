@@ -80,6 +80,7 @@ services:
       SESSION_DRIVER: redis
       DOCUSEAL_URL: ${DOCUSEAL_URL:-http://docuseal:3000}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
     volumes:
       - ./backend:/var/www/html  # <--- AGREGA ESTA LÍNEA (El puente total)
       - ./backend/storage:/var/www/html/storage
@@ -166,7 +167,7 @@ services:
       target: development
     container_name: sm_queue
     restart: unless-stopped
-    command: ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--max-time=3600"]
+    command: ["php", "artisan", "queue:work", "--queue=sm_queue,default,news", "--sleep=3", "--tries=3", "--max-time=3600"]
     environment:
       APP_ENV: ${APP_ENV:-production}
       APP_DEBUG: ${APP_DEBUG:-false}

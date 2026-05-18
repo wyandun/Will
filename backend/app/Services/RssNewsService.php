@@ -7,7 +7,6 @@ use App\Models\NewsArticle;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 class RssNewsService
 {
@@ -76,15 +75,11 @@ class RssNewsService
                         'article_url' => $article['url'],
                         'title' => $article['title'],
                         'description' => $article['description'],
-                        'image_url' => $article['image_url'],
+                        'image_url' => $article['image_url'], // external URL from RSS — no local caching
                         'published_at' => $article['published_at'],
                         'keywords_matched' => $matched,
                         'status' => NewsArticleStatus::PendingAi->value,
                     ]);
-
-                    if ($article['image_url'] !== null) {
-                        $this->cacheImage($newsArticle, $article['image_url']);
-                    }
 
                     $inserted[] = $newsArticle;
                 }
@@ -240,53 +235,6 @@ class RssNewsService
         }
 
         return null;
-    }
-
-    /**
-     * Download the external image and store it locally under storage/app/public/news/.
-     * Updates $article->image_url to the local /storage/news/{filename} URL.
-     * Silently falls back to keeping the original URL on any failure.
-     */
-    private function cacheImage(NewsArticle $article, string $imageUrl): void
-    {
-        try {
-            $response = Http::timeout(5)->withoutVerifying()->get($imageUrl);
-
-            if (! $response->successful()) {
-                return;
-            }
-
-            $contentType = $response->header('Content-Type');
-
-            // Only cache actual images
-            if (! str_starts_with($contentType, 'image/')) {
-                return;
-            }
-
-            // Derive extension from Content-Type (e.g. "image/jpeg" → "jpg")
-            $mime = strtolower(explode(';', $contentType)[0]);
-            $extension = match ($mime) {
-                'image/jpeg' => 'jpg',
-                'image/png' => 'png',
-                'image/gif' => 'gif',
-                'image/webp' => 'webp',
-                'image/svg+xml' => 'svg',
-                default => 'jpg',
-            };
-
-            $filename = md5($imageUrl).'.'.$extension;
-            $path = "news/{$filename}";
-
-            Storage::disk('public')->put($path, $response->body());
-
-            $article->image_url = Storage::disk('public')->url($path);
-            $article->saveQuietly();
-        } catch (\Throwable $e) {
-            Log::info('RssNewsService: image cache skipped', [
-                'url' => $imageUrl,
-                'reason' => $e->getMessage(),
-            ]);
-        }
     }
 
     /**
