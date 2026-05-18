@@ -3,23 +3,16 @@ import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { invitationsApi } from '../../api/invitations';
 
-const INVITABLE_ROLES = [
-  'admin_sm',
-  'sb_owner',
-  'sb_employee',
-  'bb_employee',
-  'sub_franchise_owner',
-  'sub_franchise_admin',
-  'system_admin',
-  'system_admin_readonly',
-];
+const buildInitialForm = (allowedRoles) => ({
+  name:  '',
+  email: '',
+  role:  allowedRoles[0] ?? '',
+});
 
-const INITIAL_FORM = { name: '', email: '', role: 'admin_sm' };
-
-export default function InviteUserModal({ isOpen, onClose, onSuccess }) {
+export default function InviteUserModal({ isOpen, onClose, onSuccess, allowedRoles }) {
   const { t } = useTranslation('common');
 
-  const [form, setForm]         = useState(INITIAL_FORM);
+  const [form, setForm]         = useState(() => buildInitialForm(allowedRoles));
   const [errors, setErrors]     = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError]  = useState('');
@@ -29,7 +22,7 @@ export default function InviteUserModal({ isOpen, onClose, onSuccess }) {
   const [copied, setCopied]     = useState(false);
 
   function handleClose() {
-    setForm(INITIAL_FORM);
+    setForm(buildInitialForm(allowedRoles));
     setErrors({});
     setApiError('');
     setDevLink('');
@@ -147,7 +140,7 @@ export default function InviteUserModal({ isOpen, onClose, onSuccess }) {
 
             <div className="flex justify-end gap-3 pt-1">
               <button
-                onClick={() => { setDevLink(''); setForm(INITIAL_FORM); }}
+                onClick={() => { setDevLink(''); setForm(buildInitialForm(allowedRoles)); }}
                 className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
               >
                 {t('invitation.invite_another')}
@@ -249,7 +242,7 @@ export default function InviteUserModal({ isOpen, onClose, onSuccess }) {
                 errors.role ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-white focus:border-slate-400'
               }`}
             >
-              {INVITABLE_ROLES.map((r) => (
+              {allowedRoles.map((r) => (
                 <option key={r} value={r}>
                   {t(`roles.${r}`, { defaultValue: r })}
                 </option>
@@ -282,7 +275,8 @@ export default function InviteUserModal({ isOpen, onClose, onSuccess }) {
 }
 
 InviteUserModal.propTypes = {
-  isOpen:    PropTypes.bool.isRequired,
-  onClose:   PropTypes.func.isRequired,
-  onSuccess: PropTypes.func.isRequired,
+  isOpen:       PropTypes.bool.isRequired,
+  onClose:      PropTypes.func.isRequired,
+  onSuccess:    PropTypes.func.isRequired,
+  allowedRoles: PropTypes.arrayOf(PropTypes.string).isRequired,
 };
