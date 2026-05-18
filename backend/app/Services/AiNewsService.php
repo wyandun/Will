@@ -118,7 +118,7 @@ class AiNewsService
         $description = mb_substr($article->description ?? '', 0, 600);
 
         $prompt = <<<PROMPT
-Write a compelling 3-sentence news summary in English for Latino small business owners in the USA. They work in construction, roofing, HVAC, restaurants, cleaning, landscaping. Your summary must: (1) clearly explain what happened, (2) say exactly why it matters to their business or daily life, (3) give a practical takeaway they can act on. Be engaging, warm, and direct — like a trusted advisor talking to a friend. Do not use any markdown formatting. No headers, no bold, no bullet points. Plain text only.
+Write a 3-sentence news summary in English for Latino small business owners in the USA (construction, roofing, HVAC, restaurants, cleaning, landscaping). Your summary must: (1) clearly explain what happened, (2) say exactly why it matters to their business or daily life, (3) give one practical takeaway they can act on. Do NOT start with any preamble or introduction. Do NOT use "Here's a summary", "This article", or similar openers. Start directly with the content. Plain text only — no markdown, no headers, no bold.
 
 Title: {$title}
 Description: {$description}
@@ -144,7 +144,7 @@ Eres un asistente para dueños de pequeños negocios latinos en USA (construcci�
 
 Dado el artículo de noticias en inglés, responde ÚNICAMENTE con un objeto JSON válido con exactamente estas dos claves:
 - "title_es": traducción al español del título original, fiel y natural (máximo 120 caracteres)
-- "summary_es": resumen de 3 oraciones en español. Debe: (1) explicar claramente qué pasó, (2) decir exactamente por qué importa para su negocio o vida diaria, (3) dar un paso práctico que puedan tomar. Sé directo y cálido. Sin markdown, sin encabezados, sin negritas. Solo texto plano.
+- "summary_es": resumen de 3 oraciones en español. Debe: (1) explicar claramente qué pasó, (2) decir exactamente por qué importa para su negocio o vida diaria, (3) dar un paso práctico que puedan tomar. NO uses introducciones ni saludos. NO empieces con "Hermano", "Mira", "Aquí" ni nada similar. Empieza directo con el contenido. Sin markdown, sin encabezados, sin negritas. Solo texto plano.
 
 Responde SOLO con el JSON, sin texto adicional, sin bloques de código.
 
