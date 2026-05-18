@@ -65,11 +65,12 @@ class AiNewsService
             }
 
             $summary = $this->summarizeArticle($article);
-            $summaryEs = $this->summarizeArticleEs($article);
+            $spanishResult = $this->summarizeArticleEs($article);
 
             $article->update([
                 'ai_summary' => $summary !== null ? $this->stripMarkdown($summary) : null,
-                'ai_summary_es' => $summaryEs !== null ? $this->stripMarkdown($summaryEs) : null,
+                'ai_summary_es' => $spanishResult['summary'] !== null ? $this->stripMarkdown($spanishResult['summary']) : null,
+                'title_es' => $spanishResult['title'] !== null ? $this->stripMarkdown($spanishResult['title']) : null,
                 'ai_selected' => true,
                 'status' => NewsArticleStatus::PendingReview,
             ]);
@@ -128,21 +129,75 @@ PROMPT;
 
     /**
      * Call Claude with the Spanish summarization prompt for a single article.
-     * Returns the Spanish summary string, or null on failure.
+     * Returns an array with 'title' (translated title) and 'summary' (3-sentence summary),
+     * both in Spanish. Either value may be null on failure.
+     *
+     * @return array{title: string|null, summary: string|null}
      */
-    private function summarizeArticleEs(NewsArticle $article): ?string
+    private function summarizeArticleEs(NewsArticle $article): array
     {
         $title = $article->title;
         $description = mb_substr($article->description ?? '', 0, 600);
 
         $prompt = <<<PROMPT
-Escribe un resumen de 3 oraciones en español para dueños de pequeños negocios latinos en USA. Trabajan en construcción, techado, HVAC, restaurantes, limpieza y jardinería. Tu resumen debe: (1) explicar claramente qué pasó, (2) decir exactamente por qué importa para su negocio o vida diaria, (3) dar un paso práctico que puedan tomar. Sé directo y cálido — como un asesor de confianza hablando con un amigo. No uses ningún formato markdown. Sin encabezados, sin negritas, sin viñetas. Solo texto plano.
+Eres un asistente para dueños de pequeños negocios latinos en USA (construcción, techado, HVAC, restaurantes, limpieza, jardinería).
+
+Dado el artículo de noticias en inglés, responde ÚNICAMENTE con un objeto JSON válido con exactamente estas dos claves:
+- "title_es": traducción al español del título original, fiel y natural (máximo 120 caracteres)
+- "summary_es": resumen de 3 oraciones en español. Debe: (1) explicar claramente qué pasó, (2) decir exactamente por qué importa para su negocio o vida diaria, (3) dar un paso práctico que puedan tomar. Sé directo y cálido. Sin markdown, sin encabezados, sin negritas. Solo texto plano.
+
+Responde SOLO con el JSON, sin texto adicional, sin bloques de código.
 
 Title: {$title}
 Description: {$description}
 PROMPT;
 
-        return $this->callApi($prompt, 512);
+        $raw = $this->callApi($prompt, 768);
+
+        if ($raw === null) {
+            return ['title' => null, 'summary' => null];
+        }
+
+        return $this->parseSpanishResult($raw);
+    }
+
+    /**
+     * Parse the JSON response from the Spanish summarization prompt.
+     * Returns an array with 'title' and 'summary' keys.
+     *
+     * @return array{title: string|null, summary: string|null}
+     */
+    private function parseSpanishResult(string $raw): array
+    {
+        // Strip markdown code fences if present
+        $clean = preg_replace('/```(?:json)?\s*([\s\S]*?)\s*```/', '$1', $raw) ?? $raw;
+        $clean = trim($clean);
+
+        try {
+            $decoded = json_decode($clean, true, 512, JSON_THROW_ON_ERROR);
+
+            if (! is_array($decoded)) {
+                Log::warning('AiNewsService: Spanish result is not a JSON object', ['raw' => mb_substr($raw, 0, 500)]);
+
+                return ['title' => null, 'summary' => null];
+            }
+
+            return [
+                'title' => isset($decoded['title_es']) && is_string($decoded['title_es'])
+                    ? $decoded['title_es']
+                    : null,
+                'summary' => isset($decoded['summary_es']) && is_string($decoded['summary_es'])
+                    ? $decoded['summary_es']
+                    : null,
+            ];
+        } catch (\JsonException $e) {
+            Log::warning('AiNewsService: JSON parse error in Spanish result', [
+                'error' => $e->getMessage(),
+                'raw' => mb_substr($raw, 0, 500),
+            ]);
+
+            return ['title' => null, 'summary' => null];
+        }
     }
 
     /**

@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $source
  * @property string $article_url
  * @property string $title
+ * @property string|null $title_es
  * @property string|null $description
  * @property string|null $image_url
  * @property Carbon|null $published_at
@@ -29,6 +30,7 @@ class NewsArticle extends Model
         'source',
         'article_url',
         'title',
+        'title_es',
         'description',
         'image_url',
         'published_at',

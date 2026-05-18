@@ -96,7 +96,9 @@ function ArticleCard({ article, onPublish, onReject }) {
   const isPublished = article.status === 'published';
 
   // Resolve which summary text to display based on the global app language
-  const summaryText = i18n.language.startsWith('es')
+  const isEs = i18n.language.startsWith('es');
+  const titleText = isEs ? (article.title_es ?? article.title) : article.title;
+  const summaryText = isEs
     ? (article.ai_summary_es ?? article.ai_summary ?? null)
     : (article.ai_summary ?? null);
 
@@ -137,7 +139,7 @@ function ArticleCard({ article, onPublish, onReject }) {
         className="flex items-start gap-1.5 group"
       >
         <p className="text-sm font-semibold text-slate-800 group-hover:text-blue-600 transition-colors leading-snug">
-          {article.title}
+          {titleText}
         </p>
         <IconExternalLink className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-slate-400 group-hover:text-blue-500 transition-colors" />
       </a>
@@ -437,6 +439,7 @@ ArticleCard.propTypes = {
     title: PropTypes.string.isRequired,
     article_url: PropTypes.string.isRequired,
     image_url: PropTypes.string,
+    title_es: PropTypes.string,
     ai_summary: PropTypes.string,
     ai_summary_es: PropTypes.string,
     keywords_matched: PropTypes.arrayOf(PropTypes.string),
