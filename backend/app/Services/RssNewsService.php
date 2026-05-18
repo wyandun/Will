@@ -65,8 +65,19 @@ class RssNewsService
                         continue;
                     }
 
-                    // Skip already-known URLs
-                    if (NewsArticle::where('article_url', $article['url'])->exists()) {
+                    // If the article already exists, update image_url when it is null
+                    // and the RSS feed provides one (e.g. after the localhost-url cleanup migration).
+                    $existing = NewsArticle::where('article_url', $article['url'])->first();
+
+                    if ($existing !== null) {
+                        if ($existing->image_url === null && $article['image_url'] !== null) {
+                            $existing->update(['image_url' => $article['image_url']]);
+                            Log::info("RssNewsService: updated missing image_url for article [{$existing->id}]", [
+                                'article_url' => $article['url'],
+                                'image_url' => $article['image_url'],
+                            ]);
+                        }
+
                         continue;
                     }
 
