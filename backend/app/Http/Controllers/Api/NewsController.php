@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class NewsController extends Controller
 {
@@ -93,26 +94,42 @@ class NewsController extends Controller
             ], 422);
         }
 
-        $post = DB::transaction(function () use ($request, $newsArticle) {
-            $postData = [
-                'author_id' => $request->user()->id,
-                'title' => $newsArticle->title,
-                'body' => $this->buildPostBody($newsArticle),
-                'type' => 'news',
-                'visibility' => 'global',
-                'is_pinned' => false,
-                'published_at' => now(),
-            ];
+        try {
+            $post = DB::transaction(function () use ($request, $newsArticle) {
+                $postData = [
+                    'author_id' => $request->user()->id,
+                    'title' => $newsArticle->title,
+                    'body' => $this->buildPostBody($newsArticle),
+                    'type' => 'news',
+                    'visibility' => 'global',
+                    'is_pinned' => false,
+                    'published_at' => now(),
+                ];
 
-            if ($newsArticle->image_url) {
-                $postData['image_url'] = $newsArticle->image_url;
-            }
+                if ($newsArticle->image_url) {
+                    $postData['image_url'] = $newsArticle->image_url;
+                }
 
-            $post = Post::create($postData);
-            $newsArticle->update(['status' => NewsArticleStatus::Published, 'post_id' => $post->id]);
+                $post = Post::create($postData);
+                $newsArticle->update(['status' => NewsArticleStatus::Published, 'post_id' => $post->id]);
 
-            return $post;
-        });
+                return $post;
+            });
+        } catch (\Throwable $e) {
+            Log::error('NewsController::publish failed', [
+                'article_id' => $newsArticle->id,
+                'article_url' => $newsArticle->article_url,
+                'user_id' => $request->user()->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'message' => 'Failed to publish article: '.$e->getMessage(),
+            ], 500);
+        }
 
         $newsArticle->refresh();
 
