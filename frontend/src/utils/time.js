@@ -1,6 +1,6 @@
 export function timeAgo(dateStr, locale = navigator.language) {
   if (!dateStr) return '';
-  const normalized = /[Z+-]\d*$/.test(dateStr) ? dateStr : dateStr.replace(' ', 'T') + 'Z';
+  const normalized = /Z$|[+-]\d{2}:\d{2}$/.test(dateStr) ? dateStr : dateStr.replace(' ', 'T') + 'Z';
   const diffSeconds = Math.round((new Date(normalized).getTime() - Date.now()) / 1000);
   if (isNaN(diffSeconds)) return '';
   const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });

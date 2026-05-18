@@ -31,6 +31,20 @@ class FranchisePolicy
     }
 
     /**
+     * Add a member (admin or client) to a franchise.
+     * Superadmin can add to any franchise; admin_sm only to their own.
+     */
+    public function addMember(User $user, Franchise $franchise): bool
+    {
+        if ($user->hasRole(Role::SUPERADMIN)) {
+            return true;
+        }
+
+        return $user->hasRole(Role::ADMIN_SM)
+            && (int) $user->sm_franchise_id === (int) $franchise->id;
+    }
+
+    /**
      * Create a franchise: superadmin only.
      */
     public function create(User $user): bool

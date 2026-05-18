@@ -38,7 +38,7 @@ class InvitationService
      *  3. Email has a pending invitation        → validation error (already pending).
      *  4. Email is brand new                    → create user, assign role, notify.
      *
-     * @param  array{name: string, email: string, role: string}  $data
+     * @param  array{name: string, email: string, role: string, sm_franchise_id?: int|null}  $data
      * @return array{user: User, activation_url: string|null}
      *
      * @throws ValidationException
@@ -85,7 +85,9 @@ class InvitationService
                 // Placeholder password — overwritten when the user accepts the invitation.
                 'password' => Hash::make(Str::random(32)),
                 'invitation_expires_at' => now()->addDays(self::EXPIRY_DAYS),
-                'sm_franchise_id' => $invitedBy->sm_franchise_id,
+                // Payload sm_franchise_id takes precedence (superadmin inviting to a specific
+                // franchise). Falls back to the inviter's own franchise for admin_sm inviters.
+                'sm_franchise_id' => $data['sm_franchise_id'] ?? $invitedBy->sm_franchise_id,
             ]);
 
             // Security: invitation_token and inviter_id are not mass-assignable — set explicitly

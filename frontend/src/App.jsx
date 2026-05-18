@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import AuthenticatedLayout from './components/AuthenticatedLayout';
 import FranchisesPage from './pages/franchises/FranchisesPage';
+import FranchiseDetailPage from './pages/franchises/FranchiseDetailPage';
 import CompaniesPage from './pages/companies/CompaniesPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
 import FeedPage from './pages/feed/FeedPage';
@@ -84,6 +85,14 @@ export default function App() {
             element={
               <RoleRoute roles={ADMIN_ROLES}>
                 <FranchisesPage />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/franchises/:id"
+            element={
+              <RoleRoute roles={ADMIN_ROLES}>
+                <FranchiseDetailPage />
               </RoleRoute>
             }
           />

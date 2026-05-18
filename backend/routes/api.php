@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FeedController;
 use App\Http\Controllers\Api\FranchiseController;
+use App\Http\Controllers\Api\FranchiseMemberController;
 use App\Http\Controllers\Api\InvitationController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\ProfileController;
@@ -62,7 +63,10 @@ Route::prefix('auth')->middleware('auth:sanctum')->group(function () {
 // ---------------------------------------------------------------------------
 Route::middleware('auth:sanctum')->group(function () {
     // Franchises
+    // Sub-routes declared BEFORE apiResource to prevent the {franchise} wildcard
+    // from capturing literal path segments like "members", "admins", "clients".
     Route::patch('franchises/{franchise}/toggle-status', [FranchiseController::class, 'toggleStatus']);
+    Route::get('franchises/{franchise}/members', [FranchiseMemberController::class, 'members']);
     Route::apiResource('franchises', FranchiseController::class);
 
     // close-deal must be declared BEFORE apiResource to prevent {company}
