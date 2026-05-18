@@ -15,7 +15,7 @@ class FetchNewsJob implements ShouldQueue
 
     public int $tries = 2;
 
-    public int $timeout = 120;
+    public int $timeout = 300;
 
     public function handle(RssNewsService $rss, AiNewsService $ai): void
     {
@@ -34,7 +34,7 @@ class FetchNewsJob implements ShouldQueue
         }
 
         // Step 3: Grab up to batch_size pending_ai articles (both new and re-queued)
-        $batchSize = (int) config('services.anthropic.batch_size', 15);
+        $batchSize = (int) config('services.anthropic.batch_size', 30);
         $pending = $rss->getPendingForAi($batchSize);
 
         if ($pending->isEmpty()) {

@@ -97,7 +97,7 @@ class AiNewsService
             $numbered .= "[{$n}] {$article->title}\n{$desc}\n\n";
         }
 
-        $prompt = "You are selecting news for Latino small business owners in the USA (construction, roofing, HVAC, restaurants, cleaning, landscaping). Pick the 10 most relevant articles from this list. Return ONLY a JSON array of numbers like [1,3,5,7,8,9,10,12,13,14]. No explanation.\n\n{$numbered}";
+        $prompt = "You are selecting news for Latino small business owners in the USA (construction, roofing, HVAC, restaurants, cleaning, landscaping). Pick the 15 most relevant articles from this list. Return ONLY a JSON array of numbers like [1,3,5,7,8,9,10,12,13,14,15,16,17,18,19]. No explanation.\n\n{$numbered}";
 
         $response = $this->callApi($prompt, 256);
 
