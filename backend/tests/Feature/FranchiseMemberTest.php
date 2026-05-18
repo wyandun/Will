@@ -46,7 +46,7 @@ class FranchiseMemberTest extends TestCase
     public function test_superadmin_can_list_members(): void
     {
         $superadmin = $this->createSuperadmin();
-        $franchise  = Franchise::factory()->create();
+        $franchise = Franchise::factory()->create();
 
         $response = $this->actingAs($superadmin)
             ->getJson("/api/v1/franchises/{$franchise->id}/members");
@@ -68,7 +68,7 @@ class FranchiseMemberTest extends TestCase
     public function test_admin_sm_can_list_own_franchise_members(): void
     {
         $franchise = Franchise::factory()->create();
-        $admin     = $this->createAdminSm($franchise);
+        $admin = $this->createAdminSm($franchise);
 
         $response = $this->actingAs($admin)
             ->getJson("/api/v1/franchises/{$franchise->id}/members");
@@ -80,9 +80,9 @@ class FranchiseMemberTest extends TestCase
 
     public function test_admin_sm_cannot_list_other_franchise_members(): void
     {
-        $myFranchise    = Franchise::factory()->create();
+        $myFranchise = Franchise::factory()->create();
         $otherFranchise = Franchise::factory()->create();
-        $admin          = $this->createAdminSm($myFranchise);
+        $admin = $this->createAdminSm($myFranchise);
 
         $response = $this->actingAs($admin)
             ->getJson("/api/v1/franchises/{$otherFranchise->id}/members");
@@ -95,7 +95,7 @@ class FranchiseMemberTest extends TestCase
         SpatieRole::firstOrCreate(['name' => Role::SB_OWNER, 'guard_name' => 'web']);
 
         $superadmin = $this->createSuperadmin();
-        $franchise  = Franchise::factory()->create();
+        $franchise = Franchise::factory()->create();
 
         // 2 admins
         $this->createAdminSm($franchise);
@@ -103,7 +103,7 @@ class FranchiseMemberTest extends TestCase
 
         // 1 client
         $client = User::factory()->create([
-            'sm_franchise_id'        => $franchise->id,
+            'sm_franchise_id' => $franchise->id,
             'invitation_accepted_at' => now(),
         ]);
         $client->assignRole(Role::SB_OWNER);

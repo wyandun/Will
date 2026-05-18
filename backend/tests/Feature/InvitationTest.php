@@ -619,7 +619,7 @@ class InvitationTest extends TestCase
     {
         Notification::fake();
         $superadmin = $this->createSuperadmin();
-        $franchise  = $this->createFranchise();
+        $franchise = $this->createFranchise();
 
         $validRoles = [
             Role::SYSTEM_ADMIN,
@@ -641,7 +641,7 @@ class InvitationTest extends TestCase
             $response = $this->actingAs($superadmin)
                 ->postJson('/api/v1/invitations', $this->validInvitePayload(array_merge([
                     'email' => "role_test_{$i}@test.com",
-                    'role'  => $role,
+                    'role' => $role,
                 ], $extra)));
 
             $this->assertSame(201, $response->status(), "Role {$role} should be accepted.");
@@ -1443,21 +1443,21 @@ class InvitationTest extends TestCase
     {
         Notification::fake();
         $superadmin = $this->createSuperadmin();
-        $franchise  = $this->createFranchise();
+        $franchise = $this->createFranchise();
 
         $response = $this->actingAs($superadmin)
             ->postJson('/api/v1/invitations', [
-                'name'            => 'Admin For Franchise',
-                'email'           => 'newadmin@test.com',
-                'role'            => Role::ADMIN_SM,
+                'name' => 'Admin For Franchise',
+                'email' => 'newadmin@test.com',
+                'role' => Role::ADMIN_SM,
                 'sm_franchise_id' => $franchise->id,
             ]);
 
         $response->assertStatus(201);
 
         $this->assertDatabaseHas('users', [
-            'email'            => 'newadmin@test.com',
-            'sm_franchise_id'  => $franchise->id,
+            'email' => 'newadmin@test.com',
+            'sm_franchise_id' => $franchise->id,
         ]);
     }
 
@@ -1467,9 +1467,9 @@ class InvitationTest extends TestCase
 
         $response = $this->actingAs($superadmin)
             ->postJson('/api/v1/invitations', [
-                'name'  => 'Admin No Franchise',
+                'name' => 'Admin No Franchise',
                 'email' => 'admin_nofr@test.com',
-                'role'  => Role::ADMIN_SM,
+                'role' => Role::ADMIN_SM,
                 // no sm_franchise_id
             ]);
 
@@ -1480,24 +1480,24 @@ class InvitationTest extends TestCase
     public function test_cannot_invite_with_duplicate_accepted_email_across_franchises(): void
     {
         Notification::fake();
-        $superadmin  = $this->createSuperadmin();
-        $franchiseA  = $this->createFranchise();
-        $franchiseB  = $this->createFranchise();
+        $superadmin = $this->createSuperadmin();
+        $franchiseA = $this->createFranchise();
+        $franchiseB = $this->createFranchise();
 
         // Active user already accepted in franchise A
         User::factory()->create([
-            'email'                  => 'duplicate@test.com',
+            'email' => 'duplicate@test.com',
             'invitation_accepted_at' => now()->subDay(),
-            'invitation_token'       => null,
-            'sm_franchise_id'        => $franchiseA->id,
+            'invitation_token' => null,
+            'sm_franchise_id' => $franchiseA->id,
         ]);
 
         // Try to invite the same email to franchise B
         $response = $this->actingAs($superadmin)
             ->postJson('/api/v1/invitations', [
-                'name'            => 'Dup User',
-                'email'           => 'duplicate@test.com',
-                'role'            => Role::SB_OWNER,
+                'name' => 'Dup User',
+                'email' => 'duplicate@test.com',
+                'role' => Role::SB_OWNER,
                 'sm_franchise_id' => $franchiseB->id,
             ]);
 
@@ -1510,14 +1510,14 @@ class InvitationTest extends TestCase
     {
         Notification::fake();
         $superadmin = $this->createSuperadmin();
-        $franchise  = $this->createFranchise();
+        $franchise = $this->createFranchise();
 
         // Send invitation with explicit franchise
         $this->actingAs($superadmin)
             ->postJson('/api/v1/invitations', [
-                'name'            => 'Accept Admin',
-                'email'           => 'accept.admin@test.com',
-                'role'            => Role::ADMIN_SM,
+                'name' => 'Accept Admin',
+                'email' => 'accept.admin@test.com',
+                'role' => Role::ADMIN_SM,
                 'sm_franchise_id' => $franchise->id,
             ]);
 
@@ -1525,15 +1525,15 @@ class InvitationTest extends TestCase
 
         // Accept the invitation
         $this->postJson("/api/v1/invitations/{$user->invitation_token}/accept", [
-            'password'              => 'MySecure123!',
+            'password' => 'MySecure123!',
             'password_confirmation' => 'MySecure123!',
         ])->assertOk();
 
         // Franchise link must survive the acceptance flow
         $this->assertDatabaseHas('users', [
-            'id'                     => $user->id,
-            'sm_franchise_id'        => $franchise->id,
-            'invitation_token'       => null,
+            'id' => $user->id,
+            'sm_franchise_id' => $franchise->id,
+            'invitation_token' => null,
         ]);
         $this->assertNotNull($user->fresh()->invitation_accepted_at);
     }
