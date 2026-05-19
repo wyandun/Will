@@ -76,7 +76,7 @@ class FetchNewsJob implements ShouldQueue
             'processed' => 0,
             'message' => 'Fetch failed. Please try again.',
         ], now()->addHours(12));
-        Cache::forget(NewsCacheKeys::FETCH_LOCK);
+        $this->finalize();
     }
 
     private function finalize(): void

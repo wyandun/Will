@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\NewsArticleStatus;
+use App\Exceptions\ArticleAlreadyPublishedException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\NewsArticleResource;
 use App\Jobs\FetchNewsJob;
@@ -70,7 +71,17 @@ class NewsController extends Controller
 
         // Lock acquired — dispatch the job. The job will call finalize() which releases
         // the lock on success. On failure, FetchNewsJob::failed() releases it instead.
-        FetchNewsJob::dispatch();
+        try {
+            FetchNewsJob::dispatch();
+        } catch (\Throwable $e) {
+            Cache::forget(NewsCacheKeys::FETCH_LOCK);
+            Log::error('NewsController::fetch failed to dispatch job', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to queue news fetch. Please try again.',
+            ], 500);
+        }
 
         return response()->json([
             'success' => true,
@@ -107,7 +118,7 @@ class NewsController extends Controller
                 $locked = NewsArticle::lockForUpdate()->findOrFail($newsArticle->id);
 
                 if (! $locked->status->canBePublished()) {
-                    throw new \RuntimeException('already_published');
+                    throw new ArticleAlreadyPublishedException;
                 }
 
                 // Post type and visibility are plain strings — valid values:
@@ -133,7 +144,7 @@ class NewsController extends Controller
                 return $post;
             });
         } catch (\Throwable $e) {
-            if ($e instanceof \RuntimeException && $e->getMessage() === 'already_published') {
+            if ($e instanceof ArticleAlreadyPublishedException) {
                 return response()->json([
                     'success' => false,
                     'message' => NewsArticleStatus::Published->transitionErrorMessage('published'),
@@ -171,14 +182,22 @@ class NewsController extends Controller
     {
         $this->authorize('reject', $newsArticle);
 
-        if (! $newsArticle->status->canBeRejected()) {
+        try {
+            DB::transaction(function () use ($newsArticle) {
+                $locked = NewsArticle::lockForUpdate()->findOrFail($newsArticle->id);
+
+                if (! $locked->status->canBeRejected()) {
+                    throw new \RuntimeException($locked->status->transitionErrorMessage('rejected'));
+                }
+
+                $locked->update(['status' => NewsArticleStatus::Rejected]);
+            });
+        } catch (\RuntimeException $e) {
             return response()->json([
                 'success' => false,
-                'message' => $newsArticle->status->transitionErrorMessage('rejected'),
+                'message' => $e->getMessage(),
             ], 422);
         }
-
-        $newsArticle->update(['status' => NewsArticleStatus::Rejected]);
 
         return response()->json([
             'success' => true,
