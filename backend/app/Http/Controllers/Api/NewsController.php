@@ -37,10 +37,10 @@ class NewsController extends Controller
                 'items' => NewsArticleResource::collection($articles->items())->resolve(),
                 'meta' => [
                     'current_page' => $articles->currentPage(),
-                    'last_page'    => $articles->lastPage(),
-                    'total'        => $articles->total(),
+                    'last_page' => $articles->lastPage(),
+                    'total' => $articles->total(),
                 ],
-                'last_fetch_at'     => Cache::get(NewsCacheKeys::LAST_FETCH_AT),
+                'last_fetch_at' => Cache::get(NewsCacheKeys::LAST_FETCH_AT),
                 'last_fetch_result' => Cache::get(NewsCacheKeys::FETCH_RESULT),
                 'fetch_in_progress' => Cache::has(NewsCacheKeys::FETCH_LOCK),
             ],
@@ -63,7 +63,7 @@ class NewsController extends Controller
         if (! Cache::add(NewsCacheKeys::FETCH_LOCK, true, now()->addMinutes($lockTtl))) {
             return response()->json([
                 'success' => true,
-                'data'    => ['queued' => false, 'last_fetch_at' => Cache::get(NewsCacheKeys::LAST_FETCH_AT)],
+                'data' => ['queued' => false, 'last_fetch_at' => Cache::get(NewsCacheKeys::LAST_FETCH_AT)],
                 'message' => 'News fetch already in progress.',
             ]);
         }
@@ -75,8 +75,8 @@ class NewsController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'queued'            => true,
-                'last_fetch_at'     => Cache::get(NewsCacheKeys::LAST_FETCH_AT),
+                'queued' => true,
+                'last_fetch_at' => Cache::get(NewsCacheKeys::LAST_FETCH_AT),
                 'last_fetch_result' => Cache::get(NewsCacheKeys::FETCH_RESULT),
             ],
             'message' => 'News fetch queued. Articles will appear shortly.',
@@ -109,12 +109,12 @@ class NewsController extends Controller
         try {
             $post = DB::transaction(function () use ($request, $newsArticle) {
                 $postData = [
-                    'author_id'    => $request->user()->id,
-                    'title'        => $newsArticle->title,
-                    'body'         => $this->buildPostBody($newsArticle),
-                    'type'         => 'news',
-                    'visibility'   => 'global',
-                    'is_pinned'    => false,
+                    'author_id' => $request->user()->id,
+                    'title' => $newsArticle->title,
+                    'body' => $this->buildPostBody($newsArticle),
+                    'type' => 'news',
+                    'visibility' => 'global',
+                    'is_pinned' => false,
                     'published_at' => now(),
                 ];
 
@@ -129,16 +129,16 @@ class NewsController extends Controller
             });
         } catch (\Throwable $e) {
             Log::error('NewsController::publish failed', [
-                'article_id'  => $newsArticle->id,
+                'article_id' => $newsArticle->id,
                 'article_url' => $newsArticle->article_url,
-                'user_id'     => $request->user()->id,
-                'error'       => $e->getMessage(),
+                'user_id' => $request->user()->id,
+                'error' => $e->getMessage(),
                 // Trace is captured automatically by Laravel — do not log getTraceAsString().
             ]);
 
             return response()->json([
                 'success' => false,
-                'data'    => null,
+                'data' => null,
                 'message' => 'Failed to publish the article. Please try again.',
             ], 500);
         }
@@ -147,7 +147,7 @@ class NewsController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => ['article' => NewsArticleResource::make($newsArticle)->resolve(), 'post_id' => $newsArticle->post_id],
+            'data' => ['article' => NewsArticleResource::make($newsArticle)->resolve(), 'post_id' => $newsArticle->post_id],
             'message' => 'Article published to Feed.',
         ]);
     }
@@ -163,8 +163,8 @@ class NewsController extends Controller
         if ($newsArticle->status !== NewsArticleStatus::PendingReview) {
             $reason = match ($newsArticle->status) {
                 NewsArticleStatus::Published => 'Article is already published.',
-                NewsArticleStatus::Rejected  => 'Article is already rejected.',
-                default                      => 'Only articles pending review can be rejected.',
+                NewsArticleStatus::Rejected => 'Article is already rejected.',
+                default => 'Only articles pending review can be rejected.',
             };
 
             return response()->json(['success' => false, 'message' => $reason], 422);
@@ -174,7 +174,7 @@ class NewsController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => null,
+            'data' => null,
             'message' => 'Article rejected.',
         ]);
     }
@@ -188,8 +188,8 @@ class NewsController extends Controller
         // Post.body is plain text — must never be rendered as raw HTML.
         // React's default text rendering escapes it; do not use dangerouslySetInnerHTML.
         $summary = strip_tags($article->ai_summary ?? $article->description ?? '');
-        $url     = $article->article_url;
-        $source  = strip_tags($article->source);
+        $url = $article->article_url;
+        $source = strip_tags($article->source);
 
         return "{$summary}\n\nSource: {$source}\n{$url}";
     }

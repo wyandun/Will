@@ -48,8 +48,8 @@ class FetchNewsJob implements ShouldQueue
             Log::info('FetchNewsJob: no articles pending AI processing — pool is empty');
             Cache::put(NewsCacheKeys::FETCH_RESULT, [
                 'new_from_rss' => 0,
-                'processed'    => 0,
-                'message'      => 'All recent articles have already been processed. No new content found.',
+                'processed' => 0,
+                'message' => 'All recent articles have already been processed. No new content found.',
             ], now()->addHours(12));
             $this->finalize();
 
@@ -61,8 +61,8 @@ class FetchNewsJob implements ShouldQueue
 
         Cache::put(NewsCacheKeys::FETCH_RESULT, [
             'new_from_rss' => count($newArticles),
-            'processed'    => $pending->count(),
-            'message'      => null,
+            'processed' => $pending->count(),
+            'message' => null,
         ], now()->addHours(12));
 
         $this->finalize();
