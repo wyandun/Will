@@ -21,8 +21,11 @@ class EventResource extends JsonResource
             'title' => $this->title,
             'description' => $this->description,
             'location' => $this->location,
-            'start_at' => $this->start_at->toISOString(),
-            'end_at' => $this->end_at->toISOString(),
+            // Dates are returned without timezone offset (no "Z" suffix) so the frontend
+            // displays the exact time the user entered. The stored timezone is available
+            // separately in the "timezone" field for reference purposes.
+            'start_at' => $this->start_at->format('Y-m-d\TH:i:s'),
+            'end_at' => $this->end_at->format('Y-m-d\TH:i:s'),
             'all_day' => $this->all_day,
             'timezone' => $this->timezone,
             'color' => $this->color,
