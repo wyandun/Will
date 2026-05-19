@@ -496,5 +496,9 @@
     "rejected_success": "Artículo rechazado.",
     "no_articles": "No hay artículos listos para revisar.",
     "no_articles_hint": "Haz clic en Buscar Noticias para obtener artículos relevantes de fuentes externas."
+  },
+  "policies": {
+    "unauthorized": "No tenés permiso para realizar esta acción.",
+    "franchise_required": "Debés estar asignado a una franquicia para realizar esta acción."
   }
 }

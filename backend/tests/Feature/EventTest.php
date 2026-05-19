@@ -33,6 +33,17 @@ class EventTest extends TestCase
         return User::factory()->create($attrs);
     }
 
+    private function createAdminSm(?int $franchiseId = null): User
+    {
+        SpatieRole::firstOrCreate(['name' => Role::ADMIN_SM, 'guard_name' => 'web']);
+
+        $franchise = $franchiseId ? Franchise::find($franchiseId) : Franchise::factory()->create();
+        $user = User::factory()->create(['sm_franchise_id' => $franchise->id]);
+        $user->assignRole(Role::ADMIN_SM);
+
+        return $user;
+    }
+
     private function validEventData(array $overrides = []): array
     {
         return array_merge([
@@ -105,9 +116,9 @@ class EventTest extends TestCase
     // POST /api/v1/events (store)
     // ===========================================================================
 
-    public function test_authenticated_user_can_create_event(): void
+    public function test_admin_sm_with_franchise_can_create_event(): void
     {
-        $user = $this->createUser();
+        $user = $this->createAdminSm();
 
         $response = $this->actingAs($user)->postJson('/api/v1/events', $this->validEventData());
 
@@ -120,6 +131,37 @@ class EventTest extends TestCase
             'title' => 'Team Standup',
             'user_id' => $user->id,
         ]);
+    }
+
+    public function test_user_without_role_cannot_create_event(): void
+    {
+        $user = $this->createUser();
+
+        $response = $this->actingAs($user)->postJson('/api/v1/events', $this->validEventData());
+
+        $response->assertStatus(403);
+    }
+
+    public function test_admin_sm_without_franchise_cannot_create_event(): void
+    {
+        SpatieRole::firstOrCreate(['name' => Role::ADMIN_SM, 'guard_name' => 'web']);
+
+        $user = User::factory()->create(['sm_franchise_id' => null]);
+        $user->assignRole(Role::ADMIN_SM);
+
+        $response = $this->actingAs($user)->postJson('/api/v1/events', $this->validEventData());
+
+        $response->assertStatus(403);
+    }
+
+    public function test_superadmin_can_create_event(): void
+    {
+        $superadmin = $this->createSuperadmin();
+
+        $response = $this->actingAs($superadmin)->postJson('/api/v1/events', $this->validEventData());
+
+        $response->assertStatus(201);
+        $response->assertJsonPath('success', true);
     }
 
     public function test_event_requires_title(): void
@@ -174,7 +216,7 @@ class EventTest extends TestCase
 
     public function test_all_day_normalizes_times_to_midnight(): void
     {
-        $user = $this->createUser();
+        $user = $this->createAdminSm();
 
         $response = $this->actingAs($user)->postJson('/api/v1/events', $this->validEventData([
             'all_day' => true,

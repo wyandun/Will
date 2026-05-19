@@ -496,5 +496,9 @@
     "rejected_success": "Article rejected.",
     "no_articles": "No articles ready for review.",
     "no_articles_hint": "Click Fetch News to search for relevant articles from external sources."
+  },
+  "policies": {
+    "unauthorized": "You don't have permission to perform this action.",
+    "franchise_required": "You must be assigned to a franchise to perform this action."
   }
 }
