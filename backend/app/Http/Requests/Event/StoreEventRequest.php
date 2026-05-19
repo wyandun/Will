@@ -22,6 +22,8 @@ class StoreEventRequest extends AuthenticatedRequest
             'all_day' => ['sometimes', 'boolean'],
             'timezone' => ['required', 'string', 'timezone'],
             'color' => ['sometimes', 'string', Rule::in(EventColor::values())],
+            'visibility' => ['sometimes', 'string', Rule::in(['private', 'franchise', 'public'])],
+            'type' => ['sometimes', 'string', Rule::in(['casual', 'meeting', 'deadline', 'reminder', 'training'])],
         ];
     }
 }
