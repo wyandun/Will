@@ -13,12 +13,20 @@ class FetchNewsJob implements ShouldQueue
 {
     use Queueable;
 
-    public int $tries = 2;
+    public int $tries = 1;
 
     public int $timeout = 300;
 
     public function handle(RssNewsService $rss, AiNewsService $ai): void
     {
+        // Acquire lock inside the job to guard against concurrent runs caused by
+        // queue backlog exceeding the controller-side lock TTL (5 min).
+        if (! Cache::add('news_fetch_lock', true, now()->addMinutes(10))) {
+            Log::warning('FetchNewsJob: lock already held — aborting duplicate run');
+
+            return;
+        }
+
         Log::info('FetchNewsJob: starting news fetch');
 
         // Step 1: Fetch new articles from RSS feeds

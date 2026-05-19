@@ -25,7 +25,7 @@ class NewsController extends Controller
         $this->authorize('viewAny', NewsArticle::class);
 
         $query = NewsArticle::query()
-            ->where('status', NewsArticleStatus::PendingReview->value)
+            ->where('status', NewsArticleStatus::PendingReview)
             ->where('ai_selected', true)
             ->orderByDesc('fetched_at');
 
@@ -175,6 +175,10 @@ class NewsController extends Controller
     {
         $summary = strip_tags($article->ai_summary ?? $article->description ?? '');
         $url = filter_var($article->article_url, FILTER_VALIDATE_URL) ? $article->article_url : '';
+
+        if (empty($url)) {
+            Log::warning('NewsController: article_url failed validation', ['article_id' => $article->id, 'url' => $article->article_url]);
+        }
         $source = strip_tags($article->source);
 
         return "{$summary}\n\nSource: {$source}\n{$url}";
