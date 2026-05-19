@@ -66,7 +66,13 @@ class NewsArticle extends Model
      */
     public function hasValidUrl(): bool
     {
-        return (bool) filter_var($this->article_url, FILTER_VALIDATE_URL);
+        if (! filter_var($this->article_url, FILTER_VALIDATE_URL)) {
+            return false;
+        }
+
+        $scheme = parse_url($this->article_url, PHP_URL_SCHEME);
+
+        return in_array($scheme, ['http', 'https'], true);
     }
 
     /**
