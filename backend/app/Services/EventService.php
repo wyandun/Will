@@ -8,6 +8,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class EventService
 {
@@ -54,7 +55,7 @@ class EventService
     public function create(User $user, array $data): Event
     {
         $data['user_id'] = $user->id;
-        $data['visibility'] = 'public';
+        $data['visibility'] = $data['visibility'] ?? 'private';
         $data['type'] = $data['type'] ?? 'casual';
 
         $this->normalizeAllDay($data);
@@ -73,6 +74,14 @@ class EventService
      */
     public function update(Event $event, array $data): Event
     {
+        if (isset($data['end_at']) && ! isset($data['start_at'])) {
+            if (Carbon::parse($data['end_at'])->lt($event->start_at)) {
+                throw ValidationException::withMessages([
+                    'end_at' => ['The end date must be after or equal to the start date.'],
+                ]);
+            }
+        }
+
         $this->normalizeAllDay($data);
 
         $event->update($data);

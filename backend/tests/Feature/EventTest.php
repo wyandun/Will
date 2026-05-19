@@ -103,6 +103,7 @@ class EventTest extends TestCase
                     'all_day',
                     'timezone',
                     'color',
+                    'visibility',
                     'type',
                     'created_by',
                     'created_at',
@@ -427,5 +428,116 @@ class EventTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertJsonPath('data.id', $event->id);
+    }
+
+    // ===========================================================================
+    // Bug fix: PATCH end_at without start_at
+    // ===========================================================================
+
+    public function test_update_only_end_at_with_valid_date_succeeds(): void
+    {
+        $user = $this->createUser();
+        $event = Event::factory()->create([
+            'user_id' => $user->id,
+            'start_at' => '2026-06-01 09:00:00',
+            'end_at' => '2026-06-01 10:00:00',
+        ]);
+
+        $response = $this->actingAs($user)->putJson("/api/v1/events/{$event->id}", [
+            'end_at' => '2026-06-01 12:00:00',
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.end_at', fn ($v) => str_contains($v, '2026-06-01'));
+    }
+
+    public function test_update_only_end_at_before_existing_start_at_fails(): void
+    {
+        $user = $this->createUser();
+        $event = Event::factory()->create([
+            'user_id' => $user->id,
+            'start_at' => '2026-06-01 09:00:00',
+            'end_at' => '2026-06-01 10:00:00',
+        ]);
+
+        $response = $this->actingAs($user)->putJson("/api/v1/events/{$event->id}", [
+            'end_at' => '2026-05-31 08:00:00',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('end_at');
+    }
+
+    // ===========================================================================
+    // Bug fix: visibility and type validation
+    // ===========================================================================
+
+    public function test_create_event_with_visibility_private(): void
+    {
+        $user = $this->createAdminSm();
+
+        $response = $this->actingAs($user)->postJson('/api/v1/events', $this->validEventData([
+            'visibility' => 'private',
+        ]));
+
+        $response->assertStatus(201);
+        $response->assertJsonPath('data.visibility', 'private');
+    }
+
+    public function test_create_event_with_invalid_visibility_fails(): void
+    {
+        $user = $this->createAdminSm();
+
+        $response = $this->actingAs($user)->postJson('/api/v1/events', $this->validEventData([
+            'visibility' => 'secret',
+        ]));
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('visibility');
+    }
+
+    public function test_create_event_with_valid_type(): void
+    {
+        $user = $this->createAdminSm();
+
+        $response = $this->actingAs($user)->postJson('/api/v1/events', $this->validEventData([
+            'type' => 'meeting',
+        ]));
+
+        $response->assertStatus(201);
+        $response->assertJsonPath('data.type', 'meeting');
+    }
+
+    public function test_create_event_with_invalid_type_fails(): void
+    {
+        $user = $this->createAdminSm();
+
+        $response = $this->actingAs($user)->postJson('/api/v1/events', $this->validEventData([
+            'type' => 'party',
+        ]));
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('type');
+    }
+
+    public function test_event_response_includes_visibility(): void
+    {
+        $user = $this->createUser();
+        Event::factory()->create(['visibility' => 'public']);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events');
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.0.visibility', 'public');
+    }
+
+    public function test_default_visibility_is_private_when_not_specified(): void
+    {
+        $user = $this->createAdminSm();
+
+        $response = $this->actingAs($user)->postJson('/api/v1/events', $this->validEventData());
+
+        $response->assertStatus(201);
+        $response->assertJsonPath('data.visibility', 'private');
     }
 }
