@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Enums\Role;
 use App\Models\Event;
 use App\Models\User;
+use Illuminate\Auth\Access\Response;
 
 class EventPolicy
 {
@@ -33,11 +34,23 @@ class EventPolicy
     }
 
     /**
-     * All authenticated users can create events.
+     * Only superadmin or admin_sm with a franchise assigned can create events.
      */
-    public function create(User $user): bool
+    public function create(User $user): Response
     {
-        return true;
+        if ($user->hasRole(Role::SUPERADMIN)) {
+            return Response::allow();
+        }
+
+        if (! $user->hasRole(Role::ADMIN_SM)) {
+            return Response::deny('policies.unauthorized');
+        }
+
+        if ($user->sm_franchise_id === null) {
+            return Response::deny('policies.franchise_required');
+        }
+
+        return Response::allow();
     }
 
     /**

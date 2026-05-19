@@ -479,5 +479,9 @@
       "password_optional": "Leave blank to keep unchanged",
       "password_min": "Password must be at least 12 characters."
     }
+  },
+  "policies": {
+    "unauthorized": "You don't have permission to perform this action.",
+    "franchise_required": "You must be assigned to a franchise to perform this action."
   }
 }
