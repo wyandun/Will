@@ -20,11 +20,11 @@ class EventController extends Controller
     {
         $this->authorize('viewAny', Event::class);
 
-        $perPage = min(50, max(5, (int) $request->query('per_page', 10)));
+        $perPage = min(200, max(5, (int) $request->query('per_page', 10)));
 
         $events = $this->eventService->list(
             $request->user(),
-            $request->query('search'),
+            $request->only(['search', 'start_from', 'end_before']),
             $perPage,
         );
 
