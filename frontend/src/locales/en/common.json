@@ -409,6 +409,50 @@
     "never": "Never",
     "pending": "Pending activation"
   },
+  "calendar": {
+    "title": "Calendar",
+    "new_event": "New Event",
+    "edit_event": "Edit Event",
+    "search_placeholder": "Search events...",
+    "no_events": "No events found.",
+    "no_events_search": "No events match your search.",
+    "load_error": "Failed to load events. Please try again.",
+    "event_created": "Event created successfully.",
+    "event_updated": "Event updated successfully.",
+    "event_deleted": "Event deleted successfully.",
+    "delete_confirm": "Delete this event? This action cannot be undone.",
+    "page_info": "Page {{current}} of {{total}}",
+    "events_total": "{{count}} events",
+    "prev": "Previous",
+    "next": "Next",
+    "all_day": "All day",
+    "fields": {
+      "title": "Title",
+      "title_placeholder": "e.g. Team Standup",
+      "description": "Description",
+      "description_placeholder": "Event details...",
+      "location": "Location",
+      "location_placeholder": "e.g. Conference Room A",
+      "start_at": "Start",
+      "end_at": "End",
+      "all_day": "All Day",
+      "timezone": "Timezone",
+      "timezone_placeholder": "Select a timezone",
+      "color": "Color"
+    },
+    "colors": {
+      "red": "Red",
+      "orange": "Orange",
+      "yellow": "Yellow",
+      "green": "Green",
+      "blue": "Blue",
+      "purple": "Purple",
+      "pink": "Pink",
+      "indigo": "Indigo",
+      "teal": "Teal",
+      "gray": "Gray"
+    }
+  },
   "system_admins": {
     "title": "System Administrators",
     "subtitle": "Manage accounts with global permissions across the platform.",
@@ -435,5 +479,9 @@
       "password_optional": "Leave blank to keep unchanged",
       "password_min": "Password must be at least 12 characters."
     }
+  },
+  "policies": {
+    "unauthorized": "You don't have permission to perform this action.",
+    "franchise_required": "You must be assigned to a franchise to perform this action."
   }
 }
