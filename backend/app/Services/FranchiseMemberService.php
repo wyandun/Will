@@ -15,18 +15,27 @@ class FranchiseMemberService
      */
     public function listMembers(Franchise $franchise): array
     {
+        abort_if(! $franchise->exists || ! $franchise->getKey(), 500, 'listMembers() requires a persisted Franchise model.');
+
         $admins = User::where('sm_franchise_id', $franchise->id)
             ->role(Role::ADMIN_SM)
-            ->with('userPermissions')
+            ->with('userPermissions:id,user_id,module,can_read,can_write')
             ->get(['id', 'name', 'email', 'phone', 'job_title', 'area', 'avatar_path', 'last_seen_at', 'invitation_accepted_at']);
 
         $clients = User::where('sm_franchise_id', $franchise->id)
             ->role([Role::SB_OWNER, Role::BB_EMPLOYEE])
-            ->get(['id', 'name', 'email', 'phone', 'job_title', 'avatar_path', 'last_seen_at', 'invitation_accepted_at']);
+            ->with('roles:name')
+            ->get(['id', 'name', 'email', 'phone', 'job_title', 'avatar_path', 'last_seen_at', 'invitation_accepted_at'])
+            ->each(function ($client) {
+                $client->setAttribute('role', $client->getRoleNames()->first());
+                $client->unsetRelation('roles');
+            });
 
         return [
             'franchise_id' => $franchise->id,
             'franchise_name' => $franchise->name,
+            'country' => $franchise->country,
+            'is_active' => $franchise->is_active,
             'admins_count' => $admins->count(),
             'clients_count' => $clients->count(),
             'admins' => $admins,
