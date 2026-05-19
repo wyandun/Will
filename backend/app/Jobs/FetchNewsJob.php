@@ -71,6 +71,11 @@ class FetchNewsJob implements ShouldQueue
     public function failed(\Throwable $e): void
     {
         Log::error('FetchNewsJob: job failed', ['error' => $e->getMessage()]);
+        Cache::put(NewsCacheKeys::FETCH_RESULT, [
+            'new_from_rss' => 0,
+            'processed' => 0,
+            'message' => 'Fetch failed. Please try again.',
+        ], now()->addHours(12));
         Cache::forget(NewsCacheKeys::FETCH_LOCK);
     }
 

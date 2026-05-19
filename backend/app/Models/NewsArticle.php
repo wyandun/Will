@@ -68,4 +68,18 @@ class NewsArticle extends Model
     {
         return (bool) filter_var($this->article_url, FILTER_VALIDATE_URL);
     }
+
+    /**
+     * Build the plain-text body for the Feed post created from this article.
+     * Post.body is plain text — must never be rendered as raw HTML.
+     * React's default text rendering escapes it; do not use dangerouslySetInnerHTML.
+     */
+    public function toPostBody(): string
+    {
+        $summary = strip_tags($this->ai_summary ?? $this->description ?? '');
+        $url = $this->article_url;
+        $source = strip_tags($this->source);
+
+        return "{$summary}\n\nSource: {$source}\n{$url}";
+    }
 }

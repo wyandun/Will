@@ -115,7 +115,7 @@ class RssNewsService
                     }
 
                     $newsArticle = NewsArticle::create([
-                        'source' => $sourceName,
+                        'source' => strip_tags($sourceName),
                         'article_url' => $article['url'],
                         'title' => $article['title'],
                         'description' => $article['description'],
