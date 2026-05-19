@@ -19,9 +19,9 @@ class FetchNewsJob implements ShouldQueue
 
     public function handle(RssNewsService $rss, AiNewsService $ai): void
     {
-        // Acquire lock inside the job to guard against concurrent runs caused by
-        // queue backlog exceeding the controller-side lock TTL (5 min).
-        if (! Cache::add('news_fetch_lock', true, now()->addMinutes(10))) {
+        // Acquire lock inside the job — single authoritative TTL from config.
+        $lockTtl = (int) config('services.news.fetch_lock_ttl_minutes', 10);
+        if (! Cache::add('news_fetch_lock', true, now()->addMinutes($lockTtl))) {
             Log::warning('FetchNewsJob: lock already held — aborting duplicate run');
 
             return;

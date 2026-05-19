@@ -59,7 +59,8 @@ class NewsController extends Controller
         $this->authorize('fetchAny', NewsArticle::class);
 
         // Atomic lock — only one dispatch wins while a job is in flight
-        if (! Cache::add('news_fetch_lock', true, now()->addMinutes(5))) {
+        $lockTtl = (int) config('services.news.fetch_lock_ttl_minutes', 10);
+        if (! Cache::add('news_fetch_lock', true, now()->addMinutes($lockTtl))) {
             return response()->json([
                 'success' => true,
                 'data' => ['queued' => false, 'last_fetch_at' => Cache::get('news_last_fetch_at')],
@@ -97,6 +98,13 @@ class NewsController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Article already published.',
+            ], 422);
+        }
+
+        if (! filter_var($newsArticle->article_url, FILTER_VALIDATE_URL)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Article has an invalid URL and cannot be published.',
             ], 422);
         }
 
@@ -154,7 +162,7 @@ class NewsController extends Controller
     {
         $this->authorize('reject', $newsArticle);
 
-        if (in_array($newsArticle->status, [NewsArticleStatus::Published, NewsArticleStatus::Rejected], true)) {
+        if (in_array($newsArticle->status, [NewsArticleStatus::Published, NewsArticleStatus::Rejected, NewsArticleStatus::PendingAi], true)) {
             return response()->json(['success' => false, 'message' => 'Cannot reject this article.'], 422);
         }
 

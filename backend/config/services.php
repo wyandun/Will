@@ -38,7 +38,11 @@ return [
     'anthropic' => [
         'api_key' => env('ANTHROPIC_API_KEY'),
         'model' => env('ANTHROPIC_NEWS_MODEL', 'claude-haiku-4-5-20251001'),
-        'batch_size' => 15,
+        'batch_size' => 30,
+    ],
+
+    'news' => [
+        'fetch_lock_ttl_minutes' => 10,
     ],
 
 ];
