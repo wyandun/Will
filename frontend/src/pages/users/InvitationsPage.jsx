@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { invitationsApi } from '../../api/invitations';
 import InviteUserModal from './InviteUserModal';
+import { SYSTEM_INVITABLE_ROLES } from '../../constants/roles';
 
 // ─── Role badge ───────────────────────────────────────────────────────────────
 
@@ -297,6 +298,7 @@ export default function InvitationsPage() {
           // for rows created within the last 30 seconds.
           fetchInvitations();
         }}
+        allowedRoles={SYSTEM_INVITABLE_ROLES}
       />
     </div>
   );
