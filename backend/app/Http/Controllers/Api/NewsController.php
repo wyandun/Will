@@ -58,9 +58,8 @@ class NewsController extends Controller
     {
         $this->authorize('fetchAny', NewsArticle::class);
 
-        // Atomic lock — only one dispatch wins while a job is in flight
-        $lockTtl = (int) config('services.news.fetch_lock_ttl_minutes', 10);
-        if (! Cache::add('news_fetch_lock', true, now()->addMinutes($lockTtl))) {
+        // UX gate only — the job is the authoritative lock holder.
+        if (Cache::has('news_fetch_lock')) {
             return response()->json([
                 'success' => true,
                 'data' => ['queued' => false, 'last_fetch_at' => Cache::get('news_last_fetch_at')],
@@ -68,12 +67,7 @@ class NewsController extends Controller
             ]);
         }
 
-        try {
-            FetchNewsJob::dispatch()->onQueue('news');
-        } catch (\Throwable $e) {
-            Cache::forget('news_fetch_lock');
-            throw $e;
-        }
+        FetchNewsJob::dispatch()->onQueue('news');
 
         return response()->json([
             'success' => true,
@@ -162,7 +156,7 @@ class NewsController extends Controller
     {
         $this->authorize('reject', $newsArticle);
 
-        if (in_array($newsArticle->status, [NewsArticleStatus::Published, NewsArticleStatus::Rejected, NewsArticleStatus::PendingAi], true)) {
+        if ($newsArticle->status !== NewsArticleStatus::PendingReview) {
             return response()->json(['success' => false, 'message' => 'Cannot reject this article.'], 422);
         }
 
@@ -182,11 +176,7 @@ class NewsController extends Controller
     private function buildPostBody(NewsArticle $article): string
     {
         $summary = strip_tags($article->ai_summary ?? $article->description ?? '');
-        $url = filter_var($article->article_url, FILTER_VALIDATE_URL) ? $article->article_url : '';
-
-        if (empty($url)) {
-            Log::warning('NewsController: article_url failed validation', ['article_id' => $article->id, 'url' => $article->article_url]);
-        }
+        $url = $article->article_url;
         $source = strip_tags($article->source);
 
         return "{$summary}\n\nSource: {$source}\n{$url}";
