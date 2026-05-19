@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Services\AiNewsService;
 use App\Services\RssNewsService;
+use App\Support\NewsCacheKeys;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Cache;
@@ -17,16 +18,14 @@ class FetchNewsJob implements ShouldQueue
 
     public int $timeout = 300;
 
+    // Routed to the 'news' queue — avoids competing with other job queues.
+    public string $queue = 'news';
+
     public function handle(RssNewsService $rss, AiNewsService $ai): void
     {
-        // Acquire lock inside the job — single authoritative TTL from config.
-        $lockTtl = (int) config('services.news.fetch_lock_ttl_minutes', 10);
-        if (! Cache::add('news_fetch_lock', true, now()->addMinutes($lockTtl))) {
-            Log::warning('FetchNewsJob: lock already held — aborting duplicate run');
-
-            return;
-        }
-
+        // The lock is acquired atomically by NewsController::fetch() before dispatch.
+        // The job does not re-acquire the lock — it trusts the controller gate
+        // and releases via finalize() on success or failed() on failure.
         Log::info('FetchNewsJob: starting news fetch');
 
         // Step 1: Fetch new articles from RSS feeds
@@ -47,10 +46,10 @@ class FetchNewsJob implements ShouldQueue
 
         if ($pending->isEmpty()) {
             Log::info('FetchNewsJob: no articles pending AI processing — pool is empty');
-            Cache::put('news_fetch_result', [
+            Cache::put(NewsCacheKeys::FETCH_RESULT, [
                 'new_from_rss' => 0,
-                'processed' => 0,
-                'message' => 'All recent articles have already been processed. No new content found.',
+                'processed'    => 0,
+                'message'      => 'All recent articles have already been processed. No new content found.',
             ], now()->addHours(12));
             $this->finalize();
 
@@ -60,10 +59,10 @@ class FetchNewsJob implements ShouldQueue
         $ai->processArticles($pending);
         Log::info('FetchNewsJob: AI processing complete', ['processed' => $pending->count()]);
 
-        Cache::put('news_fetch_result', [
+        Cache::put(NewsCacheKeys::FETCH_RESULT, [
             'new_from_rss' => count($newArticles),
-            'processed' => $pending->count(),
-            'message' => null,
+            'processed'    => $pending->count(),
+            'message'      => null,
         ], now()->addHours(12));
 
         $this->finalize();
@@ -72,12 +71,12 @@ class FetchNewsJob implements ShouldQueue
     public function failed(\Throwable $e): void
     {
         Log::error('FetchNewsJob: job failed', ['error' => $e->getMessage()]);
-        Cache::forget('news_fetch_lock');
+        Cache::forget(NewsCacheKeys::FETCH_LOCK);
     }
 
     private function finalize(): void
     {
-        Cache::put('news_last_fetch_at', now()->toIso8601String(), now()->addHours(12));
-        Cache::forget('news_fetch_lock');
+        Cache::put(NewsCacheKeys::LAST_FETCH_AT, now()->toIso8601String(), now()->addHours(12));
+        Cache::forget(NewsCacheKeys::FETCH_LOCK);
     }
 }

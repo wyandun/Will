@@ -8,6 +8,7 @@ use App\Http\Resources\NewsArticleResource;
 use App\Jobs\FetchNewsJob;
 use App\Models\NewsArticle;
 use App\Models\Post;
+use App\Support\NewsCacheKeys;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -24,57 +25,59 @@ class NewsController extends Controller
     {
         $this->authorize('viewAny', NewsArticle::class);
 
-        $query = NewsArticle::query()
+        $articles = NewsArticle::query()
             ->where('status', NewsArticleStatus::PendingReview)
             ->where('ai_selected', true)
-            ->orderByDesc('fetched_at');
-
-        $articles = $query->paginate(20);
-
-        $items = $articles->map(fn (NewsArticle $a) => NewsArticleResource::make($a)->resolve());
+            ->orderByDesc('fetched_at')
+            ->paginate(20);
 
         return response()->json([
             'success' => true,
             'data' => [
-                'items' => $items,
+                'items' => NewsArticleResource::collection($articles->items())->resolve(),
                 'meta' => [
                     'current_page' => $articles->currentPage(),
-                    'last_page' => $articles->lastPage(),
-                    'total' => $articles->total(),
+                    'last_page'    => $articles->lastPage(),
+                    'total'        => $articles->total(),
                 ],
-                'last_fetch_at' => Cache::get('news_last_fetch_at'),
-                'last_fetch_result' => Cache::get('news_fetch_result'),
-                'fetch_in_progress' => Cache::has('news_fetch_lock'),
+                'last_fetch_at'     => Cache::get(NewsCacheKeys::LAST_FETCH_AT),
+                'last_fetch_result' => Cache::get(NewsCacheKeys::FETCH_RESULT),
+                'fetch_in_progress' => Cache::has(NewsCacheKeys::FETCH_LOCK),
             ],
         ]);
     }
 
     /**
      * Dispatch FetchNewsJob to queue.
-     * Lock (5 min TTL) prevents double-dispatch while the job is in flight.
-     * The job sets news_last_fetch_at on completion and releases the lock.
+     * Cache::add() is the atomic gate — only one request can acquire the lock.
+     * If another request already holds it, we return early without dispatching.
      */
     public function fetch(Request $request): JsonResponse
     {
         $this->authorize('fetchAny', NewsArticle::class);
 
-        // UX gate only — the job is the authoritative lock holder.
-        if (Cache::has('news_fetch_lock')) {
+        $lockTtl = (int) config('services.news.fetch_lock_ttl_minutes', 10);
+
+        // Atomic lock acquisition — prevents race conditions from simultaneous requests.
+        // If add() returns false the lock was already held; do not dispatch a second job.
+        if (! Cache::add(NewsCacheKeys::FETCH_LOCK, true, now()->addMinutes($lockTtl))) {
             return response()->json([
                 'success' => true,
-                'data' => ['queued' => false, 'last_fetch_at' => Cache::get('news_last_fetch_at')],
+                'data'    => ['queued' => false, 'last_fetch_at' => Cache::get(NewsCacheKeys::LAST_FETCH_AT)],
                 'message' => 'News fetch already in progress.',
             ]);
         }
 
-        FetchNewsJob::dispatch()->onQueue('news');
+        // Lock acquired — dispatch the job. The job will call finalize() which releases
+        // the lock on success. On failure, FetchNewsJob::failed() releases it instead.
+        FetchNewsJob::dispatch();
 
         return response()->json([
             'success' => true,
             'data' => [
-                'queued' => true,
-                'last_fetch_at' => Cache::get('news_last_fetch_at'),
-                'last_fetch_result' => Cache::get('news_fetch_result'),
+                'queued'            => true,
+                'last_fetch_at'     => Cache::get(NewsCacheKeys::LAST_FETCH_AT),
+                'last_fetch_result' => Cache::get(NewsCacheKeys::FETCH_RESULT),
             ],
             'message' => 'News fetch queued. Articles will appear shortly.',
         ]);
@@ -95,7 +98,8 @@ class NewsController extends Controller
             ], 422);
         }
 
-        if (! filter_var($newsArticle->article_url, FILTER_VALIDATE_URL)) {
+        // URL validation delegated to the model (domain logic lives on the model).
+        if (! $newsArticle->hasValidUrl()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Article has an invalid URL and cannot be published.',
@@ -105,12 +109,12 @@ class NewsController extends Controller
         try {
             $post = DB::transaction(function () use ($request, $newsArticle) {
                 $postData = [
-                    'author_id' => $request->user()->id,
-                    'title' => $newsArticle->title,
-                    'body' => $this->buildPostBody($newsArticle),
-                    'type' => 'news',
-                    'visibility' => 'global',
-                    'is_pinned' => false,
+                    'author_id'    => $request->user()->id,
+                    'title'        => $newsArticle->title,
+                    'body'         => $this->buildPostBody($newsArticle),
+                    'type'         => 'news',
+                    'visibility'   => 'global',
+                    'is_pinned'    => false,
                     'published_at' => now(),
                 ];
 
@@ -125,16 +129,16 @@ class NewsController extends Controller
             });
         } catch (\Throwable $e) {
             Log::error('NewsController::publish failed', [
-                'article_id' => $newsArticle->id,
+                'article_id'  => $newsArticle->id,
                 'article_url' => $newsArticle->article_url,
-                'user_id' => $request->user()->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+                'user_id'     => $request->user()->id,
+                'error'       => $e->getMessage(),
+                // Trace is captured automatically by Laravel — do not log getTraceAsString().
             ]);
 
             return response()->json([
                 'success' => false,
-                'data' => null,
+                'data'    => null,
                 'message' => 'Failed to publish the article. Please try again.',
             ], 500);
         }
@@ -143,7 +147,7 @@ class NewsController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => ['article' => NewsArticleResource::make($newsArticle)->resolve(), 'post_id' => $newsArticle->post_id],
+            'data'    => ['article' => NewsArticleResource::make($newsArticle)->resolve(), 'post_id' => $newsArticle->post_id],
             'message' => 'Article published to Feed.',
         ]);
     }
@@ -157,14 +161,20 @@ class NewsController extends Controller
         $this->authorize('reject', $newsArticle);
 
         if ($newsArticle->status !== NewsArticleStatus::PendingReview) {
-            return response()->json(['success' => false, 'message' => 'Cannot reject this article.'], 422);
+            $reason = match ($newsArticle->status) {
+                NewsArticleStatus::Published => 'Article is already published.',
+                NewsArticleStatus::Rejected  => 'Article is already rejected.',
+                default                      => 'Only articles pending review can be rejected.',
+            };
+
+            return response()->json(['success' => false, 'message' => $reason], 422);
         }
 
         $newsArticle->update(['status' => NewsArticleStatus::Rejected]);
 
         return response()->json([
             'success' => true,
-            'data' => null,
+            'data'    => null,
             'message' => 'Article rejected.',
         ]);
     }
@@ -175,9 +185,11 @@ class NewsController extends Controller
 
     private function buildPostBody(NewsArticle $article): string
     {
+        // Post.body is plain text — must never be rendered as raw HTML.
+        // React's default text rendering escapes it; do not use dangerouslySetInnerHTML.
         $summary = strip_tags($article->ai_summary ?? $article->description ?? '');
-        $url = $article->article_url;
-        $source = strip_tags($article->source);
+        $url     = $article->article_url;
+        $source  = strip_tags($article->source);
 
         return "{$summary}\n\nSource: {$source}\n{$url}";
     }

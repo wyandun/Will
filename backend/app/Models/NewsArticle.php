@@ -58,4 +58,14 @@ class NewsArticle extends Model
     {
         return $this->belongsTo(Post::class);
     }
+
+    /**
+     * Returns true if article_url is a well-formed URL.
+     * Used by NewsController::publish() to guard against malformed URLs
+     * before creating a Feed post.
+     */
+    public function hasValidUrl(): bool
+    {
+        return (bool) filter_var($this->article_url, FILTER_VALIDATE_URL);
+    }
 }
