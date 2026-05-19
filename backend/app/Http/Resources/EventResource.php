@@ -26,6 +26,7 @@ class EventResource extends JsonResource
             'all_day' => $this->all_day,
             'timezone' => $this->timezone,
             'color' => $this->color,
+            'visibility' => $this->visibility,
             'type' => $this->type,
             'created_by' => $this->whenLoaded('creator', fn () => [
                 'id' => $this->creator->id,

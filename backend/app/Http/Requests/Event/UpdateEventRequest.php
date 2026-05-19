@@ -18,10 +18,16 @@ class UpdateEventRequest extends AuthenticatedRequest
             'description' => ['nullable', 'string', 'max:5000'],
             'location' => ['nullable', 'string', 'max:255'],
             'start_at' => ['sometimes', 'date'],
-            'end_at' => ['sometimes', 'date', 'after_or_equal:start_at'],
+            'end_at' => array_filter([
+                'sometimes',
+                'date',
+                $this->has('start_at') ? 'after_or_equal:start_at' : null,
+            ]),
             'all_day' => ['sometimes', 'boolean'],
             'timezone' => ['sometimes', 'string', 'timezone'],
             'color' => ['sometimes', 'string', Rule::in(EventColor::values())],
+            'visibility' => ['sometimes', 'string', Rule::in(['private', 'franchise', 'public'])],
+            'type' => ['sometimes', 'string', Rule::in(['casual', 'meeting', 'deadline', 'reminder', 'training'])],
         ];
     }
 }
