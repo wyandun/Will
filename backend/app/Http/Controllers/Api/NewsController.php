@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\NewsArticleStatus;
-use App\Exceptions\ArticleAlreadyPublishedException;
+use App\Exceptions\InvalidStatusTransitionException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\NewsArticleResource;
 use App\Jobs\FetchNewsJob;
@@ -112,13 +112,13 @@ class NewsController extends Controller
         }
 
         try {
-            $post = DB::transaction(function () use ($request, $newsArticle) {
+            DB::transaction(function () use ($request, $newsArticle) {
                 // Re-read with a row-level lock so concurrent requests cannot
                 // both pass the status guard and create two Posts.
                 $locked = NewsArticle::lockForUpdate()->findOrFail($newsArticle->id);
 
                 if (! $locked->status->canBePublished()) {
-                    throw new ArticleAlreadyPublishedException;
+                    throw new InvalidStatusTransitionException($locked->status, 'published');
                 }
 
                 // Post type and visibility are plain strings — valid values:
@@ -140,17 +140,15 @@ class NewsController extends Controller
 
                 $post = Post::create($postData);
                 $locked->update(['status' => NewsArticleStatus::Published, 'post_id' => $post->id]);
-
-                return $post;
             });
-        } catch (\Throwable $e) {
-            if ($e instanceof ArticleAlreadyPublishedException) {
-                return response()->json([
-                    'success' => false,
-                    'message' => NewsArticleStatus::Published->transitionErrorMessage('published'),
-                ], 422);
-            }
 
+            $newsArticle->refresh();
+        } catch (InvalidStatusTransitionException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getStatus()->transitionErrorMessage('published'),
+            ], 422);
+        } catch (\Throwable $e) {
             Log::error('NewsController::publish failed', [
                 'article_id' => $newsArticle->id,
                 'article_url' => $newsArticle->article_url,
@@ -164,8 +162,6 @@ class NewsController extends Controller
                 'message' => 'Failed to publish the article. Please try again.',
             ], 500);
         }
-
-        $newsArticle->refresh();
 
         return response()->json([
             'success' => true,
@@ -187,15 +183,15 @@ class NewsController extends Controller
                 $locked = NewsArticle::lockForUpdate()->findOrFail($newsArticle->id);
 
                 if (! $locked->status->canBeRejected()) {
-                    throw new \RuntimeException($locked->status->transitionErrorMessage('rejected'));
+                    throw new InvalidStatusTransitionException($locked->status, 'rejected');
                 }
 
                 $locked->update(['status' => NewsArticleStatus::Rejected]);
             });
-        } catch (\RuntimeException $e) {
+        } catch (InvalidStatusTransitionException $e) {
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => $e->getStatus()->transitionErrorMessage('rejected'),
             ], 422);
         }
 
