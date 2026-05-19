@@ -45,8 +45,9 @@ class AiNewsService
         $selectedIndices = $this->selectArticles($articleList->all());
 
         if (empty($selectedIndices)) {
-            Log::error('AiNewsService: selectArticles returned no indices — leaving articles in pending_ai for retry');
-            throw new \RuntimeException('AI selection returned no indices');
+            Log::warning('AiNewsService: selectArticles returned no indices — articles remain in pending_ai');
+
+            return;
         }
 
         // Step 2: Summarize each selected article individually
