@@ -40,7 +40,7 @@ function toLocalDate(isoString) {
   return isoString.slice(0, 10);
 }
 
-export default function EventFormModal({ event, onClose, onSaved }) {
+export default function EventFormModal({ event, initialDate, onClose, onSaved }) {
   const { t } = useTranslation('common');
   const isEditing = event !== null;
 
@@ -60,11 +60,19 @@ export default function EventFormModal({ event, onClose, onSaved }) {
         timezone: event.timezone ?? 'America/New_York',
         color: event.color ?? '#3B82F6',
       });
+    } else if (initialDate) {
+      const pad = (n) => String(n).padStart(2, '0');
+      const d = initialDate;
+      const hasTime = d.getHours() !== 0 || d.getMinutes() !== 0;
+      const start = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      const endD = new Date(d.getTime() + 60 * 60 * 1000); // +1h
+      const end = `${endD.getFullYear()}-${pad(endD.getMonth() + 1)}-${pad(endD.getDate())}T${pad(endD.getHours())}:${pad(endD.getMinutes())}`;
+      setForm({ ...EMPTY_FORM, start_at: start, end_at: end, all_day: !hasTime });
     } else {
       setForm(EMPTY_FORM);
     }
     setApiError('');
-  }, [event]);
+  }, [event, initialDate]);
 
   function handleChange(e) {
     const { name, value, type, checked } = e.target;
@@ -336,6 +344,7 @@ EventFormModal.propTypes = {
     timezone: PropTypes.string,
     color: PropTypes.string,
   }),
+  initialDate: PropTypes.instanceOf(Date),
   onClose: PropTypes.func.isRequired,
   onSaved: PropTypes.func.isRequired,
 };

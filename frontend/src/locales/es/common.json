@@ -428,6 +428,13 @@
     "prev": "Anterior",
     "next": "Siguiente",
     "all_day": "Todo el día",
+    "view_month": "Mes",
+    "view_week": "Semana",
+    "view_list": "Lista",
+    "today": "Hoy",
+    "no_events_day": "Sin eventos",
+    "week_of": "Semana del {{date}}",
+    "more_events": "+{{count}} más",
     "fields": {
       "title": "Título",
       "title_placeholder": "Ej. Reunión de equipo",

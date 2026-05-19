@@ -428,6 +428,13 @@
     "prev": "Previous",
     "next": "Next",
     "all_day": "All day",
+    "view_month": "Month",
+    "view_week": "Week",
+    "view_list": "List",
+    "today": "Today",
+    "no_events_day": "No events",
+    "week_of": "Week of {{date}}",
+    "more_events": "+{{count}} more",
     "fields": {
       "title": "Title",
       "title_placeholder": "e.g. Team Standup",
