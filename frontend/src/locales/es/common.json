@@ -479,5 +479,9 @@
       "password_optional": "Dejar en blanco para no cambiar",
       "password_min": "La contraseña debe tener al menos 12 caracteres."
     }
+  },
+  "policies": {
+    "unauthorized": "No tenés permiso para realizar esta acción.",
+    "franchise_required": "Debés estar asignado a una franquicia para realizar esta acción."
   }
 }
