@@ -133,7 +133,7 @@ class NewsController extends Controller
             return response()->json([
                 'success' => false,
                 'data' => null,
-                'message' => 'Failed to publish article: '.$e->getMessage(),
+                'message' => 'Failed to publish the article. Please try again.',
             ], 500);
         }
 
@@ -150,7 +150,7 @@ class NewsController extends Controller
      * Reject an article — removes it from the review queue.
      * Cannot reject an article that is already published or already rejected.
      */
-    public function reject(NewsArticle $newsArticle): JsonResponse
+    public function reject(Request $request, NewsArticle $newsArticle): JsonResponse
     {
         $this->authorize('reject', $newsArticle);
 
