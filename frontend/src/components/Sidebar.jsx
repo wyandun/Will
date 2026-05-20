@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/authStore';
@@ -133,3 +134,8 @@ export default function Sidebar({ open, onClose }) {
     </aside>
   );
 }
+
+Sidebar.propTypes = {
+  open: PropTypes.bool,
+  onClose: PropTypes.func,
+};
