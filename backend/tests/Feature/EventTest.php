@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\EventColor;
 use App\Enums\Role;
 use App\Models\Event;
 use App\Models\Franchise;
@@ -111,6 +112,209 @@ class EventTest extends TestCase
                 ],
             ],
         ]);
+    }
+
+    // ===========================================================================
+    // GET /api/v1/events — Search & Filter
+    // ===========================================================================
+
+    public function test_index_search_filters_by_title(): void
+    {
+        $user = $this->createUser();
+        Event::factory()->create(['title' => 'Alpha Meeting', 'visibility' => 'public']);
+        Event::factory()->create(['title' => 'Beta Workshop', 'visibility' => 'public']);
+        Event::factory()->create(['title' => 'Gamma Session', 'visibility' => 'public']);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events?search=Alpha');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(1, 'data');
+        $response->assertJsonPath('data.0.title', 'Alpha Meeting');
+    }
+
+    public function test_index_search_filters_by_description(): void
+    {
+        $user = $this->createUser();
+        Event::factory()->create(['description' => 'Quarterly planning session', 'visibility' => 'public']);
+        Event::factory()->create(['description' => 'Weekly sync meeting', 'visibility' => 'public']);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events?search=quarterly');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(1, 'data');
+    }
+
+    public function test_index_search_filters_by_location(): void
+    {
+        $user = $this->createUser();
+        Event::factory()->create(['location' => 'Main Conference Room', 'visibility' => 'public']);
+        Event::factory()->create(['location' => 'Remote via Zoom', 'visibility' => 'public']);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events?search=conference');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(1, 'data');
+    }
+
+    public function test_index_search_is_case_insensitive(): void
+    {
+        $user = $this->createUser();
+        Event::factory()->create(['title' => 'Alpha Meeting', 'visibility' => 'public']);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events?search=alpha+meeting');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(1, 'data');
+    }
+
+    public function test_index_start_from_filters_events(): void
+    {
+        $user = $this->createUser();
+        // Event ending before the filter date — should NOT appear
+        Event::factory()->create([
+            'visibility' => 'public',
+            'start_at' => '2026-01-10 09:00:00',
+            'end_at' => '2026-01-10 10:00:00',
+        ]);
+        // Event ending after the filter date — should appear
+        Event::factory()->create([
+            'visibility' => 'public',
+            'start_at' => '2026-06-15 09:00:00',
+            'end_at' => '2026-06-15 10:00:00',
+        ]);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events?start_from=2026-06-01T00:00:00.000Z');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(1, 'data');
+    }
+
+    public function test_index_end_before_filters_events(): void
+    {
+        $user = $this->createUser();
+        // Event starting before the filter date — should appear
+        Event::factory()->create([
+            'visibility' => 'public',
+            'start_at' => '2026-03-01 09:00:00',
+            'end_at' => '2026-03-01 10:00:00',
+        ]);
+        // Event starting after the filter date — should NOT appear
+        Event::factory()->create([
+            'visibility' => 'public',
+            'start_at' => '2026-08-01 09:00:00',
+            'end_at' => '2026-08-01 10:00:00',
+        ]);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events?end_before=2026-06-01T00:00:00.000Z');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(1, 'data');
+    }
+
+    public function test_index_combined_search_and_date_range(): void
+    {
+        $user = $this->createUser();
+        // Matches title but outside date range
+        Event::factory()->create([
+            'title' => 'Strategy Review',
+            'visibility' => 'public',
+            'start_at' => '2026-01-10 09:00:00',
+            'end_at' => '2026-01-10 10:00:00',
+        ]);
+        // Inside date range but title doesn't match
+        Event::factory()->create([
+            'title' => 'Unrelated Event',
+            'visibility' => 'public',
+            'start_at' => '2026-06-15 09:00:00',
+            'end_at' => '2026-06-15 10:00:00',
+        ]);
+        // Matches both title and date range
+        Event::factory()->create([
+            'title' => 'Strategy Review',
+            'visibility' => 'public',
+            'start_at' => '2026-06-15 09:00:00',
+            'end_at' => '2026-06-15 10:00:00',
+        ]);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events?search=Strategy&start_from=2026-06-01T00:00:00.000Z');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(1, 'data');
+    }
+
+    // ===========================================================================
+    // GET /api/v1/events — Pagination
+    // ===========================================================================
+
+    public function test_index_default_pagination_is_10(): void
+    {
+        $user = $this->createUser();
+        Event::factory()->count(15)->create(['visibility' => 'public']);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(10, 'data');
+        $response->assertJsonPath('meta.total', 15);
+    }
+
+    public function test_index_custom_per_page(): void
+    {
+        $user = $this->createUser();
+        Event::factory()->count(8)->create(['visibility' => 'public']);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events?per_page=5');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(5, 'data');
+    }
+
+    public function test_index_page_navigation(): void
+    {
+        $user = $this->createUser();
+        Event::factory()->count(15)->create(['visibility' => 'public']);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events?page=2');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(5, 'data');
+        $response->assertJsonPath('meta.current_page', 2);
+    }
+
+    public function test_index_meta_structure(): void
+    {
+        $user = $this->createUser();
+        Event::factory()->count(3)->create(['visibility' => 'public']);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events');
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'data',
+            'meta' => ['current_page', 'last_page', 'per_page', 'total'],
+        ]);
+    }
+
+    public function test_index_per_page_clamped_to_min_5(): void
+    {
+        $user = $this->createUser();
+        Event::factory()->count(3)->create(['visibility' => 'public']);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events?per_page=1');
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('meta.per_page', 5);
+    }
+
+    public function test_index_per_page_clamped_to_max_200(): void
+    {
+        $user = $this->createUser();
+        Event::factory()->count(3)->create(['visibility' => 'public']);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events?per_page=999');
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('meta.per_page', 200);
     }
 
     // ===========================================================================
@@ -233,6 +437,130 @@ class EventTest extends TestCase
     }
 
     // ===========================================================================
+    // POST /api/v1/events — Store validation gaps
+    // ===========================================================================
+
+    public function test_store_requires_start_at(): void
+    {
+        $user = $this->createAdminSm();
+        $data = $this->validEventData();
+        unset($data['start_at']);
+
+        $response = $this->actingAs($user)->postJson('/api/v1/events', $data);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('start_at');
+    }
+
+    public function test_store_requires_end_at(): void
+    {
+        $user = $this->createAdminSm();
+        $data = $this->validEventData();
+        unset($data['end_at']);
+
+        $response = $this->actingAs($user)->postJson('/api/v1/events', $data);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('end_at');
+    }
+
+    public function test_store_start_at_must_be_valid_date(): void
+    {
+        $user = $this->createAdminSm();
+
+        $response = $this->actingAs($user)->postJson('/api/v1/events', $this->validEventData([
+            'start_at' => 'not-a-date',
+        ]));
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('start_at');
+    }
+
+    public function test_store_title_max_255(): void
+    {
+        $user = $this->createAdminSm();
+
+        $response = $this->actingAs($user)->postJson('/api/v1/events', $this->validEventData([
+            'title' => str_repeat('a', 256),
+        ]));
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('title');
+    }
+
+    public function test_store_description_max_5000(): void
+    {
+        $user = $this->createAdminSm();
+
+        $response = $this->actingAs($user)->postJson('/api/v1/events', $this->validEventData([
+            'description' => str_repeat('a', 5001),
+        ]));
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('description');
+    }
+
+    public function test_store_location_max_255(): void
+    {
+        $user = $this->createAdminSm();
+
+        $response = $this->actingAs($user)->postJson('/api/v1/events', $this->validEventData([
+            'location' => str_repeat('a', 256),
+        ]));
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('location');
+    }
+
+    public function test_store_default_type_is_casual(): void
+    {
+        $user = $this->createAdminSm();
+        $data = $this->validEventData();
+        unset($data['type']);
+
+        $response = $this->actingAs($user)->postJson('/api/v1/events', $data);
+
+        $response->assertStatus(201);
+        $response->assertJsonPath('data.type', 'casual');
+    }
+
+    // ===========================================================================
+    // POST /api/v1/events — Event types coverage
+    // ===========================================================================
+
+    public function test_store_all_valid_event_types(): void
+    {
+        $user = $this->createAdminSm();
+
+        foreach (['casual', 'meeting', 'deadline', 'reminder', 'training'] as $type) {
+            $response = $this->actingAs($user)->postJson('/api/v1/events', $this->validEventData([
+                'type' => $type,
+            ]));
+
+            $response->assertStatus(201);
+            $response->assertJsonPath('data.type', $type);
+        }
+    }
+
+    // ===========================================================================
+    // POST /api/v1/events — Event colors coverage
+    // ===========================================================================
+
+    public function test_store_all_valid_event_colors(): void
+    {
+        $user = $this->createAdminSm();
+
+        foreach (EventColor::values() as $color) {
+            $response = $this->actingAs($user)->postJson('/api/v1/events', $this->validEventData([
+                'color' => $color,
+            ]));
+
+            $response->assertStatus(201);
+            $response->assertJsonPath('data.color', $color);
+        }
+    }
+
+    // ===========================================================================
     // GET /api/v1/events/{id} (show)
     // ===========================================================================
 
@@ -245,6 +573,42 @@ class EventTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertJsonPath('data.id', $event->id);
+    }
+
+    public function test_show_returns_created_by_relationship(): void
+    {
+        $creator = $this->createUser();
+        $event = Event::factory()->create(['user_id' => $creator->id, 'visibility' => 'public']);
+
+        $response = $this->actingAs($creator)->getJson("/api/v1/events/{$event->id}");
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'data' => ['created_by' => ['id', 'name']],
+        ]);
+        $response->assertJsonPath('data.created_by.id', $creator->id);
+    }
+
+    public function test_show_nonexistent_event_returns_404(): void
+    {
+        $user = $this->createUser();
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events/99999');
+
+        $response->assertStatus(404);
+    }
+
+    public function test_show_franchise_event_different_franchise_returns_403(): void
+    {
+        $franchiseA = Franchise::factory()->create();
+        $franchiseB = Franchise::factory()->create();
+        $creator = $this->createUser(['sm_franchise_id' => $franchiseA->id]);
+        $viewer = $this->createUser(['sm_franchise_id' => $franchiseB->id]);
+        $event = Event::factory()->create(['visibility' => 'franchise', 'user_id' => $creator->id]);
+
+        $response = $this->actingAs($viewer)->getJson("/api/v1/events/{$event->id}");
+
+        $response->assertStatus(403);
     }
 
     // ===========================================================================
@@ -290,6 +654,63 @@ class EventTest extends TestCase
         $response->assertJsonPath('data.title', 'Admin Updated');
     }
 
+    public function test_update_partial_only_title(): void
+    {
+        $user = $this->createUser();
+        $event = Event::factory()->create([
+            'user_id' => $user->id,
+            'title' => 'Original Title',
+            'description' => 'Original description',
+        ]);
+
+        $response = $this->actingAs($user)->putJson("/api/v1/events/{$event->id}", [
+            'title' => 'New Title',
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.title', 'New Title');
+        $response->assertJsonPath('data.description', 'Original description');
+    }
+
+    public function test_update_all_fields(): void
+    {
+        $user = $this->createUser();
+        $event = Event::factory()->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($user)->putJson("/api/v1/events/{$event->id}", [
+            'title' => 'Updated Title',
+            'description' => 'Updated description',
+            'location' => 'New Location',
+            'start_at' => '2026-07-01 10:00:00',
+            'end_at' => '2026-07-01 11:00:00',
+            'all_day' => false,
+            'timezone' => 'America/Los_Angeles',
+            'color' => '#EF4444',
+            'visibility' => 'public',
+            'type' => 'meeting',
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.title', 'Updated Title');
+        $response->assertJsonPath('data.type', 'meeting');
+        $response->assertJsonPath('data.visibility', 'public');
+        $response->assertJsonPath('data.color', '#EF4444');
+    }
+
+    public function test_update_start_at_and_end_at_validates_order(): void
+    {
+        $user = $this->createUser();
+        $event = Event::factory()->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($user)->putJson("/api/v1/events/{$event->id}", [
+            'start_at' => '2026-07-01 12:00:00',
+            'end_at' => '2026-07-01 09:00:00',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('end_at');
+    }
+
     // ===========================================================================
     // DELETE /api/v1/events/{id} (destroy)
     // ===========================================================================
@@ -328,6 +749,28 @@ class EventTest extends TestCase
 
         $response->assertStatus(200);
         $this->assertSoftDeleted('events', ['id' => $event->id]);
+    }
+
+    public function test_delete_nonexistent_event_returns_404(): void
+    {
+        $user = $this->createUser();
+
+        $response = $this->actingAs($user)->deleteJson('/api/v1/events/99999');
+
+        $response->assertStatus(404);
+    }
+
+    public function test_deleted_event_not_returned_in_index(): void
+    {
+        $user = $this->createUser();
+        $event = Event::factory()->create(['visibility' => 'public', 'user_id' => $user->id]);
+
+        $event->delete();
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(0, 'data');
     }
 
     // ===========================================================================
@@ -428,6 +871,18 @@ class EventTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertJsonPath('data.id', $event->id);
+    }
+
+    public function test_show_franchise_event_403_for_user_without_franchise(): void
+    {
+        $franchise = Franchise::factory()->create();
+        $creator = $this->createUser(['sm_franchise_id' => $franchise->id]);
+        $viewer = $this->createUser(['sm_franchise_id' => null]);
+        $event = Event::factory()->create(['visibility' => 'franchise', 'user_id' => $creator->id]);
+
+        $response = $this->actingAs($viewer)->getJson("/api/v1/events/{$event->id}");
+
+        $response->assertStatus(403);
     }
 
     // ===========================================================================
@@ -539,5 +994,96 @@ class EventTest extends TestCase
 
         $response->assertStatus(201);
         $response->assertJsonPath('data.visibility', 'private');
+    }
+
+    // ===========================================================================
+    // GET /api/v1/dashboard/events
+    // ===========================================================================
+
+    public function test_dashboard_events_unauthenticated_returns_401(): void
+    {
+        $this->getJson('/api/v1/dashboard/events')->assertStatus(401);
+    }
+
+    public function test_dashboard_events_returns_max_5(): void
+    {
+        $user = $this->createUser();
+        Event::factory()->count(8)->create([
+            'visibility' => 'public',
+            'start_at' => now()->addDays(1),
+            'end_at' => now()->addDays(1)->addHour(),
+        ]);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/dashboard/events');
+
+        $response->assertStatus(200);
+        $this->assertCount(5, $response->json('data'));
+    }
+
+    public function test_dashboard_events_only_returns_future_events(): void
+    {
+        $user = $this->createUser();
+        // Past events — should NOT appear
+        Event::factory()->count(2)->create([
+            'visibility' => 'public',
+            'start_at' => now()->subDays(5),
+            'end_at' => now()->subDays(5)->addHour(),
+        ]);
+        // Future events — should appear
+        Event::factory()->count(2)->create([
+            'visibility' => 'public',
+            'start_at' => now()->addDays(1),
+            'end_at' => now()->addDays(1)->addHour(),
+        ]);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/dashboard/events');
+
+        $response->assertStatus(200);
+        $this->assertCount(2, $response->json('data'));
+    }
+
+    public function test_dashboard_events_respects_visibility(): void
+    {
+        $owner = $this->createUser();
+        $viewer = $this->createUser();
+
+        // Public event — viewer should see this
+        Event::factory()->create([
+            'visibility' => 'public',
+            'user_id' => $owner->id,
+            'start_at' => now()->addDays(1),
+            'end_at' => now()->addDays(1)->addHour(),
+        ]);
+        // Private event from someone else — viewer should NOT see this
+        Event::factory()->create([
+            'visibility' => 'private',
+            'user_id' => $owner->id,
+            'start_at' => now()->addDays(1),
+            'end_at' => now()->addDays(1)->addHour(),
+        ]);
+
+        $response = $this->actingAs($viewer)->getJson('/api/v1/dashboard/events');
+
+        $response->assertStatus(200);
+        $this->assertCount(1, $response->json('data'));
+    }
+
+    public function test_dashboard_events_returns_correct_structure(): void
+    {
+        $user = $this->createUser();
+        Event::factory()->create([
+            'visibility' => 'public',
+            'start_at' => now()->addDays(1),
+            'end_at' => now()->addDays(1)->addHour(),
+        ]);
+
+        $response = $this->actingAs($user)->getJson('/api/v1/dashboard/events');
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'data' => [
+                '*' => ['id', 'title', 'start_at', 'end_at', 'all_day', 'color'],
+            ],
+        ]);
     }
 }
