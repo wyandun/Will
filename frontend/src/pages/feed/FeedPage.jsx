@@ -261,7 +261,7 @@ function CommentPanel({ postId, onToast, onCommentCountChange }) {
 
 // ─── PostDetailModal ──────────────────────────────────────────────────────────
 
-function PostDetailModal({ post, onClose, onToast }) {
+function PostDetailModal({ post, onClose, onToast, onPostUpdated }) {
   const { t } = useTranslation('common');
   const backdropRef = useRef(null);
   const emojiRef = useRef(null);
@@ -313,6 +313,7 @@ function PostDetailModal({ post, onClose, onToast }) {
         const data = res.data.data ?? {};
         setLikesCount(data.likes_count ?? 0);
         setUserReaction(data.user_reaction ?? null);
+        onPostUpdated?.(post.id, { likes_count: data.likes_count, user_reaction: data.user_reaction });
       })
       .catch(() => onToast?.(t('common.unexpected_error')));
   }
@@ -451,7 +452,13 @@ function PostDetailModal({ post, onClose, onToast }) {
           <CommentPanel
             postId={post.id}
             onToast={onToast ?? (() => {})}
-            onCommentCountChange={(delta) => setCommentsCount((c) => c + delta)}
+            onCommentCountChange={(delta) => {
+              setCommentsCount((c) => {
+                const next = c + delta;
+                onPostUpdated?.(post.id, { comments_count: next });
+                return next;
+              });
+            }}
           />
         </div>
       </div>
@@ -998,6 +1005,12 @@ export default function FeedPage() {
     fetchPosts(search, meta?.current_page ?? 1);
   }
 
+  function updatePostInList(postId, updates) {
+    setPosts((prev) =>
+      prev.map((p) => (p.id === postId ? { ...p, ...updates } : p))
+    );
+  }
+
   function handleDeletePost(post) {
     if (!window.confirm(t('feed.delete_post_confirm'))) return;
     feedApi.deletePost(post.id)
@@ -1085,6 +1098,7 @@ export default function FeedPage() {
           post={detailPost}
           onClose={() => setDetailPost(null)}
           onToast={setToast}
+          onPostUpdated={updatePostInList}
         />
       )}
 
@@ -1191,6 +1205,7 @@ PostDetailModal.propTypes = {
   post: postShape.isRequired,
   onClose: PropTypes.func.isRequired,
   onToast: PropTypes.func,
+  onPostUpdated: PropTypes.func,
 };
 
 UserAvatar.propTypes = {
