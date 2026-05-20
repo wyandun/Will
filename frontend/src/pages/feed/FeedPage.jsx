@@ -261,23 +261,28 @@ function CommentPanel({ postId, onToast, onCommentCountChange }) {
 
 // ─── PostDetailModal ──────────────────────────────────────────────────────────
 
-function PostDetailModal({ post, onClose }) {
+function PostDetailModal({ post, onClose, onToast }) {
   const { t } = useTranslation('common');
   const backdropRef = useRef(null);
+  const emojiRef = useRef(null);
   const initial = (post.author_name ?? '?')[0].toUpperCase();
   const typeKey = `feed.type_${post.type}`;
   const roleBadge = post.author_role ? ROLE_BADGES[post.author_role] : null;
 
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
+  const [likesCount, setLikesCount] = useState(post.likes_count ?? 0);
+  const [userReaction, setUserReaction] = useState(post.user_reaction ?? null);
+  const [commentsCount, setCommentsCount] = useState(post.comments_count ?? 0);
+
   const reactionsLabel = t(
-    (post.likes_count ?? 0) === 1 ? 'feed.reactions_count_one' : 'feed.reactions_count_other',
-    { count: post.likes_count ?? 0 }
+    likesCount === 1 ? 'feed.reactions_count_one' : 'feed.reactions_count_other',
+    { count: likesCount }
   );
   const commentsLabel = t(
-    (post.comments_count ?? 0) === 1 ? 'feed.comments_count_one' : 'feed.comments_count_other',
-    { count: post.comments_count ?? 0 }
+    commentsCount === 1 ? 'feed.comments_count_one' : 'feed.comments_count_other',
+    { count: commentsCount }
   );
 
-  // Close on Escape key
   useEffect(() => {
     function handleKeyDown(e) {
       if (e.key === 'Escape') onClose();
@@ -286,8 +291,30 @@ function PostDetailModal({ post, onClose }) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
+  useEffect(() => {
+    if (!emojiPickerOpen) return;
+    function handleOutside(e) {
+      if (emojiRef.current && !emojiRef.current.contains(e.target)) {
+        setEmojiPickerOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [emojiPickerOpen]);
+
   function handleBackdrop(e) {
     if (e.target === backdropRef.current) onClose();
+  }
+
+  function handleReact(emoji) {
+    setEmojiPickerOpen(false);
+    feedApi.reactToPost(post.id, emoji)
+      .then((res) => {
+        const data = res.data.data ?? {};
+        setLikesCount(data.likes_count ?? 0);
+        setUserReaction(data.user_reaction ?? null);
+      })
+      .catch(() => onToast?.(t('common.unexpected_error')));
   }
 
   return (
@@ -307,7 +334,7 @@ function PostDetailModal({ post, onClose }) {
           <IconX />
         </button>
 
-        {/* Scrollable body — stopPropagation prevents backdrop from closing modal on inner clicks */}
+        {/* Scrollable body */}
         <div className="overflow-y-auto flex flex-col gap-4 p-6 pr-12" onClick={(e) => e.stopPropagation()}>
           {/* Type badge + pin + time */}
           <div className="flex items-center gap-2 flex-wrap">
@@ -344,7 +371,7 @@ function PostDetailModal({ post, onClose }) {
             <LinkifiedText text={post.body} />
           </p>
 
-          {/* Read original article (news posts with article_url) */}
+          {/* Read original article */}
           {post.article_url && (
             <a
               href={post.article_url}
@@ -384,6 +411,48 @@ function PostDetailModal({ post, onClose }) {
           <p className="text-xs text-slate-400">
             {reactionsLabel} · {commentsLabel}
           </p>
+
+          {/* Action bar */}
+          <div className="flex items-center gap-2 border-t border-slate-100 pt-2">
+            <div className="relative" ref={emojiRef}>
+              <button
+                type="button"
+                onClick={() => setEmojiPickerOpen((prev) => !prev)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
+                  userReaction
+                    ? 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+                    : 'text-slate-500 hover:bg-slate-100'
+                }`}
+              >
+                <span className="text-base leading-none">{userReaction ?? '😊'}</span>
+                {t('feed.btn_react')}
+              </button>
+              {emojiPickerOpen && (
+                <div className="absolute left-0 top-9 z-20 flex items-center gap-1 bg-white border border-slate-200 rounded-2xl shadow-lg px-2 py-1.5">
+                  {EMOJI_OPTIONS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => handleReact(emoji)}
+                      className={`text-xl leading-none p-1 rounded-lg hover:bg-slate-100 transition-colors ${
+                        userReaction === emoji ? 'bg-amber-100' : ''
+                      }`}
+                      aria-label={emoji}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Comments — always shown inside modal */}
+          <CommentPanel
+            postId={post.id}
+            onToast={onToast ?? (() => {})}
+            onCommentCountChange={(delta) => setCommentsCount((c) => c + delta)}
+          />
         </div>
       </div>
     </div>
@@ -566,64 +635,65 @@ function PostCard({ post, currentUser, role, onEdit, onDelete, onToast, onOpen }
         {reactionsLabel} · {commentsLabel}
       </div>
 
-      {/* Action buttons */}
-      <div className="flex items-center gap-2 pt-1 border-t border-slate-50" onClick={(e) => e.stopPropagation()}>
-        {/* React button with emoji picker */}
-        <div className="relative" ref={emojiRef}>
+      {/* Action buttons + inline comment panel — stopPropagation prevents card click */}
+      <div onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2 pt-1 border-t border-slate-50">
+          {/* React button with emoji picker */}
+          <div className="relative" ref={emojiRef}>
+            <button
+              type="button"
+              onClick={() => setEmojiPickerOpen((prev) => !prev)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
+                userReaction
+                  ? 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+                  : 'text-slate-500 hover:bg-slate-100'
+              }`}
+            >
+              <span className="text-base leading-none">{userReaction ?? '😊'}</span>
+              {t('feed.btn_react')}
+            </button>
+            {emojiPickerOpen && (
+              <div className="absolute left-0 bottom-9 z-20 flex items-center gap-1 bg-white border border-slate-200 rounded-2xl shadow-lg px-2 py-1.5">
+                {EMOJI_OPTIONS.map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => handleReact(emoji)}
+                    className={`text-xl leading-none p-1 rounded-lg hover:bg-slate-100 transition-colors ${
+                      userReaction === emoji ? 'bg-amber-100' : ''
+                    }`}
+                    aria-label={emoji}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Comment button */}
           <button
             type="button"
-            onClick={() => setEmojiPickerOpen((prev) => !prev)}
+            onClick={() => setCommentOpen((prev) => !prev)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
-              userReaction
-                ? 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+              commentOpen
+                ? 'bg-blue-50 text-blue-700 hover:bg-blue-100'
                 : 'text-slate-500 hover:bg-slate-100'
             }`}
           >
-            <span className="text-base leading-none">{userReaction ?? '😊'}</span>
-            {t('feed.btn_react')}
+            <IconComment className="w-4 h-4" />
+            {t('feed.btn_comment')}
           </button>
-          {emojiPickerOpen && (
-            <div className="absolute left-0 bottom-9 z-20 flex items-center gap-1 bg-white border border-slate-200 rounded-2xl shadow-lg px-2 py-1.5">
-              {EMOJI_OPTIONS.map((emoji) => (
-                <button
-                  key={emoji}
-                  type="button"
-                  onClick={() => handleReact(emoji)}
-                  className={`text-xl leading-none p-1 rounded-lg hover:bg-slate-100 transition-colors ${
-                    userReaction === emoji ? 'bg-amber-100' : ''
-                  }`}
-                  aria-label={emoji}
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
 
-        {/* Comment button */}
-        <button
-          type="button"
-          onClick={() => setCommentOpen((prev) => !prev)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
-            commentOpen
-              ? 'bg-blue-50 text-blue-700 hover:bg-blue-100'
-              : 'text-slate-500 hover:bg-slate-100'
-          }`}
-        >
-          <IconComment className="w-4 h-4" />
-          {t('feed.btn_comment')}
-        </button>
+        {commentOpen && (
+          <CommentPanel
+            postId={post.id}
+            onToast={onToast}
+            onCommentCountChange={(delta) => setCommentsCount((c) => c + delta)}
+          />
+        )}
       </div>
-
-      {/* Inline comment panel */}
-      {commentOpen && (
-        <CommentPanel
-          postId={post.id}
-          onToast={onToast}
-          onCommentCountChange={(delta) => setCommentsCount((c) => c + delta)}
-        />
-      )}
     </div>
   );
 }
@@ -1014,6 +1084,7 @@ export default function FeedPage() {
         <PostDetailModal
           post={detailPost}
           onClose={() => setDetailPost(null)}
+          onToast={setToast}
         />
       )}
 
@@ -1119,6 +1190,7 @@ PostCard.propTypes = {
 PostDetailModal.propTypes = {
   post: postShape.isRequired,
   onClose: PropTypes.func.isRequired,
+  onToast: PropTypes.func,
 };
 
 UserAvatar.propTypes = {

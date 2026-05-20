@@ -160,6 +160,7 @@ export default function AuthenticatedLayout() {
   const { t } = useTranslation('common');
   const { loading } = useAuthVerify();
   const activeSection = useActiveSection();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   if (loading) {
     return (
@@ -195,10 +196,27 @@ export default function AuthenticatedLayout() {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      {/* Mobile sidebar backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-20 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Header — fixed full-width at top, always above sidebar */}
-      <header className="fixed top-0 left-0 right-0 h-14 bg-white border-b border-slate-200 z-30 flex items-center px-6">
-        {/* Left — logo */}
-        <div className="w-64 flex items-center shrink-0 pl-0">
+      <header className="fixed top-0 left-0 right-0 h-14 bg-white border-b border-slate-200 z-40 flex items-center px-4 lg:px-6">
+        {/* Left — hamburger (mobile) + logo */}
+        <div className="flex items-center gap-2 shrink-0 lg:w-64">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors focus:outline-none"
+            aria-label="Open menu"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
           <img src="/logo.png" alt="Strategic Mates" className="h-8 w-auto object-contain" />
         </div>
 
@@ -219,10 +237,10 @@ export default function AuthenticatedLayout() {
       </header>
 
       {/* Sidebar — fixed, starts below the header */}
-      <Sidebar />
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      {/* Page content — offset right by sidebar, down by header */}
-      <main className="ml-64 pt-14 min-h-screen">
+      {/* Page content — offset right by sidebar only on desktop, down by header */}
+      <main className="lg:ml-64 pt-14 min-h-screen">
         <div className="p-6">
           <Outlet />
         </div>
