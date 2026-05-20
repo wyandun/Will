@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { dashboardApi } from '../api/dashboard';
+import { eventsApi } from '../api/events';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -52,7 +53,7 @@ function SkeletonCard() {
 
 // ─── Event Card ──────────────────────────────────────────────────────────────
 
-function EventCard({ ev, locale, t }) {
+function EventCard({ ev, locale, t, onClick }) {
   const eventDate = new Date(ev.start_at);
   const relativeLabel = getRelativeLabel(ev.start_at, t, locale);
   const isToday = relativeLabel === t('sidebar.today');
@@ -81,7 +82,10 @@ function EventCard({ ev, locale, t }) {
     : eventDate.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <li className="flex items-start gap-3">
+    <li
+      className={`flex items-start gap-3${onClick ? ' cursor-pointer hover:bg-slate-50 rounded-lg transition-colors -mx-1 px-1' : ''}`}
+      onClick={() => onClick?.(ev)}
+    >
       {/* Color bar */}
       <div
         className="flex-shrink-0 w-1 self-stretch rounded-full"
@@ -119,26 +123,57 @@ EventCard.propTypes = {
   }).isRequired,
   locale: PropTypes.string.isRequired,
   t: PropTypes.func.isRequired,
+  onClick: PropTypes.func,
 };
 
 // ─── UpcomingEventsSidebar ────────────────────────────────────────────────────
 
-export default function UpcomingEventsSidebar() {
+export default function UpcomingEventsSidebar({ hideFooter = false, paginated = false, refreshKey = 0, onEventClick, onCreateClick }) {
   const { t, i18n } = useTranslation('common');
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);
+  const [meta, setMeta] = useState(null);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const locale = i18n.language;
 
   useEffect(() => {
-    dashboardApi.getEvents()
-      .then(setEvents)
-      .catch(() => setEvents([]))
-      .finally(() => setLoading(false));
-  }, []);
+    setLoading(true);
+    if (paginated) {
+      eventsApi.getEvents({
+        start_from: new Date().toISOString(),
+        per_page: 5,
+        page,
+      })
+        .then((result) => {
+          setEvents(result.data);
+          setMeta(result.meta);
+        })
+        .catch(() => { setEvents([]); setMeta(null); })
+        .finally(() => setLoading(false));
+    } else {
+      dashboardApi.getEvents()
+        .then(setEvents)
+        .catch(() => setEvents([]))
+        .finally(() => setLoading(false));
+    }
+  }, [refreshKey, paginated, page]);
 
   return (
     <div className="bg-white rounded-2xl p-6 border border-slate-100 flex flex-col gap-4">
+      {/* Create button */}
+      {onCreateClick && (
+        <button
+          onClick={onCreateClick}
+          className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+          {t('calendar.new_event')}
+        </button>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-amber-500">
@@ -166,18 +201,57 @@ export default function UpcomingEventsSidebar() {
       ) : (
         <ul className="flex flex-col gap-4">
           {events.map((ev) => (
-            <EventCard key={ev.id} ev={ev} locale={locale} t={t} />
+            <EventCard key={ev.id} ev={ev} locale={locale} t={t} onClick={onEventClick} />
           ))}
         </ul>
       )}
 
+      {/* Pagination */}
+      {paginated && meta && meta.last_page > 1 && (
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page <= 1}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            aria-label={t('calendar.prev')}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <span className="text-xs text-slate-500">
+            {t('sidebar.page_of', { current: meta.current_page, total: meta.last_page })}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(meta.last_page, p + 1))}
+            disabled={page >= meta.last_page}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            aria-label={t('calendar.next')}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {/* Footer */}
-      <button
-        onClick={() => navigate('/calendar')}
-        className="mt-auto w-full border border-slate-200 rounded-xl py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
-      >
-        {t('sidebar.view_all')} →
-      </button>
+      {!hideFooter && (
+        <button
+          onClick={() => navigate('/calendar')}
+          className="mt-auto w-full border border-slate-200 rounded-xl py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+        >
+          {t('sidebar.view_all')} →
+        </button>
+      )}
     </div>
   );
 }
+
+UpcomingEventsSidebar.propTypes = {
+  hideFooter: PropTypes.bool,
+  paginated: PropTypes.bool,
+  refreshKey: PropTypes.number,
+  onEventClick: PropTypes.func,
+  onCreateClick: PropTypes.func,
+};

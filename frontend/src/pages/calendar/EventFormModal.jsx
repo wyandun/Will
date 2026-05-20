@@ -40,13 +40,14 @@ function toLocalDate(isoString) {
   return isoString.slice(0, 10);
 }
 
-export default function EventFormModal({ event, initialDate, onClose, onSaved }) {
+export default function EventFormModal({ event, initialDate, onClose, onSaved, onDelete }) {
   const { t } = useTranslation('common');
   const isEditing = event !== null;
 
   const [form, setForm] = useState(EMPTY_FORM);
   const [apiError, setApiError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (event) {
@@ -64,9 +65,11 @@ export default function EventFormModal({ event, initialDate, onClose, onSaved })
       const pad = (n) => String(n).padStart(2, '0');
       const d = initialDate;
       const hasTime = d.getHours() !== 0 || d.getMinutes() !== 0;
-      const start = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      const dateOnly = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      const start = hasTime ? `${dateOnly}T${pad(d.getHours())}:${pad(d.getMinutes())}` : dateOnly;
       const endD = new Date(d.getTime() + 60 * 60 * 1000); // +1h
-      const end = `${endD.getFullYear()}-${pad(endD.getMonth() + 1)}-${pad(endD.getDate())}T${pad(endD.getHours())}:${pad(endD.getMinutes())}`;
+      const endDateOnly = `${endD.getFullYear()}-${pad(endD.getMonth() + 1)}-${pad(endD.getDate())}`;
+      const end = hasTime ? `${endDateOnly}T${pad(endD.getHours())}:${pad(endD.getMinutes())}` : dateOnly;
       setForm({ ...EMPTY_FORM, start_at: start, end_at: end, all_day: !hasTime });
     } else {
       setForm(EMPTY_FORM);
@@ -309,22 +312,58 @@ export default function EventFormModal({ event, initialDate, onClose, onSaved })
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50 rounded-b-2xl">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 bg-white border border-slate-300 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {t('common.cancel')}
-            </button>
-            <button
-              type="submit"
-              disabled={isSaveDisabled}
-              className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isSubmitting ? t('common.saving') : t('common.save')}
-            </button>
+          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 bg-slate-50 rounded-b-2xl">
+            {/* Left: Delete (edit mode only) */}
+            <div>
+              {isEditing && onDelete && !showDeleteConfirm && (
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  disabled={isSubmitting}
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-red-600 bg-white border border-red-300 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {t('common.delete')}
+                </button>
+              )}
+              {showDeleteConfirm && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-red-600">{t('calendar.delete_confirm')}</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="px-3 py-1 rounded text-xs font-medium text-slate-600 bg-white border border-slate-300 hover:bg-slate-50 transition-colors"
+                  >
+                    {t('common.cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onDelete(event.id)}
+                    className="px-3 py-1 rounded text-xs font-medium text-white bg-red-600 hover:bg-red-700 transition-colors"
+                  >
+                    {t('common.delete')}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Right: Cancel + Save */}
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isSubmitting}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 bg-white border border-slate-300 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                type="submit"
+                disabled={isSaveDisabled}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isSubmitting ? t('common.saving') : t('common.save')}
+              </button>
+            </div>
           </div>
         </form>
       </div>
@@ -347,4 +386,5 @@ EventFormModal.propTypes = {
   initialDate: PropTypes.instanceOf(Date),
   onClose: PropTypes.func.isRequired,
   onSaved: PropTypes.func.isRequired,
+  onDelete: PropTypes.func,
 };

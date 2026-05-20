@@ -497,6 +497,7 @@
     "tomorrow": "Mañana",
     "all_day": "Todo el día",
     "view_all": "Ver todos los eventos",
-    "no_events": "No hay eventos próximos"
+    "no_events": "No hay eventos próximos",
+    "page_of": "{{current}} / {{total}}"
   }
 }
