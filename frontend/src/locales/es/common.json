@@ -170,7 +170,8 @@
     "comment_deleted": "Comentario eliminado.",
     "comment_error": "Error al publicar el comentario. Intentá de nuevo.",
     "no_comments": "Sin comentarios aún. ¡Sé el primero!",
-    "load_comments_error": "Error al cargar los comentarios."
+    "load_comments_error": "Error al cargar los comentarios.",
+    "read_article": "Leer artículo original"
   },
   "franchises": {
     "title": "Franquicias",
@@ -436,5 +437,20 @@
       "password_optional": "Dejar en blanco para no cambiar",
       "password_min": "La contraseña debe tener al menos 12 caracteres."
     }
+  },
+  "news": {
+    "modal_title": "Noticias con IA",
+    "last_updated": "Última actualización",
+    "fetch_btn": "Buscar Noticias",
+    "fetching": "Buscando…",
+    "fetch_queued": "Búsqueda en cola. Los artículos aparecerán en breve.",
+    "ai_summary": "Resumen IA",
+    "publish_to_feed": "Publicar en Feed",
+    "reject": "Rechazar",
+    "published": "Publicado",
+    "published_success": "Artículo publicado en el Feed.",
+    "rejected_success": "Artículo rechazado.",
+    "no_articles": "No hay artículos listos para revisar.",
+    "no_articles_hint": "Haz clic en Buscar Noticias para obtener artículos relevantes de fuentes externas."
   }
 }

@@ -31,7 +31,6 @@ class DatabaseSeeder extends Seeder
     {
         $this->seedRoles();
         $this->createSuperAdmin();
-        $this->call(FeedSeeder::class);
     }
 
     private function seedRoles(): void

@@ -162,9 +162,26 @@ class FeedSeeder extends Seeder
         }
 
         $now = now();
+        $inserted = 0;
+        $skipped = 0;
 
         foreach (self::POSTS as $index => $post) {
-            DB::table('posts')->insertOrIgnore([
+            // Use title as the idempotency key — if a post with this exact title
+            // already exists, skip it. This avoids relying on insertOrIgnore which
+            // requires a UNIQUE constraint to work in PostgreSQL and silently inserts
+            // nothing when no such constraint exists.
+            $exists = DB::table('posts')
+                ->where('title', $post['title'])
+                ->whereNull('deleted_at')
+                ->exists();
+
+            if ($exists) {
+                $skipped++;
+
+                continue;
+            }
+
+            DB::table('posts')->insert([
                 'author_id' => $author->id,
                 'franchise_id' => null,
                 'title' => $post['title'],
@@ -179,8 +196,10 @@ class FeedSeeder extends Seeder
                 'created_at' => $now->copy()->subHours($index * 3),
                 'updated_at' => $now->copy()->subHours($index * 3),
             ]);
+
+            $inserted++;
         }
 
-        $this->command->info('FeedSeeder: '.count(self::POSTS).' posts seeded.');
+        $this->command->info("FeedSeeder: {$inserted} posts inserted, {$skipped} skipped (already exist).");
     }
 }
