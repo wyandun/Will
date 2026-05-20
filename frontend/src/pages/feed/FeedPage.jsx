@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { feedApi } from '../../api/feed';
 import { useAuthStore } from '../../store/authStore';
 import PostFormModal from './PostFormModal';
+import { timeAgo } from '../../utils/time';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -40,17 +41,6 @@ function IconTrash({ className = 'w-3.5 h-3.5' }) {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function timeAgo(dateStr) {
-  if (!dateStr) return '';
-  const normalized = /[Z+-]\d*$/.test(dateStr) ? dateStr : dateStr.replace(' ', 'T') + 'Z';
-  const diff = Math.floor((Date.now() - new Date(normalized).getTime()) / 1000);
-  if (diff <= 0) return 'just now';
-  if (diff < 60) return `${diff}s ago`;
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
-}
 
 const TYPE_COLORS = {
   announcement: 'bg-blue-100 text-blue-700',

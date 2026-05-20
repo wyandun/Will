@@ -44,24 +44,25 @@ class SendInvitationRequest extends FormRequest
                 Rule::in(Role::invitable()),
             ],
 
-            // Required when inviting an admin_sm so the invited user is linked
-            // to the correct franchise. Optional for all other roles (the service
-            // falls back to the inviter's own sm_franchise_id).
-            // 'sometimes' is intentionally absent: withValidator() needs to be able
-            // to add 'required' when role=admin_sm, which won't work if the base rule
-            // skips validation when the field is absent.
+            // Required only when a superadmin invites an admin_sm — the superadmin
+            // must specify which franchise to assign the new admin to.
+            // When an admin_sm sends the invitation, sm_franchise_id is optional
+            // because the service already falls back to the inviter's own
+            // sm_franchise_id (see InvitationService::send()).
             'sm_franchise_id' => ['nullable', 'integer', 'exists:franchises,id'],
         ];
     }
 
     /**
-     * sm_franchise_id is required when the role is admin_sm.
-     * Using withValidator() so the conditional rule runs after base validation.
+     * sm_franchise_id is required only when a superadmin invites an admin_sm.
+     * admin_sm inviters are scoped to their own franchise, so the field is
+     * optional for them — the service resolves it from the inviter's record.
      */
     public function withValidator(Validator $validator): void
     {
         $validator->sometimes('sm_franchise_id', 'required', function ($input) {
-            return $input->role === Role::ADMIN_SM;
+            return $this->user()?->hasRole(Role::SUPERADMIN)
+                && $input->role === Role::ADMIN_SM;
         });
     }
 

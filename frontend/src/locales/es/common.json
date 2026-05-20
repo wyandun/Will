@@ -102,7 +102,8 @@
     "view_all_maps": "Ver todos los mapas",
     "pending": "Pendiente",
     "signed": "Firmado",
-    "read_more": "Leer"
+    "read_more": "Leer",
+    "repository_label": "Repositorio"
   },
   "feed": {
     "title": "Feed",
