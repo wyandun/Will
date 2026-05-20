@@ -85,16 +85,18 @@ const EMOJI_OPTIONS = ['👍', '❤️', '😂', '🎉', '😮'];
  * Convert URLs in plain text to clickable <a> elements.
  * Handles http:// and https:// links.
  */
+const URL_SPLIT_RE = /(https?:\/\/[^\s]+)/g;
+const URL_TEST_RE = /^https?:\/\/[^\s]+$/;
+
 function LinkifiedText({ text }) {
   if (!text) return null;
 
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
-  const parts = text.split(urlRegex);
+  const parts = text.split(URL_SPLIT_RE);
 
   return (
     <>
       {parts.map((part, i) =>
-        urlRegex.test(part) ? (
+        URL_TEST_RE.test(part) ? (
           <a
             key={i}
             href={part}
@@ -129,6 +131,7 @@ function CommentPanel({ postId, onToast, onCommentCountChange }) {
   const [sending, setSending] = useState(false);
   const [text, setText] = useState('');
   const inputRef = useRef(null);
+  const sendingRef = useRef(false);
 
   const fetchComments = (page = 1) => {
     setLoading(true);
@@ -149,7 +152,8 @@ function CommentPanel({ postId, onToast, onCommentCountChange }) {
 
   function handleSend() {
     const trimmed = text.trim();
-    if (!trimmed) return;
+    if (!trimmed || sendingRef.current) return;
+    sendingRef.current = true;
     setSending(true);
     feedApi.addComment(postId, trimmed)
       .then((res) => {
@@ -160,7 +164,7 @@ function CommentPanel({ postId, onToast, onCommentCountChange }) {
         onCommentCountChange?.(1);
       })
       .catch(() => onToast(t('feed.comment_error')))
-      .finally(() => setSending(false));
+      .finally(() => { sendingRef.current = false; setSending(false); });
   }
 
   function handleKeyDown(e) {
@@ -993,6 +997,7 @@ export default function FeedPage() {
   }
 
   function handlePageChange(newPage) {
+    setDetailPostId(null);
     fetchPosts(search, newPage);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }

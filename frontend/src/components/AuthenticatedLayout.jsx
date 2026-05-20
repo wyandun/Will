@@ -162,6 +162,15 @@ export default function AuthenticatedLayout() {
   const activeSection = useActiveSection();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    function handleEsc(e) {
+      if (e.key === 'Escape') setSidebarOpen(false);
+    }
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [sidebarOpen]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -209,7 +218,7 @@ export default function AuthenticatedLayout() {
         {/* Left — hamburger (mobile) + logo */}
         <div className="flex items-center gap-2 shrink-0 lg:w-64">
           <button
-            onClick={() => setSidebarOpen(true)}
+            onClick={() => setSidebarOpen((v) => !v)}
             className="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors focus:outline-none"
             aria-label="Open menu"
           >
