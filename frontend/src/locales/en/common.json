@@ -490,5 +490,13 @@
   "policies": {
     "unauthorized": "You don't have permission to perform this action.",
     "franchise_required": "You must be assigned to a franchise to perform this action."
+  },
+  "sidebar": {
+    "upcoming_events": "Next scheduled events",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "all_day": "All day",
+    "view_all": "View all events",
+    "no_events": "No upcoming events"
   }
 }
