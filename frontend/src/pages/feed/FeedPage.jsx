@@ -85,16 +85,18 @@ const EMOJI_OPTIONS = ['👍', '❤️', '😂', '🎉', '😮'];
  * Convert URLs in plain text to clickable <a> elements.
  * Handles http:// and https:// links.
  */
+const URL_SPLIT_RE = /(https?:\/\/[^\s]+)/g;
+const URL_TEST_RE = /^https?:\/\/[^\s]+$/;
+
 function LinkifiedText({ text }) {
   if (!text) return null;
 
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
-  const parts = text.split(urlRegex);
+  const parts = text.split(URL_SPLIT_RE);
 
   return (
     <>
       {parts.map((part, i) =>
-        urlRegex.test(part) ? (
+        URL_TEST_RE.test(part) ? (
           <a
             key={i}
             href={part}
@@ -129,13 +131,15 @@ function CommentPanel({ postId, onToast, onCommentCountChange }) {
   const [sending, setSending] = useState(false);
   const [text, setText] = useState('');
   const inputRef = useRef(null);
+  const sendingRef = useRef(false);
 
   const fetchComments = (page = 1) => {
     setLoading(true);
     feedApi.getComments(postId, page)
       .then((res) => {
         const payload = res.data.data ?? {};
-        setComments(payload.items ?? []);
+        const items = payload.items ?? [];
+        setComments((prev) => page === 1 ? items : [...prev, ...items]);
         setMeta(payload.meta ?? null);
       })
       .catch(() => onToast(t('feed.load_comments_error')))
@@ -149,7 +153,8 @@ function CommentPanel({ postId, onToast, onCommentCountChange }) {
 
   function handleSend() {
     const trimmed = text.trim();
-    if (!trimmed) return;
+    if (!trimmed || sendingRef.current) return;
+    sendingRef.current = true;
     setSending(true);
     feedApi.addComment(postId, trimmed)
       .then((res) => {
@@ -160,7 +165,7 @@ function CommentPanel({ postId, onToast, onCommentCountChange }) {
         onCommentCountChange?.(1);
       })
       .catch(() => onToast(t('feed.comment_error')))
-      .finally(() => setSending(false));
+      .finally(() => { sendingRef.current = false; setSending(false); });
   }
 
   function handleKeyDown(e) {
@@ -261,7 +266,7 @@ function CommentPanel({ postId, onToast, onCommentCountChange }) {
 
 // ─── PostDetailModal ──────────────────────────────────────────────────────────
 
-function PostDetailModal({ post, onClose, onToast }) {
+function PostDetailModal({ post, onClose, onToast, onPostUpdated }) {
   const { t } = useTranslation('common');
   const backdropRef = useRef(null);
   const emojiRef = useRef(null);
@@ -270,9 +275,10 @@ function PostDetailModal({ post, onClose, onToast }) {
   const roleBadge = post.author_role ? ROLE_BADGES[post.author_role] : null;
 
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
-  const [likesCount, setLikesCount] = useState(post.likes_count ?? 0);
-  const [userReaction, setUserReaction] = useState(post.user_reaction ?? null);
-  const [commentsCount, setCommentsCount] = useState(post.comments_count ?? 0);
+
+  const likesCount = post.likes_count ?? 0;
+  const userReaction = post.user_reaction ?? null;
+  const commentsCount = post.comments_count ?? 0;
 
   const reactionsLabel = t(
     likesCount === 1 ? 'feed.reactions_count_one' : 'feed.reactions_count_other',
@@ -311,8 +317,7 @@ function PostDetailModal({ post, onClose, onToast }) {
     feedApi.reactToPost(post.id, emoji)
       .then((res) => {
         const data = res.data.data ?? {};
-        setLikesCount(data.likes_count ?? 0);
-        setUserReaction(data.user_reaction ?? null);
+        onPostUpdated?.(post.id, { likes_count: data.likes_count ?? 0, user_reaction: data.user_reaction ?? null });
       })
       .catch(() => onToast?.(t('common.unexpected_error')));
   }
@@ -451,7 +456,9 @@ function PostDetailModal({ post, onClose, onToast }) {
           <CommentPanel
             postId={post.id}
             onToast={onToast ?? (() => {})}
-            onCommentCountChange={(delta) => setCommentsCount((c) => c + delta)}
+            onCommentCountChange={(delta) =>
+              onPostUpdated?.(post.id, { comments_count: (post.comments_count ?? 0) + delta })
+            }
           />
         </div>
       </div>
@@ -461,16 +468,17 @@ function PostDetailModal({ post, onClose, onToast }) {
 
 // ─── PostCard ─────────────────────────────────────────────────────────────────
 
-function PostCard({ post, currentUser, role, onEdit, onDelete, onToast, onOpen }) {
+function PostCard({ post, currentUser, role, onEdit, onDelete, onToast, onOpen, onPostUpdated }) {
   const { t } = useTranslation('common');
   const [menuOpen, setMenuOpen] = useState(false);
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const [commentOpen, setCommentOpen] = useState(false);
-  const [likesCount, setLikesCount] = useState(post.likes_count ?? 0);
-  const [userReaction, setUserReaction] = useState(post.user_reaction ?? null);
-  const [commentsCount, setCommentsCount] = useState(post.comments_count ?? 0);
   const menuRef = useRef(null);
   const emojiRef = useRef(null);
+
+  const likesCount = post.likes_count ?? 0;
+  const userReaction = post.user_reaction ?? null;
+  const commentsCount = post.comments_count ?? 0;
 
   const initial = (post.author_name ?? '?')[0].toUpperCase();
   const typeKey = `feed.type_${post.type}`;
@@ -502,8 +510,7 @@ function PostCard({ post, currentUser, role, onEdit, onDelete, onToast, onOpen }
     feedApi.reactToPost(post.id, emoji)
       .then((res) => {
         const data = res.data.data ?? {};
-        setLikesCount(data.likes_count ?? 0);
-        setUserReaction(data.user_reaction ?? null);
+        onPostUpdated(post.id, { likes_count: data.likes_count ?? 0, user_reaction: data.user_reaction ?? null });
       })
       .catch(() => onToast(t('common.unexpected_error')));
   }
@@ -690,7 +697,9 @@ function PostCard({ post, currentUser, role, onEdit, onDelete, onToast, onOpen }
           <CommentPanel
             postId={post.id}
             onToast={onToast}
-            onCommentCountChange={(delta) => setCommentsCount((c) => c + delta)}
+            onCommentCountChange={(delta) =>
+              onPostUpdated(post.id, { comments_count: (post.comments_count ?? 0) + delta })
+            }
           />
         )}
       </div>
@@ -735,39 +744,43 @@ function ComposeBar({ currentUser, role, onOpenCreate, onOpenNews }) {
   const initial = (currentUser.name ?? '?')[0].toUpperCase();
 
   return (
-    <div className="flex items-center gap-3 p-4 bg-white rounded-2xl border border-slate-100">
-      {currentUser.avatar_url ? (
-        <img
-          src={currentUser.avatar_url}
-          alt={currentUser.name}
-          className="w-9 h-9 rounded-full object-cover flex-shrink-0"
-        />
-      ) : (
-        <div className="w-9 h-9 rounded-full bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
-          {initial}
-        </div>
-      )}
-      <button
-        type="button"
-        onClick={onOpenCreate}
-        className="flex-1 text-left text-sm text-slate-400 bg-slate-50 hover:bg-slate-100 rounded-xl px-4 py-2.5 transition-colors"
-      >
-        {t('feed.compose_placeholder')}
-      </button>
-      <button
-        type="button"
-        onClick={onOpenCreate}
-        className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors flex-shrink-0"
-      >
-        {t('feed.new_post')}
-      </button>
-      <button
-        type="button"
-        onClick={onOpenNews}
-        className="px-4 py-2 rounded-xl text-sm font-semibold text-amber-700 bg-amber-100 hover:bg-amber-200 transition-colors flex-shrink-0"
-      >
-        {t('feed.news_btn')}
-      </button>
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-4 bg-white rounded-2xl border border-slate-100">
+      <div className="flex items-center gap-3 flex-1 min-w-0">
+        {currentUser.avatar_url ? (
+          <img
+            src={currentUser.avatar_url}
+            alt={currentUser.name}
+            className="w-9 h-9 rounded-full object-cover flex-shrink-0"
+          />
+        ) : (
+          <div className="w-9 h-9 rounded-full bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
+            {initial}
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={onOpenCreate}
+          className="flex-1 text-left text-sm text-slate-400 bg-slate-50 hover:bg-slate-100 rounded-xl px-4 py-2.5 transition-colors"
+        >
+          {t('feed.compose_placeholder')}
+        </button>
+      </div>
+      <div className="flex gap-2 flex-shrink-0">
+        <button
+          type="button"
+          onClick={onOpenCreate}
+          className="flex-1 sm:flex-none px-4 py-2 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+        >
+          {t('feed.new_post')}
+        </button>
+        <button
+          type="button"
+          onClick={onOpenNews}
+          className="flex-1 sm:flex-none px-4 py-2 rounded-xl text-sm font-semibold text-amber-700 bg-amber-100 hover:bg-amber-200 transition-colors"
+        >
+          {t('feed.news_btn')}
+        </button>
+      </div>
     </div>
   );
 }
@@ -948,7 +961,8 @@ export default function FeedPage() {
   // Modal state
   const [modalPost, setModalPost] = useState(undefined); // undefined=closed, null=create, object=edit
   const [newsModalOpen, setNewsModalOpen] = useState(false);
-  const [detailPost, setDetailPost] = useState(null);
+  const [detailPostId, setDetailPostId] = useState(null);
+  const detailPost = posts.find((p) => p.id === detailPostId) ?? null;
   const [toast, setToast] = useState('');
 
   const fetchPosts = (term, pageNum) => {
@@ -988,6 +1002,7 @@ export default function FeedPage() {
   }
 
   function handlePageChange(newPage) {
+    setDetailPostId(null);
     fetchPosts(search, newPage);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -996,6 +1011,12 @@ export default function FeedPage() {
     setModalPost(undefined);
     setToast(message);
     fetchPosts(search, meta?.current_page ?? 1);
+  }
+
+  function updatePostInList(postId, updates) {
+    setPosts((prev) =>
+      prev.map((p) => (p.id === postId ? { ...p, ...updates } : p))
+    );
   }
 
   function handleDeletePost(post) {
@@ -1009,7 +1030,7 @@ export default function FeedPage() {
   }
 
   return (
-    <div className="flex gap-5">
+    <div className="flex flex-col lg:flex-row gap-5">
       {/* Left column — compose + search + posts */}
       <div className="flex-1 min-w-0 flex flex-col gap-5">
         {/* Compose bar */}
@@ -1063,7 +1084,8 @@ export default function FeedPage() {
                   onEdit={(p) => setModalPost(p)}
                   onDelete={handleDeletePost}
                   onToast={setToast}
-                  onOpen={() => setDetailPost(post)}
+                  onOpen={() => setDetailPostId(post.id)}
+                  onPostUpdated={updatePostInList}
                 />
               ))}
             </div>
@@ -1073,8 +1095,8 @@ export default function FeedPage() {
         )}
       </div>
 
-      {/* Right column — presence panels */}
-      <div className="w-72 flex-shrink-0 flex flex-col gap-4 sticky top-20 self-start">
+      {/* Right column — presence panels (hidden on small screens) */}
+      <div className="hidden lg:flex flex-col w-72 flex-shrink-0 gap-4 sticky top-20 self-start">
         <OnlineNowPanel users={presence.online ?? []} loading={presenceLoading} />
         <RecentlyActivePanel users={presence.recently_active ?? []} loading={presenceLoading} />
       </div>
@@ -1083,8 +1105,9 @@ export default function FeedPage() {
       {detailPost && (
         <PostDetailModal
           post={detailPost}
-          onClose={() => setDetailPost(null)}
+          onClose={() => setDetailPostId(null)}
           onToast={setToast}
+          onPostUpdated={updatePostInList}
         />
       )}
 
@@ -1185,12 +1208,14 @@ PostCard.propTypes = {
   onDelete: PropTypes.func.isRequired,
   onToast: PropTypes.func.isRequired,
   onOpen: PropTypes.func.isRequired,
+  onPostUpdated: PropTypes.func.isRequired,
 };
 
 PostDetailModal.propTypes = {
   post: postShape.isRequired,
   onClose: PropTypes.func.isRequired,
   onToast: PropTypes.func,
+  onPostUpdated: PropTypes.func,
 };
 
 UserAvatar.propTypes = {

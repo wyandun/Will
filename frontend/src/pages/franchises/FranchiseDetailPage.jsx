@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { franchisesApi } from '../../api/franchises';
 import { invitationsApi } from '../../api/invitations';
+import { timeAgo } from '../../utils/time';
 import AddAdminModal from './AddAdminModal';
 import AddClientModal from './AddClientModal';
 
@@ -33,24 +34,6 @@ function getAvatarColor(name) {
   return colors[Math.abs(hash) % colors.length];
 }
 
-function formatLastSeen(dateStr) {
-  if (!dateStr) return null;
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now - date;
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return '1 day ago';
-  if (diffDays < 30) return `${diffDays} days ago`;
-  if (diffDays < 365) {
-    const months = Math.floor(diffDays / 30);
-    return months === 1 ? '1 month ago' : `${months} months ago`;
-  }
-  const years = Math.floor(diffDays / 365);
-  return years === 1 ? '1 year ago' : `${years} years ago`;
-}
-
 // ─── Badge colors ─────────────────────────────────────────────────────────────
 
 const AREA_COLORS = {
@@ -70,9 +53,7 @@ const ROLE_COLORS = {
 // ─── Member row ───────────────────────────────────────────────────────────────
 
 function MemberRow({ member, badgeLabel, badgeColor, t }) {
-  const lastSeenLabel = member.last_seen_at
-    ? formatLastSeen(member.last_seen_at)
-    : null;
+  const lastSeenLabel = member.last_seen_at ? timeAgo(member.last_seen_at) : null;
 
   return (
     <li className="flex items-center gap-4 py-3 px-1">

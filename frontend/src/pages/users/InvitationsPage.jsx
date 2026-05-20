@@ -217,6 +217,7 @@ export default function InvitationsPage() {
             <p className="text-sm text-slate-400 mt-1">{t('invitation.empty_subtitle')}</p>
           </div>
         ) : (
+          <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-100">
             <thead className="bg-slate-50">
               <tr>
@@ -279,6 +280,7 @@ export default function InvitationsPage() {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 
