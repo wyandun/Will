@@ -270,9 +270,10 @@ function PostDetailModal({ post, onClose, onToast, onPostUpdated }) {
   const roleBadge = post.author_role ? ROLE_BADGES[post.author_role] : null;
 
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
-  const [likesCount, setLikesCount] = useState(post.likes_count ?? 0);
-  const [userReaction, setUserReaction] = useState(post.user_reaction ?? null);
-  const [commentsCount, setCommentsCount] = useState(post.comments_count ?? 0);
+
+  const likesCount = post.likes_count ?? 0;
+  const userReaction = post.user_reaction ?? null;
+  const commentsCount = post.comments_count ?? 0;
 
   const reactionsLabel = t(
     likesCount === 1 ? 'feed.reactions_count_one' : 'feed.reactions_count_other',
@@ -311,9 +312,7 @@ function PostDetailModal({ post, onClose, onToast, onPostUpdated }) {
     feedApi.reactToPost(post.id, emoji)
       .then((res) => {
         const data = res.data.data ?? {};
-        setLikesCount(data.likes_count ?? 0);
-        setUserReaction(data.user_reaction ?? null);
-        onPostUpdated?.(post.id, { likes_count: data.likes_count, user_reaction: data.user_reaction });
+        onPostUpdated?.(post.id, { likes_count: data.likes_count ?? 0, user_reaction: data.user_reaction ?? null });
       })
       .catch(() => onToast?.(t('common.unexpected_error')));
   }
@@ -452,13 +451,9 @@ function PostDetailModal({ post, onClose, onToast, onPostUpdated }) {
           <CommentPanel
             postId={post.id}
             onToast={onToast ?? (() => {})}
-            onCommentCountChange={(delta) => {
-              setCommentsCount((c) => {
-                const next = c + delta;
-                onPostUpdated?.(post.id, { comments_count: next });
-                return next;
-              });
-            }}
+            onCommentCountChange={(delta) =>
+              onPostUpdated?.(post.id, { comments_count: (post.comments_count ?? 0) + delta })
+            }
           />
         </div>
       </div>
@@ -468,16 +463,17 @@ function PostDetailModal({ post, onClose, onToast, onPostUpdated }) {
 
 // ─── PostCard ─────────────────────────────────────────────────────────────────
 
-function PostCard({ post, currentUser, role, onEdit, onDelete, onToast, onOpen }) {
+function PostCard({ post, currentUser, role, onEdit, onDelete, onToast, onOpen, onPostUpdated }) {
   const { t } = useTranslation('common');
   const [menuOpen, setMenuOpen] = useState(false);
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const [commentOpen, setCommentOpen] = useState(false);
-  const [likesCount, setLikesCount] = useState(post.likes_count ?? 0);
-  const [userReaction, setUserReaction] = useState(post.user_reaction ?? null);
-  const [commentsCount, setCommentsCount] = useState(post.comments_count ?? 0);
   const menuRef = useRef(null);
   const emojiRef = useRef(null);
+
+  const likesCount = post.likes_count ?? 0;
+  const userReaction = post.user_reaction ?? null;
+  const commentsCount = post.comments_count ?? 0;
 
   const initial = (post.author_name ?? '?')[0].toUpperCase();
   const typeKey = `feed.type_${post.type}`;
@@ -509,8 +505,7 @@ function PostCard({ post, currentUser, role, onEdit, onDelete, onToast, onOpen }
     feedApi.reactToPost(post.id, emoji)
       .then((res) => {
         const data = res.data.data ?? {};
-        setLikesCount(data.likes_count ?? 0);
-        setUserReaction(data.user_reaction ?? null);
+        onPostUpdated(post.id, { likes_count: data.likes_count ?? 0, user_reaction: data.user_reaction ?? null });
       })
       .catch(() => onToast(t('common.unexpected_error')));
   }
@@ -697,7 +692,9 @@ function PostCard({ post, currentUser, role, onEdit, onDelete, onToast, onOpen }
           <CommentPanel
             postId={post.id}
             onToast={onToast}
-            onCommentCountChange={(delta) => setCommentsCount((c) => c + delta)}
+            onCommentCountChange={(delta) =>
+              onPostUpdated(post.id, { comments_count: (post.comments_count ?? 0) + delta })
+            }
           />
         )}
       </div>
@@ -955,7 +952,8 @@ export default function FeedPage() {
   // Modal state
   const [modalPost, setModalPost] = useState(undefined); // undefined=closed, null=create, object=edit
   const [newsModalOpen, setNewsModalOpen] = useState(false);
-  const [detailPost, setDetailPost] = useState(null);
+  const [detailPostId, setDetailPostId] = useState(null);
+  const detailPost = posts.find((p) => p.id === detailPostId) ?? null;
   const [toast, setToast] = useState('');
 
   const fetchPosts = (term, pageNum) => {
@@ -1076,7 +1074,8 @@ export default function FeedPage() {
                   onEdit={(p) => setModalPost(p)}
                   onDelete={handleDeletePost}
                   onToast={setToast}
-                  onOpen={() => setDetailPost(post)}
+                  onOpen={() => setDetailPostId(post.id)}
+                  onPostUpdated={updatePostInList}
                 />
               ))}
             </div>
@@ -1096,7 +1095,7 @@ export default function FeedPage() {
       {detailPost && (
         <PostDetailModal
           post={detailPost}
-          onClose={() => setDetailPost(null)}
+          onClose={() => setDetailPostId(null)}
           onToast={setToast}
           onPostUpdated={updatePostInList}
         />
@@ -1199,6 +1198,7 @@ PostCard.propTypes = {
   onDelete: PropTypes.func.isRequired,
   onToast: PropTypes.func.isRequired,
   onOpen: PropTypes.func.isRequired,
+  onPostUpdated: PropTypes.func.isRequired,
 };
 
 PostDetailModal.propTypes = {
