@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { dashboardApi } from '../../api/dashboard';
 import { timeAgo } from '../../utils/time';
+import UpcomingEventsSidebar from '../../components/UpcomingEventsSidebar';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -348,47 +349,6 @@ function LatestPostsWidget({ feed }) {
   );
 }
 
-// ─── Upcoming Events ──────────────────────────────────────────────────────────
-
-function UpcomingEventsWidget({ events }) {
-  const { t } = useTranslation('common');
-  const navigate = useNavigate();
-
-  return (
-    <div className="bg-white rounded-2xl p-6 border border-slate-100">
-      <WidgetHeader
-        icon={<IconCalendar className="w-4 h-4 text-amber-500" />}
-        title={t('dashboard.upcoming_events')}
-        onViewAll={() => navigate('/calendar')}
-      />
-      {events.length === 0 ? (
-        <EmptyState message={t('dashboard.no_events')} />
-      ) : (
-        <ul className="flex flex-col gap-3">
-          {events.slice(0, 5).map((ev) => (
-            <li key={ev.id} className="flex items-start gap-3">
-              <div className="flex-shrink-0 w-10 text-center bg-amber-50 rounded-lg py-1">
-                <p className="text-xs text-amber-600 font-semibold uppercase">
-                  {new Date(ev.start).toLocaleString(undefined, { month: 'short' })}
-                </p>
-                <p className="text-base font-bold text-slate-800 leading-none">
-                  {new Date(ev.start).getDate()}
-                </p>
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-slate-700 truncate">{ev.title}</p>
-                <p className="text-xs text-slate-400">
-                  {new Date(ev.start).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
-                </p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-
 // ─── Project Tracking ─────────────────────────────────────────────────────────
 
 function ProgressCircle({ pct }) {
@@ -583,7 +543,6 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [kpis, setKpis] = useState(DEFAULT_KPIS);
   const [feed, setFeed] = useState([]);
-  const [events, setEvents] = useState([]);
   const [tracking, setTracking] = useState([]);
   const [contracts, setContracts] = useState(DEFAULT_CONTRACTS);
   const [documents, setDocuments] = useState([]);
@@ -594,7 +553,6 @@ export default function DashboardPage() {
       .then((data) => {
         if (data.kpis)         setKpis(data.kpis);
         if (data.feed)         setFeed(data.feed);
-        if (data.events)       setEvents(data.events);
         if (data.tracking)     setTracking(data.tracking);
         if (data.contracts)    setContracts(data.contracts);
         if (data.documents)    setDocuments(data.documents);
@@ -619,7 +577,7 @@ export default function DashboardPage() {
       {/* Row 2: Latest posts + Upcoming events */}
       <div className="grid grid-cols-2 gap-4">
         <LatestPostsWidget feed={feed} />
-        <UpcomingEventsWidget events={events} />
+        <UpcomingEventsSidebar />
       </div>
 
       {/* Row 3: Project tracking + Contracts */}
@@ -712,16 +670,6 @@ PostCard.propTypes = {
 
 LatestPostsWidget.propTypes = {
   feed: PropTypes.arrayOf(PropTypes.object).isRequired,
-};
-
-UpcomingEventsWidget.propTypes = {
-  events: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.number.isRequired,
-      title: PropTypes.string,
-      start: PropTypes.string,
-    })
-  ).isRequired,
 };
 
 ProgressCircle.propTypes = {
