@@ -138,7 +138,8 @@ function CommentPanel({ postId, onToast, onCommentCountChange }) {
     feedApi.getComments(postId, page)
       .then((res) => {
         const payload = res.data.data ?? {};
-        setComments(payload.items ?? []);
+        const items = payload.items ?? [];
+        setComments((prev) => page === 1 ? items : [...prev, ...items]);
         setMeta(payload.meta ?? null);
       })
       .catch(() => onToast(t('feed.load_comments_error')))
@@ -1025,7 +1026,7 @@ export default function FeedPage() {
   }
 
   return (
-    <div className="flex gap-5">
+    <div className="flex flex-col lg:flex-row gap-5">
       {/* Left column — compose + search + posts */}
       <div className="flex-1 min-w-0 flex flex-col gap-5">
         {/* Compose bar */}
@@ -1090,8 +1091,8 @@ export default function FeedPage() {
         )}
       </div>
 
-      {/* Right column — presence panels */}
-      <div className="w-72 flex-shrink-0 flex flex-col gap-4 sticky top-20 self-start">
+      {/* Right column — presence panels (hidden on small screens) */}
+      <div className="hidden lg:flex flex-col w-72 flex-shrink-0 gap-4 sticky top-20 self-start">
         <OnlineNowPanel users={presence.online ?? []} loading={presenceLoading} />
         <RecentlyActivePanel users={presence.recently_active ?? []} loading={presenceLoading} />
       </div>

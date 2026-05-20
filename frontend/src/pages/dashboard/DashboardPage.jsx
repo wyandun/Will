@@ -338,7 +338,7 @@ function LatestPostsWidget({ feed }) {
       {feed.length === 0 ? (
         <EmptyState message={t('dashboard.no_posts')} />
       ) : (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {feed.slice(0, 2).map((post) => (
             <PostCard key={post.id} post={post} />
           ))}
@@ -580,7 +580,9 @@ const DEFAULT_KPIS = {
 const DEFAULT_CONTRACTS = { pending: 0, signed: 0, recent: [] };
 
 export default function DashboardPage() {
+  const { t } = useTranslation('common');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [kpis, setKpis] = useState(DEFAULT_KPIS);
   const [feed, setFeed] = useState([]);
   const [events, setEvents] = useState([]);
@@ -600,36 +602,43 @@ export default function DashboardPage() {
         if (data.documents)    setDocuments(data.documents);
         if (data.process_maps) setProcessMaps(data.process_maps);
       })
-      .catch(() => {})
+      .catch(() => setError(t('common.unexpected_error')))
       .finally(() => setLoading(false));
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Error banner */}
+      {error && (
+        <div className="rounded-xl bg-red-50 border border-red-200 px-5 py-4 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
       {/* Row 1: Banner + KPIs */}
-      <div className="grid grid-cols-5 gap-4">
-        <div className="col-span-3">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        <div className="lg:col-span-3">
           <Banner kpis={kpis} loading={loading} />
         </div>
-        <div className="col-span-2">
+        <div className="lg:col-span-2">
           <KpiGrid kpis={kpis} loading={loading} />
         </div>
       </div>
 
       {/* Row 2: Latest posts + Upcoming events */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <LatestPostsWidget feed={feed} />
         <UpcomingEventsWidget events={events} />
       </div>
 
       {/* Row 3: Project tracking + Contracts */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <ProjectTrackingWidget tracking={tracking} />
         <ContractsWidget contracts={contracts} />
       </div>
 
       {/* Row 4: Documents to review + Process maps */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <DocumentsWidget documents={documents} />
         <ProcessMapsWidget processMaps={processMaps} />
       </div>
