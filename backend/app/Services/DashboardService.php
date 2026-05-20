@@ -228,7 +228,7 @@ class DashboardService
     {
         $query = DB::table('events')
             ->whereNull('events.deleted_at')
-            ->where('events.start_at', '>=', now())
+            ->where('events.start_at', '>=', now()->startOfDay())
             ->select([
                 'events.id',
                 'events.title',

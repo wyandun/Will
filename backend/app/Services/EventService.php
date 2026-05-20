@@ -13,9 +13,11 @@ use Illuminate\Validation\ValidationException;
 class EventService
 {
     /**
-     * List events with optional search, paginated.
+     * List events with optional filters, paginated.
+     *
+     * @param  array<string, mixed>  $filters  Supports: search, start_from, end_before
      */
-    public function list(User $user, ?string $search, int $perPage = 10): LengthAwarePaginator
+    public function list(User $user, array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
         $query = Event::with('creator');
 
@@ -36,12 +38,21 @@ class EventService
             });
         }
 
+        $search = $filters['search'] ?? null;
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'ilike', "%{$search}%")
                     ->orWhere('description', 'ilike', "%{$search}%")
                     ->orWhere('location', 'ilike', "%{$search}%");
             });
+        }
+
+        if (! empty($filters['start_from'])) {
+            $query->where('end_at', '>=', Carbon::parse($filters['start_from'])->startOfDay());
+        }
+
+        if (! empty($filters['end_before'])) {
+            $query->where('start_at', '<=', Carbon::parse($filters['end_before'])->endOfDay());
         }
 
         return $query->orderBy('start_at')->paginate($perPage);
