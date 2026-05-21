@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -215,7 +216,7 @@ class DashboardService
                 'image_path' => $post->image_url,
                 'likes_count' => (int) ($likes[$post->id] ?? 0),
                 'comments_count' => (int) ($comments[$post->id] ?? 0),
-                'created_at' => $post->created_at,
+                'created_at' => $post->created_at ? Carbon::parse($post->created_at)->toIso8601String() : null,
             ];
         })->all();
     }
@@ -245,8 +246,8 @@ class DashboardService
         return $query->get()->map(fn ($e) => [
             'id' => $e->id,
             'title' => $e->title,
-            'start_at' => $e->start_at,
-            'end_at' => $e->end_at,
+            'start' => $e->start_at,
+            'end' => $e->end_at,
             'all_day' => (bool) $e->all_day,
             'color' => $e->color,
         ])->all();
@@ -281,9 +282,9 @@ class DashboardService
         return $query->get()->map(fn ($t) => [
             'id' => $t->id,
             'company_name' => $t->company_name,
-            'item_name' => $t->item_name,
+            'name' => $t->item_name,
             'status' => $t->status,
-            'progress_percent' => (int) $t->progress_percent,
+            'progress' => (int) $t->progress_percent,
         ])->all();
     }
 
@@ -364,14 +365,12 @@ class DashboardService
             return [];
         }
 
-        $now = now();
-
         return $query->get()->map(fn ($d) => [
             'id' => $d->id,
-            'title' => $d->title,
+            'file_name' => $d->title,
             'source' => 'Repository',
             'file_type' => $d->file_type,
-            'days_ago' => (int) $now->diffInDays($d->created_at),
+            'created_at' => $d->created_at ? Carbon::parse($d->created_at)->toIso8601String() : null,
         ])->all();
     }
 

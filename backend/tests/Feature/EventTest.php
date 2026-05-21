@@ -298,12 +298,11 @@ class EventTest extends TestCase
     public function test_index_per_page_clamped_to_min_5(): void
     {
         $user = $this->createUser();
-        Event::factory()->count(3)->create(['visibility' => 'public']);
 
         $response = $this->actingAs($user)->getJson('/api/v1/events?per_page=1');
 
-        $response->assertStatus(200);
-        $response->assertJsonPath('meta.per_page', 5);
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('per_page');
     }
 
     public function test_index_per_page_clamped_to_max_200(): void
@@ -313,8 +312,61 @@ class EventTest extends TestCase
 
         $response = $this->actingAs($user)->getJson('/api/v1/events?per_page=999');
 
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('per_page');
+    }
+
+    public function test_index_per_page_below_min_returns_422(): void
+    {
+        $user = $this->createUser();
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events?per_page=1');
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('per_page');
+    }
+
+    // ===========================================================================
+    // GET /api/v1/events — Query param validation
+    // ===========================================================================
+
+    public function test_index_invalid_start_from_returns_422(): void
+    {
+        $user = $this->createUser();
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events?start_from=not-a-date');
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('start_from');
+    }
+
+    public function test_index_invalid_end_before_returns_422(): void
+    {
+        $user = $this->createUser();
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events?end_before=garbage');
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('end_before');
+    }
+
+    public function test_index_search_max_length_validated(): void
+    {
+        $user = $this->createUser();
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events?search='.str_repeat('a', 101));
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('search');
+    }
+
+    public function test_index_valid_search_within_max_length_succeeds(): void
+    {
+        $user = $this->createUser();
+
+        $response = $this->actingAs($user)->getJson('/api/v1/events?search='.str_repeat('a', 100));
+
         $response->assertStatus(200);
-        $response->assertJsonPath('meta.per_page', 200);
     }
 
     // ===========================================================================
@@ -1082,7 +1134,7 @@ class EventTest extends TestCase
         $response->assertStatus(200);
         $response->assertJsonStructure([
             'data' => [
-                '*' => ['id', 'title', 'start_at', 'end_at', 'all_day', 'color'],
+                '*' => ['id', 'title', 'start', 'end', 'all_day', 'color'],
             ],
         ]);
     }

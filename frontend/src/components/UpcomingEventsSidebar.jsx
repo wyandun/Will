@@ -140,8 +140,10 @@ export default function UpcomingEventsSidebar({ hideFooter = false, paginated = 
   useEffect(() => {
     setLoading(true);
     if (paginated) {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
       eventsApi.getEvents({
-        start_from: new Date().toISOString(),
+        start_from: todayStart.toISOString(),
         per_page: 5,
         page,
       })

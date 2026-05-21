@@ -102,7 +102,8 @@
     "view_all_maps": "View all maps",
     "pending": "Pending",
     "signed": "Signed",
-    "read_more": "Read"
+    "read_more": "Read",
+    "repository_label": "Repository"
   },
   "feed": {
     "title": "Feed",
@@ -169,7 +170,8 @@
     "comment_deleted": "Comment deleted.",
     "comment_error": "Failed to post comment. Please try again.",
     "no_comments": "No comments yet. Be the first!",
-    "load_comments_error": "Failed to load comments."
+    "load_comments_error": "Failed to load comments.",
+    "read_article": "Read original article"
   },
   "franchises": {
     "title": "Franchises",
@@ -433,6 +435,12 @@
     "no_events_day": "No events",
     "week_of": "Week of {{date}}",
     "more_events": "+{{count}} more",
+    "show_all_events": "Show all {{count}} events",
+    "all_events_for": "All events for {{date}}",
+    "new_event_on": "New event",
+    "search_results_title": "Results for \"{{query}}\"",
+    "search_no_results": "No events match \"{{query}}\"",
+    "clear_search": "Clear search",
     "fields": {
       "title": "Title",
       "title_placeholder": "e.g. Team Standup",
@@ -486,6 +494,21 @@
       "password_optional": "Leave blank to keep unchanged",
       "password_min": "Password must be at least 12 characters."
     }
+  },
+  "news": {
+    "modal_title": "AI News",
+    "last_updated": "Last updated",
+    "fetch_btn": "Fetch News",
+    "fetching": "Fetching…",
+    "fetch_queued": "News fetch queued. Articles will appear shortly.",
+    "ai_summary": "AI Summary",
+    "publish_to_feed": "Publish to Feed",
+    "reject": "Reject",
+    "published": "Published",
+    "published_success": "Article published to Feed.",
+    "rejected_success": "Article rejected.",
+    "no_articles": "No articles ready for review.",
+    "no_articles_hint": "Click Fetch News to search for relevant articles from external sources."
   },
   "policies": {
     "unauthorized": "You don't have permission to perform this action.",
