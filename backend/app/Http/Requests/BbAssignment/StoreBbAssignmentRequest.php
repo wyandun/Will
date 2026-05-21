@@ -54,7 +54,7 @@ class StoreBbAssignmentRequest extends FormRequest
         $validator->after(function ($validator): void {
             $user = $this->user();
 
-            if (! $user->hasRole('admin_sm')) {
+            if (! $user->hasRole(Role::ADMIN_SM)) {
                 return;
             }
 

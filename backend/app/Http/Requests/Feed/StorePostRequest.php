@@ -2,13 +2,14 @@
 
 namespace App\Http\Requests\Feed;
 
+use App\Enums\Role;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StorePostRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->hasAnyRole(['superadmin', 'system_admin', 'admin_sm']);
+        return $this->user()->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::ADMIN_SM]);
     }
 
     /**

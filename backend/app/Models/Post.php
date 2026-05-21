@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Role;
 use Carbon\Carbon;
 use Database\Factories\PostFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -131,7 +132,7 @@ class Post extends Model
      */
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->hasRole('superadmin')) {
+        if ($user->hasRole(Role::SUPERADMIN)) {
             return $query;
         }
 

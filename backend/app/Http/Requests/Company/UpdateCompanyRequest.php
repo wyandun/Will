@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Company;
 
+use App\Enums\Role;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -42,7 +43,7 @@ class UpdateCompanyRequest extends FormRequest
             $user = $this->user();
 
             // Guard: admin_sm must have a franchise assigned before scoping can work.
-            if ($user->hasRole('admin_sm') && ! $user->sm_franchise_id) {
+            if ($user->hasRole(Role::ADMIN_SM) && ! $user->sm_franchise_id) {
                 $validator->errors()->add(
                     'sm_franchise_id',
                     'Tu cuenta no tiene una franquicia asignada. Contacta al superadmin.'
@@ -52,7 +53,7 @@ class UpdateCompanyRequest extends FormRequest
             }
 
             if (
-                $user->hasRole('admin_sm')
+                $user->hasRole(Role::ADMIN_SM)
                 && $this->has('sm_franchise_id')
                 && (int) $this->input('sm_franchise_id') !== (int) $user->sm_franchise_id
             ) {

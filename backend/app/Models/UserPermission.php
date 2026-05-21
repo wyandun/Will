@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\Role;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 
 class UserPermission extends Model
 {
@@ -64,13 +65,15 @@ class UserPermission extends Model
      */
     public static function syncForRole(int $userId, string $role): void
     {
-        $canWrite = in_array($role, [Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::ADMIN_SM], true);
+        DB::transaction(function () use ($userId, $role) {
+            $canWrite = in_array($role, [Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::ADMIN_SM], true);
 
-        foreach (self::ALL_MODULES as $module) {
-            self::updateOrCreate(
-                ['user_id' => $userId, 'module' => $module],
-                ['can_read' => true, 'can_write' => $canWrite],
-            );
-        }
+            foreach (self::ALL_MODULES as $module) {
+                self::updateOrCreate(
+                    ['user_id' => $userId, 'module' => $module],
+                    ['can_read' => true, 'can_write' => $canWrite],
+                );
+            }
+        });
     }
 }

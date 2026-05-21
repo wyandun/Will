@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\Role;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
@@ -21,11 +22,11 @@ class DashboardService
      */
     private function resolveCompanyScope(User $user): ?array
     {
-        if ($user->hasRole('superadmin')) {
+        if ($user->hasRole(Role::SUPERADMIN)) {
             return null;
         }
 
-        if ($user->hasRole('admin_sm')) {
+        if ($user->hasRole(Role::ADMIN_SM)) {
             return DB::table('companies')
                 ->where('sm_franchise_id', $user->sm_franchise_id)
                 ->pluck('id')
@@ -170,7 +171,7 @@ class DashboardService
             ->limit(5);
 
         // Visibility scoping — mirrors FeedService::getPosts
-        if (! $user->hasRole('superadmin')) {
+        if (! $user->hasRole(Role::SUPERADMIN)) {
             $franchiseId = $user->sm_franchise_id;
             $query->where(function ($q) use ($franchiseId) {
                 $q->where('posts.visibility', 'global')
