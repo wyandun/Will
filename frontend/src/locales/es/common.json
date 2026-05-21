@@ -102,7 +102,8 @@
     "view_all_maps": "Ver todos los mapas",
     "pending": "Pendiente",
     "signed": "Firmado",
-    "read_more": "Leer"
+    "read_more": "Leer",
+    "repository_label": "Repositorio"
   },
   "feed": {
     "title": "Feed",
@@ -169,7 +170,8 @@
     "comment_deleted": "Comentario eliminado.",
     "comment_error": "Error al publicar el comentario. Intentá de nuevo.",
     "no_comments": "Sin comentarios aún. ¡Sé el primero!",
-    "load_comments_error": "Error al cargar los comentarios."
+    "load_comments_error": "Error al cargar los comentarios.",
+    "read_article": "Leer artículo original"
   },
   "franchises": {
     "title": "Franquicias",
@@ -433,6 +435,12 @@
     "no_events_day": "Sin eventos",
     "week_of": "Semana del {{date}}",
     "more_events": "+{{count}} más",
+    "show_all_events": "Ver los {{count}} eventos",
+    "all_events_for": "Todos los eventos de {{date}}",
+    "new_event_on": "Nuevo evento",
+    "search_results_title": "Resultados para \"{{query}}\"",
+    "search_no_results": "Ningún evento coincide con \"{{query}}\"",
+    "clear_search": "Limpiar búsqueda",
     "fields": {
       "title": "Título",
       "title_placeholder": "Ej. Reunión de equipo",
@@ -486,6 +494,21 @@
       "password_optional": "Dejar en blanco para no cambiar",
       "password_min": "La contraseña debe tener al menos 12 caracteres."
     }
+  },
+  "news": {
+    "modal_title": "Noticias con IA",
+    "last_updated": "Última actualización",
+    "fetch_btn": "Buscar Noticias",
+    "fetching": "Buscando…",
+    "fetch_queued": "Búsqueda en cola. Los artículos aparecerán en breve.",
+    "ai_summary": "Resumen IA",
+    "publish_to_feed": "Publicar en Feed",
+    "reject": "Rechazar",
+    "published": "Publicado",
+    "published_success": "Artículo publicado en el Feed.",
+    "rejected_success": "Artículo rechazado.",
+    "no_articles": "No hay artículos listos para revisar.",
+    "no_articles_hint": "Haz clic en Buscar Noticias para obtener artículos relevantes de fuentes externas."
   },
   "policies": {
     "unauthorized": "No tenés permiso para realizar esta acción.",

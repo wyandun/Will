@@ -40,10 +40,11 @@ class EventService
 
         $search = $filters['search'] ?? null;
         if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('title', 'ilike', "%{$search}%")
-                    ->orWhere('description', 'ilike', "%{$search}%")
-                    ->orWhere('location', 'ilike', "%{$search}%");
+            $escaped = str_replace(['%', '_'], ['\\%', '\\_'], $search);
+            $query->where(function ($q) use ($escaped) {
+                $q->where('title', 'ilike', "%{$escaped}%")
+                    ->orWhere('description', 'ilike', "%{$escaped}%")
+                    ->orWhere('location', 'ilike', "%{$escaped}%");
             });
         }
 

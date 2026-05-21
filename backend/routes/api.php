@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\FeedController;
 use App\Http\Controllers\Api\FranchiseController;
 use App\Http\Controllers\Api\FranchiseMemberController;
 use App\Http\Controllers\Api\InvitationController;
+use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\SystemAdminController;
 use Illuminate\Support\Facades\Route;
@@ -61,7 +62,7 @@ Route::prefix('auth')->middleware('auth:sanctum')->group(function () {
 // ---------------------------------------------------------------------------
 // Protected resources — require Sanctum authentication
 // ---------------------------------------------------------------------------
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // Franchises
     // Sub-routes declared BEFORE apiResource to prevent the {franchise} wildcard
     // from capturing literal path segments like "members", "admins", "clients".
@@ -106,6 +107,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/posts/{postId}/comments', [FeedController::class, 'comments']);
         Route::post('/posts/{postId}/comments', [FeedController::class, 'addComment'])->middleware('throttle:30,1');
         Route::delete('/comments/{commentId}', [FeedController::class, 'deleteComment']);
+    });
+
+    // News (AI-curated from RSS — superadmin/admin_sm only)
+    Route::prefix('news')->group(function () {
+        Route::get('/articles', [NewsController::class, 'index']);
+        Route::post('/fetch', [NewsController::class, 'fetch']);
+        Route::post('/articles/{newsArticle}/publish', [NewsController::class, 'publish']);
+        Route::post('/articles/{newsArticle}/reject', [NewsController::class, 'reject']);
     });
 
     // Dashboard
