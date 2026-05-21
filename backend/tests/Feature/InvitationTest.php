@@ -662,6 +662,7 @@ class InvitationTest extends TestCase
 
     public function test_system_admin_can_send_invitations(): void
     {
+        Notification::fake();
         $admin = $this->createSystemAdmin();
 
         $response = $this->actingAs($admin)
