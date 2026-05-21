@@ -411,6 +411,57 @@
     "never": "Nunca",
     "pending": "Activación pendiente"
   },
+  "calendar": {
+    "title": "Calendario",
+    "new_event": "Nuevo Evento",
+    "edit_event": "Editar Evento",
+    "search_placeholder": "Buscar eventos...",
+    "no_events": "No se encontraron eventos.",
+    "no_events_search": "Ningún evento coincide con tu búsqueda.",
+    "load_error": "Error al cargar eventos. Intenta de nuevo.",
+    "event_created": "Evento creado exitosamente.",
+    "event_updated": "Evento actualizado exitosamente.",
+    "event_deleted": "Evento eliminado exitosamente.",
+    "delete_confirm": "¿Eliminar este evento? Esta acción no se puede deshacer.",
+    "page_info": "Página {{current}} de {{total}}",
+    "events_total": "{{count}} eventos",
+    "prev": "Anterior",
+    "next": "Siguiente",
+    "all_day": "Todo el día",
+    "view_month": "Mes",
+    "view_week": "Semana",
+    "view_list": "Lista",
+    "today": "Hoy",
+    "no_events_day": "Sin eventos",
+    "week_of": "Semana del {{date}}",
+    "more_events": "+{{count}} más",
+    "fields": {
+      "title": "Título",
+      "title_placeholder": "Ej. Reunión de equipo",
+      "description": "Descripción",
+      "description_placeholder": "Detalles del evento...",
+      "location": "Ubicación",
+      "location_placeholder": "Ej. Sala de conferencias A",
+      "start_at": "Inicio",
+      "end_at": "Fin",
+      "all_day": "Todo el día",
+      "timezone": "Zona horaria",
+      "timezone_placeholder": "Selecciona una zona horaria",
+      "color": "Color"
+    },
+    "colors": {
+      "red": "Rojo",
+      "orange": "Naranja",
+      "yellow": "Amarillo",
+      "green": "Verde",
+      "blue": "Azul",
+      "purple": "Morado",
+      "pink": "Rosa",
+      "indigo": "Índigo",
+      "teal": "Verde azulado",
+      "gray": "Gris"
+    }
+  },
   "system_admins": {
     "title": "Administradores de Sistema",
     "subtitle": "Gestiona las cuentas con permisos globales en la plataforma.",
@@ -452,6 +503,18 @@
     "rejected_success": "Artículo rechazado.",
     "no_articles": "No hay artículos listos para revisar.",
     "no_articles_hint": "Haz clic en Buscar Noticias para obtener artículos relevantes de fuentes externas."
+  },
+  "policies": {
+    "unauthorized": "No tenés permiso para realizar esta acción.",
+    "franchise_required": "Debés estar asignado a una franquicia para realizar esta acción."
+  },
+  "sidebar": {
+    "upcoming_events": "Próximos eventos agendados",
+    "today": "Hoy",
+    "tomorrow": "Mañana",
+    "all_day": "Todo el día",
+    "view_all": "Ver todos los eventos",
+    "no_events": "No hay eventos próximos"
   },
   "profile": {
     "page_title": "Perfil",

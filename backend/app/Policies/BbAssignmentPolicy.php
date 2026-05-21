@@ -2,8 +2,10 @@
 
 namespace App\Policies;
 
+use App\Enums\Role;
 use App\Models\BbAssignment;
 use App\Models\User;
+use Illuminate\Auth\Access\Response;
 
 class BbAssignmentPolicy
 {
@@ -11,9 +13,21 @@ class BbAssignmentPolicy
      * Assign a BB to a company: superadmin always allowed;
      * admin_sm only within their own franchise scope (enforced in the service).
      */
-    public function create(User $user): bool
+    public function create(User $user): Response
     {
-        return $user->hasRole('superadmin') || $user->hasRole('admin_sm');
+        if ($user->hasRole(Role::SUPERADMIN)) {
+            return Response::allow();
+        }
+
+        if (! $user->hasRole(Role::ADMIN_SM)) {
+            return Response::deny('policies.unauthorized');
+        }
+
+        if ($user->sm_franchise_id === null) {
+            return Response::deny('policies.franchise_required');
+        }
+
+        return Response::allow();
     }
 
     /**
@@ -22,11 +36,11 @@ class BbAssignmentPolicy
      */
     public function delete(User $user, BbAssignment $bbAssignment): bool
     {
-        if ($user->hasRole('superadmin')) {
+        if ($user->hasRole(Role::SUPERADMIN)) {
             return true;
         }
 
-        if (! $user->hasRole('admin_sm')) {
+        if (! $user->hasRole(Role::ADMIN_SM)) {
             return false;
         }
 

@@ -2,8 +2,10 @@
 
 namespace App\Policies;
 
+use App\Enums\Role;
 use App\Models\Company;
 use App\Models\User;
+use Illuminate\Auth\Access\Response;
 
 class CompanyPolicy
 {
@@ -12,7 +14,7 @@ class CompanyPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('superadmin') || $user->hasRole('admin_sm');
+        return $user->hasRole(Role::SUPERADMIN) || $user->hasRole(Role::ADMIN_SM);
     }
 
     /**
@@ -21,20 +23,32 @@ class CompanyPolicy
      */
     public function view(User $user, Company $company): bool
     {
-        if ($user->hasRole('superadmin')) {
+        if ($user->hasRole(Role::SUPERADMIN)) {
             return true;
         }
 
-        return $user->hasRole('admin_sm')
+        return $user->hasRole(Role::ADMIN_SM)
             && (int) $user->sm_franchise_id === (int) $company->sm_franchise_id;
     }
 
     /**
-     * Create a company: superadmin or admin_sm (within their franchise).
+     * Create a company: superadmin always; admin_sm only if assigned to a franchise.
      */
-    public function create(User $user): bool
+    public function create(User $user): Response
     {
-        return $user->hasRole('superadmin') || $user->hasRole('admin_sm');
+        if ($user->hasRole(Role::SUPERADMIN)) {
+            return Response::allow();
+        }
+
+        if (! $user->hasRole(Role::ADMIN_SM)) {
+            return Response::deny('policies.unauthorized');
+        }
+
+        if ($user->sm_franchise_id === null) {
+            return Response::deny('policies.franchise_required');
+        }
+
+        return Response::allow();
     }
 
     /**
@@ -42,11 +56,11 @@ class CompanyPolicy
      */
     public function update(User $user, Company $company): bool
     {
-        if ($user->hasRole('superadmin')) {
+        if ($user->hasRole(Role::SUPERADMIN)) {
             return true;
         }
 
-        return $user->hasRole('admin_sm')
+        return $user->hasRole(Role::ADMIN_SM)
             && (int) $user->sm_franchise_id === (int) $company->sm_franchise_id;
     }
 
@@ -55,11 +69,11 @@ class CompanyPolicy
      */
     public function delete(User $user, Company $company): bool
     {
-        if ($user->hasRole('superadmin')) {
+        if ($user->hasRole(Role::SUPERADMIN)) {
             return true;
         }
 
-        return $user->hasRole('admin_sm')
+        return $user->hasRole(Role::ADMIN_SM)
             && (int) $user->sm_franchise_id === (int) $company->sm_franchise_id;
     }
 }

@@ -1,61 +1,7 @@
 import PropTypes from 'prop-types';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-
-// ─── Common IANA timezones grouped by region ─────────────────────────────────
-const TIMEZONE_OPTIONS = [
-  { group: 'Americas', zones: [
-    { value: 'America/New_York',      label: 'Eastern Time (ET) — New York' },
-    { value: 'America/Chicago',       label: 'Central Time (CT) — Chicago' },
-    { value: 'America/Denver',        label: 'Mountain Time (MT) — Denver' },
-    { value: 'America/Los_Angeles',   label: 'Pacific Time (PT) — Los Angeles' },
-    { value: 'America/Anchorage',     label: 'Alaska Time — Anchorage' },
-    { value: 'Pacific/Honolulu',      label: 'Hawaii Time — Honolulu' },
-    { value: 'America/Toronto',       label: 'Eastern — Toronto' },
-    { value: 'America/Vancouver',     label: 'Pacific — Vancouver' },
-    { value: 'America/Mexico_City',   label: 'Mexico City' },
-    { value: 'America/Cancun',        label: 'Cancún' },
-    { value: 'America/Bogota',        label: 'Bogotá' },
-    { value: 'America/Lima',          label: 'Lima' },
-    { value: 'America/Santiago',      label: 'Santiago' },
-    { value: 'America/Buenos_Aires',  label: 'Buenos Aires' },
-    { value: 'America/Sao_Paulo',     label: 'São Paulo' },
-    { value: 'America/Caracas',       label: 'Caracas' },
-    { value: 'America/Panama',        label: 'Panama' },
-    { value: 'America/Guayaquil',     label: 'Guayaquil' },
-    { value: 'America/Santo_Domingo', label: 'Santo Domingo' },
-    { value: 'America/Havana',        label: 'Havana' },
-  ]},
-  { group: 'Europe', zones: [
-    { value: 'Europe/London',    label: 'London (GMT/BST)' },
-    { value: 'Europe/Paris',     label: 'Paris (CET)' },
-    { value: 'Europe/Berlin',    label: 'Berlin (CET)' },
-    { value: 'Europe/Madrid',    label: 'Madrid (CET)' },
-    { value: 'Europe/Rome',      label: 'Rome (CET)' },
-    { value: 'Europe/Amsterdam', label: 'Amsterdam (CET)' },
-    { value: 'Europe/Lisbon',    label: 'Lisbon (WET)' },
-    { value: 'Europe/Moscow',    label: 'Moscow (MSK)' },
-    { value: 'Europe/Istanbul',  label: 'Istanbul (TRT)' },
-  ]},
-  { group: 'Asia & Pacific', zones: [
-    { value: 'Asia/Dubai',       label: 'Dubai (GST)' },
-    { value: 'Asia/Kolkata',     label: 'India (IST)' },
-    { value: 'Asia/Shanghai',    label: 'Shanghai (CST)' },
-    { value: 'Asia/Tokyo',       label: 'Tokyo (JST)' },
-    { value: 'Asia/Seoul',       label: 'Seoul (KST)' },
-    { value: 'Asia/Singapore',   label: 'Singapore (SGT)' },
-    { value: 'Asia/Hong_Kong',   label: 'Hong Kong (HKT)' },
-    { value: 'Australia/Sydney', label: 'Sydney (AEST)' },
-    { value: 'Pacific/Auckland', label: 'Auckland (NZST)' },
-  ]},
-  { group: 'Africa', zones: [
-    { value: 'Africa/Cairo',        label: 'Cairo (EET)' },
-    { value: 'Africa/Lagos',        label: 'Lagos (WAT)' },
-    { value: 'Africa/Johannesburg', label: 'Johannesburg (SAST)' },
-    { value: 'Africa/Nairobi',      label: 'Nairobi (EAT)' },
-    { value: 'Africa/Casablanca',   label: 'Casablanca (WET)' },
-  ]},
-];
+import { TIMEZONE_OPTIONS } from '../../utils/timezones';
 
 const FRANCHISE_FIELDS = ['name', 'email', 'phone', 'country', 'timezone', 'address'];
 const EMPTY_FORM = Object.fromEntries(FRANCHISE_FIELDS.map(f => [f, '']));
