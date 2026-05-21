@@ -72,7 +72,7 @@ class NewsController extends Controller
         // Lock acquired — dispatch the job. The job will call finalize() which releases
         // the lock on success. On failure, FetchNewsJob::failed() releases it instead.
         try {
-            FetchNewsJob::dispatch();
+            FetchNewsJob::dispatch()->onQueue('news');
         } catch (\Throwable $e) {
             Cache::forget(NewsCacheKeys::FETCH_LOCK);
             Log::error('NewsController::fetch failed to dispatch job', ['error' => $e->getMessage()]);
