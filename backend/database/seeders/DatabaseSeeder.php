@@ -15,18 +15,6 @@ class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
 
-    private const ALL_MODULES = [
-        'feed',
-        'contracts',
-        'repository',
-        'processes',
-        'accounting',
-        'inventory',
-        'tracking',
-        'catalog',
-        'calendar',
-    ];
-
     public function run(): void
     {
         $this->seedRoles();
@@ -89,12 +77,7 @@ class DatabaseSeeder extends Seeder
 
         $user->syncRoles([Role::SUPERADMIN]);
 
-        foreach (self::ALL_MODULES as $module) {
-            UserPermission::updateOrCreate(
-                ['user_id' => $user->id, 'module' => $module],
-                ['can_read' => true, 'can_write' => true]
-            );
-        }
+        UserPermission::syncForRole($user->id, Role::SUPERADMIN);
 
         $this->command->info("Superadmin ready — {$email}");
     }

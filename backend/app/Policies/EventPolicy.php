@@ -19,7 +19,7 @@ class EventPolicy
 
     /**
      * Visibility-aware: public events are visible to all, franchise events
-     * to same-franchise users, private events only to the creator or superadmin.
+     * to same-franchise users, private events only to the creator or superadmin/system_admin.
      */
     public function view(User $user, Event $event): bool
     {
@@ -28,17 +28,17 @@ class EventPolicy
             'franchise' => $user->sm_franchise_id !== null
                 && $user->sm_franchise_id === $event->creator->sm_franchise_id,
             'private' => (int) $user->id === (int) $event->user_id
-                || $user->hasRole(Role::SUPERADMIN),
+                || $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN]),
             default => false,
         };
     }
 
     /**
-     * Only superadmin or admin_sm with a franchise assigned can create events.
+     * Superadmin, system_admin, or admin_sm with a franchise assigned can create events.
      */
     public function create(User $user): Response
     {
-        if ($user->hasRole(Role::SUPERADMIN)) {
+        if ($user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN])) {
             return Response::allow();
         }
 
@@ -54,20 +54,20 @@ class EventPolicy
     }
 
     /**
-     * Only the event creator or a superadmin can update.
+     * Only the event creator, superadmin, or system_admin can update.
      */
     public function update(User $user, Event $event): bool
     {
         return (int) $user->id === (int) $event->user_id
-            || $user->hasRole(Role::SUPERADMIN);
+            || $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN]);
     }
 
     /**
-     * Only the event creator or a superadmin can delete.
+     * Only the event creator, superadmin, or system_admin can delete.
      */
     public function delete(User $user, Event $event): bool
     {
         return (int) $user->id === (int) $event->user_id
-            || $user->hasRole(Role::SUPERADMIN);
+            || $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN]);
     }
 }

@@ -14,18 +14,6 @@ use OpenApi\Attributes as OA;
 
 class SystemAdminController extends Controller
 {
-    private const ALL_MODULES = [
-        'feed',
-        'contracts',
-        'repository',
-        'processes',
-        'accounting',
-        'inventory',
-        'tracking',
-        'catalog',
-        'calendar',
-    ];
-
     #[OA\Get(
         path: '/system-admins',
         tags: ['System Admins'],
@@ -137,16 +125,7 @@ class SystemAdminController extends Controller
         $user->assignRole($roleName);
 
         // Assign module permissions based on role
-        $canWrite = $roleName === Role::SYSTEM_ADMIN;
-
-        foreach (self::ALL_MODULES as $module) {
-            UserPermission::create([
-                'user_id' => $user->id,
-                'module' => $module,
-                'can_read' => true,
-                'can_write' => $canWrite,
-            ]);
-        }
+        UserPermission::syncForRole($user->id, $roleName);
 
         return response()->json([
             'success' => true,
@@ -230,13 +209,7 @@ class SystemAdminController extends Controller
 
         $systemAdmin->syncRoles([$roleName]);
 
-        $canWrite = $roleName === Role::SYSTEM_ADMIN;
-        foreach (self::ALL_MODULES as $module) {
-            UserPermission::updateOrCreate(
-                ['user_id' => $systemAdmin->id, 'module' => $module],
-                ['can_read' => true, 'can_write' => $canWrite]
-            );
-        }
+        UserPermission::syncForRole($systemAdmin->id, $roleName);
 
         return response()->json([
             'success' => true,

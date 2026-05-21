@@ -138,7 +138,7 @@ export default function FranchiseDetailPage() {
   const role = useAuthStore((s) => s.role);
   const user = useAuthStore((s) => s.user);
 
-  const isSuperadmin = role === 'superadmin';
+  const isSuperadmin = role === 'superadmin' || role === 'system_admin';
   const isAdminSm = role === 'admin_sm';
   const canAdd = isSuperadmin || (isAdminSm && user?.sm_franchise_id === parseInt(id, 10));
 

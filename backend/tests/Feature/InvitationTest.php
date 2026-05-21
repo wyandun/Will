@@ -260,13 +260,13 @@ class InvitationTest extends TestCase
         $response->assertStatus(403);
     }
 
-    public function test_system_admin_is_forbidden_from_invitation_index(): void
+    public function test_system_admin_can_access_invitation_index(): void
     {
         $admin = $this->createSystemAdmin();
 
         $response = $this->actingAs($admin)->getJson('/api/v1/invitations');
 
-        $response->assertStatus(403);
+        $response->assertStatus(200);
     }
 
     public function test_index_returns_403_if_user_has_null_franchise(): void
@@ -660,14 +660,14 @@ class InvitationTest extends TestCase
         $response->assertStatus(403);
     }
 
-    public function test_system_admin_cannot_send_invitations(): void
+    public function test_system_admin_can_send_invitations(): void
     {
         $admin = $this->createSystemAdmin();
 
         $response = $this->actingAs($admin)
             ->postJson('/api/v1/invitations', $this->validInvitePayload());
 
-        $response->assertStatus(403);
+        $response->assertStatus(201);
     }
 
     // ===========================================================================

@@ -8,7 +8,7 @@ class StorePostRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->hasAnyRole(['superadmin', 'admin_sm']);
+        return $this->user()->hasAnyRole(['superadmin', 'system_admin', 'admin_sm']);
     }
 
     /**
