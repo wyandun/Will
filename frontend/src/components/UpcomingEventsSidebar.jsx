@@ -54,8 +54,9 @@ function SkeletonCard() {
 // ─── Event Card ──────────────────────────────────────────────────────────────
 
 function EventCard({ ev, locale, t, onClick }) {
-  const eventDate = new Date(ev.start_at);
-  const relativeLabel = getRelativeLabel(ev.start_at, t, locale);
+  const startStr = ev.start_at ?? ev.start;
+  const eventDate = new Date(startStr);
+  const relativeLabel = getRelativeLabel(startStr, t, locale);
   const isToday = relativeLabel === t('sidebar.today');
   const isTomorrow = relativeLabel === t('sidebar.tomorrow');
 
@@ -116,8 +117,10 @@ EventCard.propTypes = {
   ev: PropTypes.shape({
     id: PropTypes.number.isRequired,
     title: PropTypes.string.isRequired,
-    start_at: PropTypes.string.isRequired,
+    start_at: PropTypes.string,
+    start: PropTypes.string,
     end_at: PropTypes.string,
+    end: PropTypes.string,
     all_day: PropTypes.bool,
     color: PropTypes.string,
   }).isRequired,
