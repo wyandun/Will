@@ -428,6 +428,13 @@
     "prev": "Anterior",
     "next": "Siguiente",
     "all_day": "Todo el día",
+    "view_month": "Mes",
+    "view_week": "Semana",
+    "view_list": "Lista",
+    "today": "Hoy",
+    "no_events_day": "Sin eventos",
+    "week_of": "Semana del {{date}}",
+    "more_events": "+{{count}} más",
     "fields": {
       "title": "Título",
       "title_placeholder": "Ej. Reunión de equipo",
@@ -500,5 +507,13 @@
   "policies": {
     "unauthorized": "No tenés permiso para realizar esta acción.",
     "franchise_required": "Debés estar asignado a una franquicia para realizar esta acción."
+  },
+  "sidebar": {
+    "upcoming_events": "Próximos eventos agendados",
+    "today": "Hoy",
+    "tomorrow": "Mañana",
+    "all_day": "Todo el día",
+    "view_all": "Ver todos los eventos",
+    "no_events": "No hay eventos próximos"
   }
 }
