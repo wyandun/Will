@@ -72,5 +72,12 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('invitation', function (Request $request): Limit {
             return Limit::perMinute(10)->by($request->ip());
         });
+
+        // Global API rate limiter: 120 requests per minute per authenticated user (or IP
+        // for unauthenticated requests). Prevents abuse of high-per_page endpoints like
+        // events (per_page=200) and general API spam from compromised accounts.
+        RateLimiter::for('api', function (Request $request): Limit {
+            return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
+        });
     }
 }
