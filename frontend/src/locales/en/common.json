@@ -435,6 +435,12 @@
     "no_events_day": "No events",
     "week_of": "Week of {{date}}",
     "more_events": "+{{count}} more",
+    "show_all_events": "Show all {{count}} events",
+    "all_events_for": "All events for {{date}}",
+    "new_event_on": "New event",
+    "search_results_title": "Results for \"{{query}}\"",
+    "search_no_results": "No events match \"{{query}}\"",
+    "clear_search": "Clear search",
     "fields": {
       "title": "Title",
       "title_placeholder": "e.g. Team Standup",
