@@ -1082,7 +1082,7 @@ class EventTest extends TestCase
         $response->assertStatus(200);
         $response->assertJsonStructure([
             'data' => [
-                '*' => ['id', 'title', 'start_at', 'end_at', 'all_day', 'color'],
+                '*' => ['id', 'title', 'start', 'end', 'all_day', 'color'],
             ],
         ]);
     }

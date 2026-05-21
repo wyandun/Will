@@ -7,6 +7,7 @@ import CalendarListView from './CalendarListView';
 import CalendarMonthView from './CalendarMonthView';
 import CalendarWeekView from './CalendarWeekView';
 import UpcomingEventsSidebar from '../../components/UpcomingEventsSidebar';
+import SearchResultsPanel from './SearchResultsPanel';
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 
@@ -71,6 +72,10 @@ export default function EventsPage() {
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [sidebarKey, setSidebarKey] = useState(0);
 
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showSearchPanel, setShowSearchPanel] = useState(false);
+
   const fetchEvents = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -85,7 +90,6 @@ export default function EventsPage() {
           start_from: start.toISOString(),
           end_before: end.toISOString(),
           per_page: 200,
-          search: search || undefined,
         });
         setEvents(result.data);
         setMeta(null);
@@ -100,6 +104,30 @@ export default function EventsPage() {
   useEffect(() => {
     fetchEvents();
   }, [fetchEvents]);
+
+  // Global search (debounced) — fires a separate API call without date filters
+  useEffect(() => {
+    if (!search.trim() || view === 'list') {
+      setShowSearchPanel(false);
+      setSearchResults([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setSearchLoading(true);
+      setShowSearchPanel(true);
+      try {
+        const result = await eventsApi.getEvents({ search, per_page: 20 });
+        setSearchResults(result.data);
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [search, view]);
 
   // Reset page when switching to list view
   function handleViewChange(newView) {
@@ -121,6 +149,14 @@ export default function EventsPage() {
   function handleSearch(e) {
     setSearch(e.target.value);
     setPage(1);
+  }
+
+  function handleSearchResultSelect(event) {
+    setCurrentDate(new Date(event.start_at));
+    setSearch('');
+    setShowSearchPanel(false);
+    setSearchResults([]);
+    openEdit(event);
   }
 
   function openCreate() {
@@ -238,7 +274,7 @@ export default function EventsPage() {
             )}
 
             {/* Search */}
-            <div className="flex-1 max-w-xs">
+            <div className="flex-1 max-w-xs relative">
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
@@ -250,9 +286,31 @@ export default function EventsPage() {
                   value={search}
                   onChange={handleSearch}
                   placeholder={t('calendar.search_placeholder')}
-                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                  className={`w-full pl-10 ${search ? 'pr-9' : 'pr-4'} py-2 rounded-lg border border-slate-300 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition`}
                 />
+                {search && (
+                  <button
+                    onClick={() => { setSearch(''); setShowSearchPanel(false); setSearchResults([]); }}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+                    aria-label={t('calendar.clear_search')}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
               </div>
+
+              {/* Search results panel (month/week views only) */}
+              {showSearchPanel && view !== 'list' && (
+                <SearchResultsPanel
+                  query={search}
+                  results={searchResults}
+                  loading={searchLoading}
+                  onSelectEvent={handleSearchResultSelect}
+                  onClose={() => { setSearch(''); setShowSearchPanel(false); setSearchResults([]); }}
+                />
+              )}
             </div>
 
             {/* View selector */}
