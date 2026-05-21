@@ -213,7 +213,7 @@ class FeedService
             throw new NotFoundHttpException('Comment not found.');
         }
 
-        if ((int) $comment->user_id !== $user->id && ! $user->hasRole('superadmin')) {
+        if ((int) $comment->user_id !== $user->id && ! $user->hasAnyRole(['superadmin', 'system_admin'])) {
             Log::warning('Unauthorized comment delete attempt', [
                 'user_id' => $user->id,
                 'comment_id' => $commentId,
@@ -251,7 +251,7 @@ class FeedService
             });
 
         // Visibility scoping
-        if (! $user->hasRole('superadmin')) {
+        if (! $user->hasAnyRole(['superadmin', 'system_admin', 'system_admin_readonly'])) {
             $franchiseId = $user->sm_franchise_id;
             $query->where(function ($q) use ($franchiseId) {
                 $q->where('posts.visibility', 'global')
@@ -410,7 +410,7 @@ class FeedService
             ]);
 
         // Scope which users are visible to this user
-        if ($user->hasRole('superadmin')) {
+        if ($user->hasAnyRole(['superadmin', 'system_admin', 'system_admin_readonly'])) {
             // no filter
         } elseif ($user->hasRole('admin_sm')) {
             $baseQuery->where('users.sm_franchise_id', $user->sm_franchise_id);
@@ -551,7 +551,7 @@ class FeedService
             throw new NotFoundHttpException('Post not found.');
         }
 
-        if ((int) $post->author_id !== $user->id && ! $user->hasRole('superadmin')) {
+        if ((int) $post->author_id !== $user->id && ! $user->hasAnyRole(['superadmin', 'system_admin'])) {
             Log::warning('Unauthorized post update attempt', [
                 'user_id' => $user->id,
                 'post_id' => $postId,
@@ -628,7 +628,7 @@ class FeedService
             throw new NotFoundHttpException('Post not found.');
         }
 
-        if ((int) $post->author_id !== $user->id && ! $user->hasRole('superadmin')) {
+        if ((int) $post->author_id !== $user->id && ! $user->hasAnyRole(['superadmin', 'system_admin'])) {
             Log::warning('Unauthorized post delete attempt', [
                 'user_id' => $user->id,
                 'post_id' => $postId,

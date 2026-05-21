@@ -45,7 +45,7 @@ EmptyState.propTypes = {
 export default function CompaniesPage() {
   const { t } = useTranslation('common');
   const role = useAuthStore((s) => s.role);
-  const canManage = role === 'superadmin' || role === 'admin_sm';
+  const canManage = role === 'superadmin' || role === 'system_admin' || role === 'admin_sm';
 
   const [companies, setCompanies] = useState([]);
   const [companiesTotal, setCompaniesTotal] = useState(null);

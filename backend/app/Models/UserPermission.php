@@ -2,11 +2,27 @@
 
 namespace App\Models;
 
+use App\Enums\Role;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class UserPermission extends Model
 {
+    /**
+     * Canonical list of module-permission keys used across the system.
+     */
+    public const ALL_MODULES = [
+        'feed',
+        'contracts',
+        'repository',
+        'processes',
+        'accounting',
+        'inventory',
+        'tracking',
+        'catalog',
+        'calendar',
+    ];
+
     /**
      * Module keys: feed, contracts, repository, processes, accounting,
      *              inventory, tracking, catalog, calendar
@@ -33,5 +49,28 @@ class UserPermission extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Centralized permission sync
+    // ---------------------------------------------------------------------------
+
+    /**
+     * Create or update UserPermission rows for every module based on the given role.
+     *
+     * - SUPERADMIN / SYSTEM_ADMIN / ADMIN_SM → can_read=true, can_write=true
+     * - SYSTEM_ADMIN_READONLY                → can_read=true, can_write=false
+     * - All other roles (sb_owner, etc.)     → can_read=true, can_write=false
+     */
+    public static function syncForRole(int $userId, string $role): void
+    {
+        $canWrite = in_array($role, [Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::ADMIN_SM], true);
+
+        foreach (self::ALL_MODULES as $module) {
+            self::updateOrCreate(
+                ['user_id' => $userId, 'module' => $module],
+                ['can_read' => true, 'can_write' => $canWrite],
+            );
+        }
     }
 }

@@ -97,7 +97,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     });
 
     // Feed
-    Route::prefix('feed')->group(function () {
+    Route::prefix('feed')->middleware('module.permission:feed')->group(function () {
         Route::get('/posts', [FeedController::class, 'posts']);
         Route::get('/presence', [FeedController::class, 'presence']);
         Route::post('/posts', [FeedController::class, 'store']);
@@ -110,7 +110,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     });
 
     // News (AI-curated from RSS — superadmin/admin_sm only)
-    Route::prefix('news')->group(function () {
+    Route::prefix('news')->middleware('module.permission:feed')->group(function () {
         Route::get('/articles', [NewsController::class, 'index']);
         Route::post('/fetch', [NewsController::class, 'fetch']);
         Route::post('/articles/{newsArticle}/publish', [NewsController::class, 'publish']);

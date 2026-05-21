@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Models\Post;
 use App\Models\User;
+use App\Models\UserPermission;
 use App\Services\FeedService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -29,6 +30,7 @@ class FeedControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $user->assignRole('sb_owner');
+        UserPermission::syncForRole($user->id, 'sb_owner');
 
         $response = $this->actingAs($user)->getJson('/api/v1/feed/posts');
 
@@ -41,6 +43,7 @@ class FeedControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $user->assignRole('sb_owner');
+        UserPermission::syncForRole($user->id, 'sb_owner');
 
         Post::factory()->count(3)->create([
             'author_id' => $user->id,
@@ -68,6 +71,7 @@ class FeedControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $user->assignRole('superadmin');
+        UserPermission::syncForRole($user->id, 'superadmin');
 
         Post::factory()->count(15)->create([
             'author_id' => $user->id,
@@ -85,6 +89,7 @@ class FeedControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $user->assignRole('superadmin');
+        UserPermission::syncForRole($user->id, 'superadmin');
 
         $response = $this->actingAs($user)->getJson('/api/v1/feed/posts?per_page=999');
 
@@ -96,6 +101,7 @@ class FeedControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $user->assignRole('sb_owner');
+        UserPermission::syncForRole($user->id, 'sb_owner');
 
         $mock = $this->mock(FeedService::class);
         $mock->expects('getPosts')
@@ -113,6 +119,7 @@ class FeedControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $user->assignRole('sb_owner');
+        UserPermission::syncForRole($user->id, 'sb_owner');
 
         $mock = $this->mock(FeedService::class);
         $mock->expects('getPosts')
@@ -141,6 +148,7 @@ class FeedControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $user->assignRole('sb_owner');
+        UserPermission::syncForRole($user->id, 'sb_owner');
 
         $response = $this->actingAs($user)->getJson('/api/v1/feed/presence');
 
@@ -152,6 +160,7 @@ class FeedControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $user->assignRole('sb_owner');
+        UserPermission::syncForRole($user->id, 'sb_owner');
 
         $response = $this->actingAs($user)->getJson('/api/v1/feed/presence');
 
@@ -175,6 +184,7 @@ class FeedControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $user->assignRole('superadmin');
+        UserPermission::syncForRole($user->id, 'superadmin');
 
         $response = $this->actingAs($user)->postJson('/api/v1/feed/posts', [
             'title' => 'New Announcement',
@@ -192,6 +202,7 @@ class FeedControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $user->assignRole('admin_sm');
+        UserPermission::syncForRole($user->id, 'admin_sm');
 
         $response = $this->actingAs($user)->postJson('/api/v1/feed/posts', [
             'title' => 'Franchise News',
@@ -208,6 +219,7 @@ class FeedControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $user->assignRole('sb_owner');
+        UserPermission::syncForRole($user->id, 'sb_owner');
 
         $response = $this->actingAs($user)->postJson('/api/v1/feed/posts', [
             'title' => 'My Post',
@@ -223,6 +235,7 @@ class FeedControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $user->assignRole('superadmin');
+        UserPermission::syncForRole($user->id, 'superadmin');
 
         $response = $this->actingAs($user)->postJson('/api/v1/feed/posts', []);
 
@@ -238,6 +251,7 @@ class FeedControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $user->assignRole('admin_sm');
+        UserPermission::syncForRole($user->id, 'admin_sm');
 
         $post = Post::factory()->create([
             'author_id' => $user->id,
@@ -256,6 +270,7 @@ class FeedControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $user->assignRole('superadmin');
+        UserPermission::syncForRole($user->id, 'superadmin');
 
         $response = $this->actingAs($user)->putJson('/api/v1/feed/posts/99999', ['title' => 'Updated']);
 
@@ -266,9 +281,11 @@ class FeedControllerTest extends TestCase
     {
         $author = User::factory()->create();
         $author->assignRole('admin_sm');
+        UserPermission::syncForRole($author->id, 'admin_sm');
 
         $other = User::factory()->create();
         $other->assignRole('sb_owner');
+        UserPermission::syncForRole($other->id, 'sb_owner');
 
         $post = Post::factory()->create(['author_id' => $author->id]);
 
@@ -287,6 +304,7 @@ class FeedControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $user->assignRole('admin_sm');
+        UserPermission::syncForRole($user->id, 'admin_sm');
 
         $post = Post::factory()->create(['author_id' => $user->id]);
 
@@ -300,9 +318,11 @@ class FeedControllerTest extends TestCase
     {
         $author = User::factory()->create();
         $author->assignRole('admin_sm');
+        UserPermission::syncForRole($author->id, 'admin_sm');
 
         $superadmin = User::factory()->create();
         $superadmin->assignRole('superadmin');
+        UserPermission::syncForRole($superadmin->id, 'superadmin');
 
         $post = Post::factory()->create(['author_id' => $author->id]);
 
@@ -316,6 +336,7 @@ class FeedControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $user->assignRole('superadmin');
+        UserPermission::syncForRole($user->id, 'superadmin');
 
         $response = $this->actingAs($user)->deleteJson('/api/v1/feed/posts/99999');
 

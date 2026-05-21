@@ -41,7 +41,7 @@ StubPage.propTypes = {
 
 // ─── Role guard ───────────────────────────────────────────────────────────────
 
-const ADMIN_ROLES = ['superadmin', 'admin_sm'];
+const ADMIN_ROLES = ['superadmin', 'system_admin', 'system_admin_readonly', 'admin_sm'];
 
 /**
  * Renders children only when the current user holds one of the allowed roles.
@@ -131,7 +131,7 @@ export default function App() {
           <Route
             path="/catalog"
             element={
-              <RoleRoute roles={['superadmin']}>
+              <RoleRoute roles={ADMIN_ROLES}>
                 <StubPage title={t('nav.service_catalog')} />
               </RoleRoute>
             }

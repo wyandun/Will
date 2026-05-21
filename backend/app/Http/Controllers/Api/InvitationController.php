@@ -35,7 +35,7 @@ class InvitationController extends Controller
             ->with(['roles', 'invitedBy:id,name'])
             ->orderByDesc('created_at');
 
-        if (! $authUser->hasRole(Role::SUPERADMIN)) {
+        if (! $authUser->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY])) {
             // Guard against null franchise: WHERE sm_franchise_id = NULL would
             // silently match other null-franchise rows (cross-tenant data leak).
             abort_if(is_null($authUser->sm_franchise_id), 403, 'invitation.no_franchise_context');

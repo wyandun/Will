@@ -109,6 +109,7 @@ class InvitationService
         }
 
         $user->assignRole($data['role']);
+        UserPermission::syncForRole($user->id, $data['role']);
 
         return $this->notify($user, $invitedBy);
     }

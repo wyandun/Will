@@ -9,20 +9,26 @@ use App\Models\User;
 class FranchisePolicy
 {
     /**
-     * List franchises: superadmin sees all, admin_sm sees theirs.
+     * List franchises: superadmin/system_admin/system_admin_readonly see all,
+     * admin_sm sees theirs.
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasRole(Role::SUPERADMIN) || $user->hasRole(Role::ADMIN_SM);
+        return $user->hasAnyRole([
+            Role::SUPERADMIN,
+            Role::SYSTEM_ADMIN,
+            Role::SYSTEM_ADMIN_READONLY,
+            Role::ADMIN_SM,
+        ]);
     }
 
     /**
-     * View a single franchise: superadmin always allowed;
+     * View a single franchise: superadmin/system_admin/system_admin_readonly always allowed;
      * admin_sm only if the franchise is theirs.
      */
     public function view(User $user, Franchise $franchise): bool
     {
-        if ($user->hasRole(Role::SUPERADMIN)) {
+        if ($user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY])) {
             return true;
         }
 
@@ -32,11 +38,11 @@ class FranchisePolicy
 
     /**
      * Add a member (admin or client) to a franchise.
-     * Superadmin can add to any franchise; admin_sm only to their own.
+     * Superadmin/system_admin can add to any franchise; admin_sm only to their own.
      */
     public function addMember(User $user, Franchise $franchise): bool
     {
-        if ($user->hasRole(Role::SUPERADMIN)) {
+        if ($user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN])) {
             return true;
         }
 
@@ -45,40 +51,34 @@ class FranchisePolicy
     }
 
     /**
-     * Create a franchise: superadmin only.
+     * Create a franchise: superadmin/system_admin only.
      */
     public function create(User $user): bool
     {
-        return $user->hasRole(Role::SUPERADMIN);
+        return $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN]);
     }
 
     /**
-     * Update franchise data (name, type, email, etc.): superadmin only.
+     * Update franchise data (name, type, email, etc.): superadmin/system_admin only.
      */
     public function update(User $user, Franchise $franchise): bool
     {
-        return $user->hasRole(Role::SUPERADMIN);
+        return $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN]);
     }
 
     /**
-     * Toggle franchise active/inactive status: superadmin only.
-     *
-     * This is intentionally separated from `update` because toggling status
-     * is a distinct operational action that may gain different permissions
-     * in the future (e.g., allowing admin_sm to toggle their own franchise).
-     * Currently restricted to superadmin only — admin_sm cannot toggle status
-     * on any franchise, including their own.
+     * Toggle franchise active/inactive status: superadmin/system_admin only.
      */
     public function toggleStatus(User $user, Franchise $franchise): bool
     {
-        return $user->hasRole(Role::SUPERADMIN);
+        return $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN]);
     }
 
     /**
-     * Delete a franchise: superadmin only.
+     * Delete a franchise: superadmin/system_admin only.
      */
     public function delete(User $user, Franchise $franchise): bool
     {
-        return $user->hasRole(Role::SUPERADMIN);
+        return $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN]);
     }
 }

@@ -411,6 +411,7 @@ function PostCard({ post, currentUser, role, onEdit, onDelete, onToast, onOpen }
     currentUser &&
     (currentUser.id === post.author_id ||
       role === 'superadmin' ||
+      role === 'system_admin' ||
       role === 'admin_sm');
 
   // Close menus when clicking outside
@@ -658,7 +659,7 @@ function UserAvatar({ user }) {
 function ComposeBar({ currentUser, role, onOpenCreate, onOpenNews }) {
   const { t } = useTranslation('common');
 
-  const canCompose = role === 'superadmin' || role === 'admin_sm';
+  const canCompose = role === 'superadmin' || role === 'system_admin' || role === 'admin_sm';
 
   if (!canCompose) return null;
 

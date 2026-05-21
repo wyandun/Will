@@ -28,21 +28,21 @@ class UserPolicy
     }
 
     /**
-     * superadmin and admin_sm can send / manage invitations.
+     * superadmin, system_admin, system_admin_readonly (read), and admin_sm can access invitations.
      */
     public function inviteUsers(User $user): bool
     {
-        return $user->hasAnyRole([Role::SUPERADMIN, Role::ADMIN_SM]);
+        return $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY, Role::ADMIN_SM]);
     }
 
     /**
      * Actor can manage (resend / revoke) a specific pending invitation.
-     * Superadmin can act on any invitation; admin_sm only on invitations
+     * Superadmin/system_admin can act on any invitation; admin_sm only on invitations
      * belonging to their own franchise.
      */
     public function manageInvitation(User $authUser, User $target): bool
     {
-        if ($authUser->hasRole(Role::SUPERADMIN)) {
+        if ($authUser->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN])) {
             return true;
         }
 
