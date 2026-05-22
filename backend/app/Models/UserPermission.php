@@ -62,6 +62,16 @@ class UserPermission extends Model
      * - SUPERADMIN / SYSTEM_ADMIN / ADMIN_SM → can_read=true, can_write=true
      * - SYSTEM_ADMIN_READONLY                → can_read=true, can_write=false
      * - All other roles (sb_owner, etc.)     → can_read=true, can_write=false
+     *
+     * Security notes (reviewed 2026-05):
+     * - Unknown roles default to can_write=false (safest permission level).
+     *   All production callers validate the role via FormRequest before calling this method.
+     * - Concurrency-safe: unique index on (user_id, module) prevents duplicates,
+     *   and updateOrCreate is atomic at the SQL level. The wrapping transaction
+     *   ensures all 9 modules are synced consistently.
+     * - 9 individual updateOrCreate calls (one per module) are acceptable for the
+     *   current call volume (interactive requests and seeder). Consider upsert()
+     *   if batch provisioning is added.
      */
     public static function syncForRole(int $userId, string $role): void
     {
