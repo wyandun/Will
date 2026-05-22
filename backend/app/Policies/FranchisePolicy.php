@@ -59,19 +59,31 @@ class FranchisePolicy
     }
 
     /**
-     * Update franchise data (name, type, email, etc.): superadmin/system_admin only.
+     * Update franchise data (name, type, email, etc.): superadmin/system_admin always;
+     * admin_sm only for their own franchise.
      */
     public function update(User $user, Franchise $franchise): bool
     {
-        return $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN]);
+        if ($user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN])) {
+            return true;
+        }
+
+        return $user->hasRole(Role::ADMIN_SM)
+            && (int) $user->sm_franchise_id === (int) $franchise->id;
     }
 
     /**
-     * Toggle franchise active/inactive status: superadmin/system_admin only.
+     * Toggle franchise active/inactive status: superadmin/system_admin always;
+     * admin_sm only for their own franchise.
      */
     public function toggleStatus(User $user, Franchise $franchise): bool
     {
-        return $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN]);
+        if ($user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN])) {
+            return true;
+        }
+
+        return $user->hasRole(Role::ADMIN_SM)
+            && (int) $user->sm_franchise_id === (int) $franchise->id;
     }
 
     /**

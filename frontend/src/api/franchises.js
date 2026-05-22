@@ -41,6 +41,13 @@ export const franchisesApi = {
     apiClient.delete(`/franchises/${id}`).then((res) => res.data),
 
   /**
+   * Get a single franchise by ID.
+   * @param {number} id
+   */
+  getFranchise: (id) =>
+    apiClient.get(`/franchises/${id}`).then((res) => res.data.data),
+
+  /**
    * Get all members (admins + clients) of a franchise.
    * @param {number} id
    */

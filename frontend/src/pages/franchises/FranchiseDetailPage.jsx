@@ -7,6 +7,7 @@ import { franchisesApi } from '../../api/franchises';
 import { invitationsApi } from '../../api/invitations';
 import AddAdminModal from './AddAdminModal';
 import AddClientModal from './AddClientModal';
+import FranchiseFormModal from './FranchiseFormModal';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -141,23 +142,30 @@ export default function FranchiseDetailPage() {
   const isSuperadmin = role === 'superadmin' || role === 'system_admin';
   const isAdminSm = role === 'admin_sm';
   const canAdd = isSuperadmin || (isAdminSm && user?.sm_franchise_id === parseInt(id, 10));
+  const canManage = isSuperadmin || (isAdminSm && user?.sm_franchise_id === parseInt(id, 10));
 
+  const [franchise, setFranchise] = useState(null);
   const [members, setMembers] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState('');
   const [activeTab, setActiveTab] = useState('admins');
   const [isAddAdminOpen, setIsAddAdminOpen] = useState(false);
   const [isAddClientOpen, setIsAddClientOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
-  // ── Load members ──────────────────────────────────────────────────────────
+  // ── Load franchise + members ───────────────────────────────────────────────
 
-  const loadMembers = useCallback(async () => {
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     setFetchError('');
     try {
-      const data = await franchisesApi.getMembers(id);
-      setMembers(data);
+      const [franchiseData, membersData] = await Promise.all([
+        franchisesApi.getFranchise(id),
+        franchisesApi.getMembers(id),
+      ]);
+      setFranchise(franchiseData);
+      setMembers(membersData);
     } catch (error) {
       setFetchError(
         error?.response?.data?.message ?? t('franchise_detail.load_error')
@@ -168,17 +176,37 @@ export default function FranchiseDetailPage() {
   }, [id, t]);
 
   useEffect(() => {
-    loadMembers();
-  }, [loadMembers]);
+    loadData();
+  }, [loadData]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
+
+  async function handleSave(payload, franchiseId) {
+    await franchisesApi.updateFranchise(franchiseId, payload);
+    setIsModalOpen(false);
+    await loadData();
+  }
+
+  async function handleToggleStatus() {
+    if (!franchise) return;
+    const action = franchise.is_active ? 'deactivate' : 'activate';
+    if (!window.confirm(t(`franchises.${action}_confirm`, { name: franchise.name }))) return;
+    try {
+      const updated = await franchisesApi.toggleFranchiseStatus(franchise.id);
+      setFranchise(updated);
+    } catch (error) {
+      const msgKey = error?.response?.data?.message;
+      const message = msgKey ? t(msgKey, { defaultValue: msgKey }) : t('common.unexpected_error');
+      window.alert(message);
+    }
+  }
 
   async function handleSaveAdmin(payload) {
     await invitationsApi.sendInvitation({ ...payload, role: 'admin_sm', sm_franchise_id: parseInt(id, 10) });
     setIsAddAdminOpen(false);
     setSuccessMessage(t('franchise_detail.admin_invited'));
     setTimeout(() => setSuccessMessage(''), 3000);
-    await loadMembers();
+    await loadData();
   }
 
   async function handleSaveClient(payload) {
@@ -186,7 +214,7 @@ export default function FranchiseDetailPage() {
     setIsAddClientOpen(false);
     setSuccessMessage(t('franchise_detail.client_invited'));
     setTimeout(() => setSuccessMessage(''), 3000);
-    await loadMembers();
+    await loadData();
   }
 
   // ── Derived data ──────────────────────────────────────────────────────────
@@ -195,7 +223,8 @@ export default function FranchiseDetailPage() {
   const clients = members?.clients ?? [];
   const adminsCount = members?.admins_count ?? admins.length;
   const clientsCount = members?.clients_count ?? clients.length;
-  const franchiseName = members?.franchise_name ?? '';
+  const franchiseName = franchise?.name ?? members?.franchise_name ?? '';
+  const isActive = franchise?.is_active ?? members?.is_active;
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -233,7 +262,7 @@ export default function FranchiseDetailPage() {
             <div>
               <p className="text-sm font-medium text-red-700">{fetchError}</p>
               <button
-                onClick={loadMembers}
+                onClick={loadData}
                 className="mt-1 text-xs text-red-600 underline hover:text-red-800"
               >
                 {t('common.try_again')}
@@ -247,28 +276,98 @@ export default function FranchiseDetailPage() {
           <>
             {/* Franchise header */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-              <div className="flex items-center gap-4">
+              <div className="flex items-start gap-4">
                 <div className={`w-14 h-14 rounded-xl ${getAvatarColor(franchiseName)} flex items-center justify-center shrink-0`}>
                   <span className="text-white text-lg font-bold">{getInitials(franchiseName)}</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h1 className="text-xl font-semibold text-slate-800">{franchiseName}</h1>
-                  {members.country && (
-                    <p className="text-sm text-slate-500 mt-0.5">{members.country}</p>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h1 className="text-xl font-semibold text-slate-800">{franchiseName}</h1>
+                    {isActive !== undefined && (
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset ${
+                          isActive !== false
+                            ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20'
+                            : 'bg-red-50 text-red-700 ring-red-600/20'
+                        }`}
+                      >
+                        {isActive !== false ? t('franchises.active') : t('franchises.inactive')}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Contact info row */}
+                  {(franchise?.country || franchise?.email || franchise?.phone || franchise?.address) && (
+                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                      {franchise?.country && (
+                        <span className="text-sm text-slate-500 flex items-center gap-1">
+                          <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253" />
+                          </svg>
+                          {franchise.country}
+                        </span>
+                      )}
+                      {franchise?.email && (
+                        <span className="text-sm text-slate-500 flex items-center gap-1">
+                          <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                          </svg>
+                          {franchise.email}
+                        </span>
+                      )}
+                      {franchise?.phone && (
+                        <span className="text-sm text-slate-500 flex items-center gap-1">
+                          <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
+                          </svg>
+                          {franchise.phone}
+                        </span>
+                      )}
+                      {franchise?.address && (
+                        <span className="text-sm text-slate-500 flex items-center gap-1">
+                          <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                          </svg>
+                          {franchise.address}
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
-                {members.is_active !== undefined && (
-                  <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset ${
-                      members.is_active !== false
-                        ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20'
-                        : 'bg-red-50 text-red-700 ring-red-600/20'
+              </div>
+
+              {/* Action buttons — only for users who can manage this franchise */}
+              {canManage && franchise && (
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2">
+                  <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+                    </svg>
+                    {t('common.edit')}
+                  </button>
+                  <button
+                    onClick={handleToggleStatus}
+                    className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                      isActive !== false
+                        ? 'text-amber-700 bg-amber-50 hover:bg-amber-100'
+                        : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
                     }`}
                   >
-                    {members.is_active !== false ? t('franchises.active') : t('franchises.inactive')}
-                  </span>
-                )}
-              </div>
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+                      {isActive !== false ? (
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                      ) : (
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      )}
+                    </svg>
+                    {isActive !== false ? t('franchises.deactivate') : t('franchises.activate')}
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Success toast */}
@@ -399,6 +498,13 @@ export default function FranchiseDetailPage() {
         <AddClientModal
           onClose={() => setIsAddClientOpen(false)}
           onSave={handleSaveClient}
+        />
+      )}
+      {isModalOpen && franchise && (
+        <FranchiseFormModal
+          franchise={franchise}
+          onClose={() => setIsModalOpen(false)}
+          onSave={handleSave}
         />
       )}
     </>
