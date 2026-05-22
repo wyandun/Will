@@ -154,6 +154,12 @@ export default function FranchiseDetailPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
+  // Pending invitations state
+  const [activationUrls, setActivationUrls] = useState({});
+  const [resendingId, setResendingId] = useState(null);
+  const [revokingId, setRevokingId] = useState(null);
+  const [copiedId, setCopiedId] = useState(null);
+
   // ── Load franchise + members ───────────────────────────────────────────────
 
   const loadData = useCallback(async () => {
@@ -202,19 +208,68 @@ export default function FranchiseDetailPage() {
   }
 
   async function handleSaveAdmin(payload) {
-    await invitationsApi.sendInvitation({ ...payload, role: 'admin_sm', sm_franchise_id: parseInt(id, 10) });
+    const result = await invitationsApi.sendInvitation({ ...payload, role: 'admin_sm', sm_franchise_id: parseInt(id, 10) });
+    if (result?.data?.activation_url && result?.data?.user?.id) {
+      setActivationUrls((prev) => ({ ...prev, [result.data.user.id]: result.data.activation_url }));
+    }
     setIsAddAdminOpen(false);
     setSuccessMessage(t('franchise_detail.admin_invited'));
-    setTimeout(() => setSuccessMessage(''), 3000);
+    setTimeout(() => setSuccessMessage(''), 4000);
     await loadData();
   }
 
   async function handleSaveClient(payload) {
-    await invitationsApi.sendInvitation({ ...payload, sm_franchise_id: parseInt(id, 10) });
+    const result = await invitationsApi.sendInvitation({ ...payload, sm_franchise_id: parseInt(id, 10) });
+    if (result?.data?.activation_url && result?.data?.user?.id) {
+      setActivationUrls((prev) => ({ ...prev, [result.data.user.id]: result.data.activation_url }));
+    }
     setIsAddClientOpen(false);
     setSuccessMessage(t('franchise_detail.client_invited'));
-    setTimeout(() => setSuccessMessage(''), 3000);
+    setTimeout(() => setSuccessMessage(''), 4000);
     await loadData();
+  }
+
+  async function handleResend(member) {
+    setResendingId(member.id);
+    try {
+      const result = await invitationsApi.resendInvitation(member.id);
+      if (result?.data?.activation_url) {
+        setActivationUrls((prev) => ({ ...prev, [member.id]: result.data.activation_url }));
+      }
+      setSuccessMessage(t('invitation.resent_success'));
+      setTimeout(() => setSuccessMessage(''), 4000);
+    } catch {
+      window.alert(t('invitation.resend_error'));
+    } finally {
+      setResendingId(null);
+    }
+  }
+
+  async function handleRevoke(member) {
+    if (!window.confirm(t('invitation.revoke_confirm', { name: member.name }))) return;
+    setRevokingId(member.id);
+    try {
+      await invitationsApi.revokeInvitation(member.id);
+      setActivationUrls((prev) => {
+        const next = { ...prev };
+        delete next[member.id];
+        return next;
+      });
+      setSuccessMessage(t('invitation.revoked_success'));
+      setTimeout(() => setSuccessMessage(''), 4000);
+      await loadData();
+    } catch {
+      window.alert(t('invitation.revoke_error'));
+    } finally {
+      setRevokingId(null);
+    }
+  }
+
+  function handleCopyUrl(memberId, url) {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedId(memberId);
+      setTimeout(() => setCopiedId(null), 2000);
+    });
   }
 
   // ── Derived data ──────────────────────────────────────────────────────────
@@ -225,6 +280,15 @@ export default function FranchiseDetailPage() {
   const clientsCount = members?.clients_count ?? clients.length;
   const franchiseName = franchise?.name ?? members?.franchise_name ?? '';
   const isActive = franchise?.is_active ?? members?.is_active;
+
+  const pendingAdmins = admins
+    .filter((a) => !a.invitation_accepted_at)
+    .map((a) => ({ ...a, memberType: 'admin' }));
+  const pendingClients = clients
+    .filter((c) => !c.invitation_accepted_at)
+    .map((c) => ({ ...c, memberType: 'client' }));
+  const pendingMembers = [...pendingAdmins, ...pendingClients];
+  const pendingCount = pendingMembers.length;
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -413,9 +477,26 @@ export default function FranchiseDetailPage() {
                     {clientsCount}
                   </span>
                 </button>
+                <button
+                  onClick={() => setActiveTab('pending')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    activeTab === 'pending'
+                      ? 'bg-white text-slate-800 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  {t('franchise_detail.tab_pending')}
+                  {pendingCount > 0 && (
+                    <span className={`ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-semibold ${
+                      activeTab === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-500'
+                    }`}>
+                      {pendingCount}
+                    </span>
+                  )}
+                </button>
               </div>
 
-              {canAdd && (
+              {canAdd && activeTab !== 'pending' && (
                 <button
                   onClick={() => activeTab === 'admins' ? setIsAddAdminOpen(true) : setIsAddClientOpen(true)}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
@@ -478,6 +559,93 @@ export default function FranchiseDetailPage() {
                           />
                         );
                       })}
+                    </ul>
+                  )}
+                </>
+              )}
+
+              {activeTab === 'pending' && (
+                <>
+                  {pendingMembers.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                      <svg className="w-10 h-10 text-slate-300 mb-3" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 9v.906a2.25 2.25 0 01-1.183 1.981l-6.478 3.488M2.25 9v.906a2.25 2.25 0 001.183 1.981l6.478 3.488m8.839 2.51l-4.66-2.51m0 0l-1.023-.55a2.25 2.25 0 00-2.134 0l-1.022.55m0 0l-4.661 2.51m16.5 1.615a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V8.844a2.25 2.25 0 011.183-1.981l7.5-4.039a2.25 2.25 0 012.134 0l7.5 4.039a2.25 2.25 0 011.183 1.98V19.5z" />
+                      </svg>
+                      <p className="text-sm text-slate-500">{t('franchise_detail.no_pending')}</p>
+                    </div>
+                  ) : (
+                    <ul className="divide-y divide-slate-100">
+                      {pendingMembers.map((member) => (
+                        <li key={member.id} className="px-5 py-4">
+                          <div className="flex items-start gap-4">
+                            {/* Avatar */}
+                            <div className={`w-10 h-10 rounded-full ${getAvatarColor(member.name)} flex items-center justify-center shrink-0`}>
+                              <span className="text-white text-sm font-semibold">{getInitials(member.name)}</span>
+                            </div>
+
+                            {/* Info */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="text-sm font-medium text-slate-800">{member.name}</p>
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset bg-amber-50 text-amber-700 ring-amber-600/20">
+                                  {t('franchise_detail.pending')}
+                                </span>
+                                {member.memberType === 'admin' ? (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset bg-blue-50 text-blue-700 ring-blue-600/20">
+                                    Admin SM
+                                  </span>
+                                ) : (
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset ${ROLE_COLORS[member.role] ?? 'bg-slate-50 text-slate-600 ring-slate-600/20'}`}>
+                                    {t(`roles.${member.role}`, { defaultValue: member.role })}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-slate-400 mt-0.5">{member.email}</p>
+                              {member.created_at && (
+                                <p className="text-xs text-slate-400 mt-0.5">
+                                  {t('franchise_detail.invited_label')} {formatLastSeen(member.created_at)}
+                                </p>
+                              )}
+
+                              {/* Activation URL (dev mode only — shown after invite/resend) */}
+                              {activationUrls[member.id] && (
+                                <div className="mt-2 flex items-center gap-2 rounded-lg bg-blue-50 border border-blue-100 px-3 py-2">
+                                  <svg className="w-3.5 h-3.5 text-blue-500 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+                                  </svg>
+                                  <p className="text-xs text-blue-700 flex-1 truncate font-mono">{activationUrls[member.id]}</p>
+                                  <button
+                                    onClick={() => handleCopyUrl(member.id, activationUrls[member.id])}
+                                    className="shrink-0 text-xs font-medium text-blue-700 hover:text-blue-900 transition-colors"
+                                  >
+                                    {copiedId === member.id ? t('invitation.copied') : t('invitation.copy')}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Actions — only for users who can manage invitations */}
+                            {canAdd && (
+                              <div className="flex items-center gap-2 shrink-0">
+                                <button
+                                  onClick={() => handleResend(member)}
+                                  disabled={resendingId === member.id || revokingId === member.id}
+                                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                  {resendingId === member.id ? '…' : t('invitation.action_resend')}
+                                </button>
+                                <button
+                                  onClick={() => handleRevoke(member)}
+                                  disabled={revokingId === member.id || resendingId === member.id}
+                                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                  {revokingId === member.id ? '…' : t('invitation.action_revoke')}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </li>
+                      ))}
                     </ul>
                   )}
                 </>

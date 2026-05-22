@@ -409,7 +409,10 @@
     "creating": "Creating…",
     "last_seen": "Last seen",
     "never": "Never",
-    "pending": "Pending activation"
+    "pending": "Pending activation",
+    "tab_pending": "Pending",
+    "no_pending": "No pending invitations.",
+    "invited_label": "Invited"
   },
   "calendar": {
     "title": "Calendar",
