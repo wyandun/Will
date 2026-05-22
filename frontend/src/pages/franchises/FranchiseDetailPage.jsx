@@ -7,6 +7,8 @@ import { franchisesApi } from '../../api/franchises';
 import { invitationsApi } from '../../api/invitations';
 import AddAdminModal from './AddAdminModal';
 import AddClientModal from './AddClientModal';
+import AdminPermissionsModal from './AdminPermissionsModal';
+import EditAdminModal from './EditAdminModal';
 import FranchiseFormModal from './FranchiseFormModal';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -154,6 +156,12 @@ export default function FranchiseDetailPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
+  // Admin management state
+  const [editingAdmin, setEditingAdmin] = useState(null);
+  const [permissionsAdmin, setPermissionsAdmin] = useState(null);
+  const [deactivatingId, setDeactivatingId] = useState(null);
+  const [restoringId, setRestoringId] = useState(null);
+
   // Pending invitations state
   const [activationUrls, setActivationUrls] = useState({});
   const [resendingId, setResendingId] = useState(null);
@@ -272,6 +280,61 @@ export default function FranchiseDetailPage() {
     });
   }
 
+  // ── Admin management handlers ─────────────────────────────────────────────
+
+  async function handleEditAdmin(profilePayload, passwordPayload, adminId, fId) {
+    await franchisesApi.updateAdmin(fId, adminId, profilePayload);
+    if (passwordPayload) {
+      await franchisesApi.resetAdminPassword(fId, adminId, passwordPayload);
+    }
+    setEditingAdmin(null);
+    setSuccessMessage(t('franchise_detail.admin_updated'));
+    setTimeout(() => setSuccessMessage(''), 4000);
+    await loadData();
+  }
+
+  async function handleSavePermissions(permissionsPayload, adminId, fId) {
+    await franchisesApi.updateAdminPermissions(fId, adminId, permissionsPayload);
+    setPermissionsAdmin(null);
+    setSuccessMessage(t('franchise_detail.permissions_updated'));
+    setTimeout(() => setSuccessMessage(''), 4000);
+    await loadData();
+  }
+
+  async function handleDeactivateAdmin(admin) {
+    if (!window.confirm(t('franchise_detail.deactivate_confirm', { name: admin.name }))) return;
+    setDeactivatingId(admin.id);
+    try {
+      await franchisesApi.deactivateAdmin(parseInt(id, 10), admin.id);
+      setSuccessMessage(t('franchise_detail.admin_deactivated'));
+      setTimeout(() => setSuccessMessage(''), 4000);
+      await loadData();
+    } catch (error) {
+      const msgKey = error?.response?.data?.message;
+      const message = msgKey ? t(msgKey, { defaultValue: msgKey }) : t('common.unexpected_error');
+      window.alert(message);
+    } finally {
+      setDeactivatingId(null);
+    }
+  }
+
+  async function handleRestoreAdmin(admin) {
+    if (!window.confirm(t('franchise_detail.activate_confirm', { name: admin.name }))) return;
+    setRestoringId(admin.id);
+    try {
+      await franchisesApi.restoreAdmin(parseInt(id, 10), admin.id);
+      setSuccessMessage(t('franchise_detail.admin_restored'));
+      setTimeout(() => setSuccessMessage(''), 4000);
+      await loadData();
+    } catch (error) {
+      const msgKey = error?.response?.data?.message;
+      const message = msgKey ? t(msgKey, { defaultValue: msgKey }) : t('common.unexpected_error');
+      window.alert(message);
+    } finally {
+      setRestoringId(null);
+    }
+  }
+
   // ── Derived data ──────────────────────────────────────────────────────────
 
   const admins = members?.admins ?? [];
@@ -280,6 +343,8 @@ export default function FranchiseDetailPage() {
   const clientsCount = members?.clients_count ?? clients.length;
   const franchiseName = franchise?.name ?? members?.franchise_name ?? '';
   const isActive = franchise?.is_active ?? members?.is_active;
+
+  const deactivatedAdmins = members?.deactivated_admins ?? [];
 
   const pendingAdmins = admins
     .filter((a) => !a.invitation_accepted_at)
@@ -513,7 +578,7 @@ export default function FranchiseDetailPage() {
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
               {activeTab === 'admins' && (
                 <>
-                  {admins.length === 0 ? (
+                  {admins.length === 0 && deactivatedAdmins.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-16 text-center">
                       <svg className="w-10 h-10 text-slate-300 mb-3" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
@@ -521,17 +586,121 @@ export default function FranchiseDetailPage() {
                       <p className="text-sm text-slate-500">{t('franchise_detail.no_admins')}</p>
                     </div>
                   ) : (
-                    <ul className="divide-y divide-slate-100 px-5">
-                      {admins.map((admin) => (
-                        <MemberRow
-                          key={admin.id}
-                          member={admin}
-                          badgeLabel={admin.area ? t(`franchise_detail.area_${admin.area}`) : null}
-                          badgeColor={admin.area ? `${AREA_COLORS[admin.area]} ring-1 ring-inset` : null}
-                          t={t}
-                        />
-                      ))}
-                    </ul>
+                    <>
+                      {admins.length > 0 && (
+                        <ul className="divide-y divide-slate-100 px-5">
+                          {admins.map((admin) => (
+                            <li key={admin.id} className="flex items-center gap-4 py-3 px-1">
+                              {/* Avatar */}
+                              <div className={`w-10 h-10 rounded-full ${getAvatarColor(admin.name)} flex items-center justify-center shrink-0`}>
+                                <span className="text-white text-sm font-semibold">{getInitials(admin.name)}</span>
+                              </div>
+                              {/* Name + email */}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-slate-800 truncate">{admin.name}</p>
+                                <p className="text-xs text-slate-400 truncate">{admin.email}</p>
+                              </div>
+                              {/* Area badge */}
+                              {admin.area && (
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset shrink-0 ${AREA_COLORS[admin.area] ?? 'bg-slate-50 text-slate-600 ring-slate-600/20'}`}>
+                                  {t(`franchise_detail.area_${admin.area}`)}
+                                </span>
+                              )}
+                              {/* Job title */}
+                              {admin.job_title && (
+                                <span className="hidden sm:block text-xs text-slate-400 shrink-0 max-w-[120px] truncate">
+                                  {admin.job_title}
+                                </span>
+                              )}
+                              {/* Last seen */}
+                              <div className="shrink-0 text-right">
+                                {admin.last_seen_at ? (
+                                  <span className="text-xs text-slate-400">{formatLastSeen(admin.last_seen_at)}</span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/20">
+                                    {t('franchise_detail.pending')}
+                                  </span>
+                                )}
+                              </div>
+                              {/* Action buttons (superadmin only) */}
+                              {isSuperadmin && (
+                                <div className="flex items-center gap-1 shrink-0">
+                                  {/* Edit */}
+                                  <button
+                                    onClick={() => setEditingAdmin(admin)}
+                                    title={t('franchise_detail.edit_admin')}
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+                                    </svg>
+                                  </button>
+                                  {/* Permissions */}
+                                  <button
+                                    onClick={() => setPermissionsAdmin(admin)}
+                                    title={t('franchise_detail.permissions_title')}
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50 transition-colors"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                                    </svg>
+                                  </button>
+                                  {/* Deactivate */}
+                                  <button
+                                    onClick={() => handleDeactivateAdmin(admin)}
+                                    disabled={deactivatingId === admin.id}
+                                    title={t('franchise_detail.deactivate_admin')}
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+
+                      {/* Deactivated admins */}
+                      {isSuperadmin && deactivatedAdmins.length > 0 && (
+                        <div className={admins.length > 0 ? 'border-t border-slate-200' : ''}>
+                          <div className="px-5 py-3 bg-slate-50">
+                            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                              {t('franchise_detail.deactivated')} ({deactivatedAdmins.length})
+                            </p>
+                          </div>
+                          <ul className="divide-y divide-slate-100 px-5">
+                            {deactivatedAdmins.map((admin) => (
+                              <li key={admin.id} className="flex items-center gap-4 py-3 px-1 opacity-60">
+                                {/* Avatar */}
+                                <div className="w-10 h-10 rounded-full bg-slate-300 flex items-center justify-center shrink-0">
+                                  <span className="text-white text-sm font-semibold">{getInitials(admin.name)}</span>
+                                </div>
+                                {/* Name + email */}
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-slate-500 truncate">{admin.name}</p>
+                                  <p className="text-xs text-slate-400 truncate">{admin.email}</p>
+                                </div>
+                                {/* Deactivated badge */}
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset bg-red-50 text-red-700 ring-red-600/20 shrink-0">
+                                  {t('franchise_detail.deactivated')}
+                                </span>
+                                {/* Restore button */}
+                                <button
+                                  onClick={() => handleRestoreAdmin(admin)}
+                                  disabled={restoringId === admin.id}
+                                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+                                >
+                                  {restoringId === admin.id ? '...' : t('franchise_detail.activate_admin')}
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </>
                   )}
                 </>
               )}
@@ -673,6 +842,22 @@ export default function FranchiseDetailPage() {
           franchise={franchise}
           onClose={() => setIsModalOpen(false)}
           onSave={handleSave}
+        />
+      )}
+      {editingAdmin && (
+        <EditAdminModal
+          admin={editingAdmin}
+          franchiseId={parseInt(id, 10)}
+          onClose={() => setEditingAdmin(null)}
+          onSave={handleEditAdmin}
+        />
+      )}
+      {permissionsAdmin && (
+        <AdminPermissionsModal
+          admin={permissionsAdmin}
+          franchiseId={parseInt(id, 10)}
+          onClose={() => setPermissionsAdmin(null)}
+          onSave={handleSavePermissions}
         />
       )}
     </>

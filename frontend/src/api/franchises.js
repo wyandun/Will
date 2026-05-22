@@ -54,4 +54,23 @@ export const franchisesApi = {
   getMembers: (id) =>
     apiClient.get(`/franchises/${id}/members`).then((res) => res.data.data),
 
+  // ── Franchise admin management ──────────────────────────────────────────
+
+  updateAdmin: (franchiseId, userId, data) =>
+    apiClient.patch(`/franchises/${franchiseId}/admins/${userId}`, data).then((res) => res.data.data),
+
+  resetAdminPassword: (franchiseId, userId, data) =>
+    apiClient.patch(`/franchises/${franchiseId}/admins/${userId}/password`, data).then((res) => res.data),
+
+  deactivateAdmin: (franchiseId, userId) =>
+    apiClient.delete(`/franchises/${franchiseId}/admins/${userId}`).then((res) => res.data),
+
+  restoreAdmin: (franchiseId, userId) =>
+    apiClient.patch(`/franchises/${franchiseId}/admins/${userId}/restore`).then((res) => res.data),
+
+  getAdminPermissions: (franchiseId, userId) =>
+    apiClient.get(`/franchises/${franchiseId}/admins/${userId}/permissions`).then((res) => res.data.data),
+
+  updateAdminPermissions: (franchiseId, userId, permissions) =>
+    apiClient.put(`/franchises/${franchiseId}/admins/${userId}/permissions`, { permissions }).then((res) => res.data),
 };

@@ -22,6 +22,13 @@ class FranchiseMemberService
             ->with('userPermissions:id,user_id,module,can_read,can_write')
             ->get(['id', 'name', 'email', 'phone', 'job_title', 'area', 'avatar_path', 'last_seen_at', 'invitation_accepted_at', 'created_at']);
 
+        $deactivatedAdmins = User::withTrashed()
+            ->where('sm_franchise_id', $franchise->id)
+            ->whereNotNull('deleted_at')
+            ->role(Role::ADMIN_SM)
+            ->with('userPermissions:id,user_id,module,can_read,can_write')
+            ->get(['id', 'name', 'email', 'phone', 'job_title', 'area', 'avatar_path', 'last_seen_at', 'invitation_accepted_at', 'created_at', 'deleted_at']);
+
         $clients = User::where('sm_franchise_id', $franchise->id)
             ->role([Role::SB_OWNER, Role::BB_EMPLOYEE])
             ->with('roles:name')
@@ -39,6 +46,7 @@ class FranchiseMemberService
             'admins_count' => $admins->count(),
             'clients_count' => $clients->count(),
             'admins' => $admins,
+            'deactivated_admins' => $deactivatedAdmins,
             'clients' => $clients,
         ];
     }

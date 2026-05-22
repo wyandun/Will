@@ -35,6 +35,42 @@ class UserPolicy
         return $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY, Role::ADMIN_SM]);
     }
 
+    // ── Franchise admin management (superadmin only) ──────────────────────────
+
+    public function updateFranchiseAdmin(User $user, User $admin): bool
+    {
+        if (! $admin->hasRole(Role::ADMIN_SM)) {
+            return false;
+        }
+
+        return $user->hasRole(Role::SUPERADMIN);
+    }
+
+    public function deleteFranchiseAdmin(User $user, User $admin): bool
+    {
+        if (! $admin->hasRole(Role::ADMIN_SM)) {
+            return false;
+        }
+
+        return $user->hasRole(Role::SUPERADMIN);
+    }
+
+    public function restoreFranchiseAdmin(User $user): bool
+    {
+        return $user->hasRole(Role::SUPERADMIN);
+    }
+
+    public function updateFranchiseAdminPermissions(User $user, User $admin): bool
+    {
+        if (! $admin->hasRole(Role::ADMIN_SM)) {
+            return false;
+        }
+
+        return $user->hasRole(Role::SUPERADMIN);
+    }
+
+    // ── Invitations ─────────────────────────────────────────────────────────────
+
     /**
      * Actor can manage (resend / revoke) a specific pending invitation.
      * Superadmin/system_admin can act on any invitation; admin_sm only on invitations

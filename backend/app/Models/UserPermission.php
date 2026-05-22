@@ -73,6 +73,23 @@ class UserPermission extends Model
      *   current call volume (interactive requests and seeder). Consider upsert()
      *   if batch provisioning is added.
      */
+    /**
+     * Update individual module permissions for a user.
+     *
+     * @param  array<int, array{module: string, can_read: bool, can_write: bool}>  $permissions
+     */
+    public static function updateForUser(int $userId, array $permissions): void
+    {
+        DB::transaction(function () use ($userId, $permissions) {
+            foreach ($permissions as $perm) {
+                self::updateOrCreate(
+                    ['user_id' => $userId, 'module' => $perm['module']],
+                    ['can_read' => $perm['can_read'], 'can_write' => $perm['can_write']],
+                );
+            }
+        });
+    }
+
     public static function syncForRole(int $userId, string $role): void
     {
         DB::transaction(function () use ($userId, $role) {

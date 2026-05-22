@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\FeedController;
+use App\Http\Controllers\Api\FranchiseAdminController;
 use App\Http\Controllers\Api\FranchiseController;
 use App\Http\Controllers\Api\FranchiseMemberController;
 use App\Http\Controllers\Api\InvitationController;
@@ -66,6 +67,16 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // Franchises
     // Sub-routes declared BEFORE apiResource to prevent the {franchise} wildcard
     // from capturing literal path segments like "members", "admins", "clients".
+    // Franchise admin management (superadmin only)
+    Route::prefix('franchises/{franchise}/admins/{user}')->group(function () {
+        Route::patch('/', [FranchiseAdminController::class, 'update']);
+        Route::patch('/password', [FranchiseAdminController::class, 'resetPassword']);
+        Route::delete('/', [FranchiseAdminController::class, 'destroy']);
+        Route::patch('/restore', [FranchiseAdminController::class, 'restore']);
+        Route::get('/permissions', [FranchiseAdminController::class, 'permissions']);
+        Route::put('/permissions', [FranchiseAdminController::class, 'updatePermissions']);
+    });
+
     Route::patch('franchises/{franchise}/toggle-status', [FranchiseController::class, 'toggleStatus']);
     Route::get('franchises/{franchise}/members', [FranchiseMemberController::class, 'members']);
     Route::apiResource('franchises', FranchiseController::class);
@@ -80,7 +91,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
     Route::apiResource('system-admins', SystemAdminController::class)->only(['index', 'store', 'update', 'destroy']);
 
-    Route::apiResource('events', EventController::class);
+    Route::apiResource('events', EventController::class)->middleware('module.permission:calendar');
 
     // Invitations — protected management endpoints
     Route::get('invitations', [InvitationController::class, 'index']);
