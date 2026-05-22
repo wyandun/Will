@@ -21,8 +21,8 @@ class EventService
     {
         $query = Event::with('creator');
 
-        // Superadmin sees all events regardless of visibility
-        if (! $user->hasRole(Role::SUPERADMIN)) {
+        // Superadmin and system admins see all events regardless of visibility
+        if (! $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY])) {
             $query->where(function ($q) use ($user) {
                 $q->where('visibility', 'public')
                     ->orWhere('user_id', $user->id);
