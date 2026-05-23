@@ -62,7 +62,7 @@ Route::prefix('auth')->middleware('auth:sanctum')->group(function () {
 // ---------------------------------------------------------------------------
 // Protected resources — require Sanctum authentication
 // ---------------------------------------------------------------------------
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // Franchises
     // Sub-routes declared BEFORE apiResource to prevent the {franchise} wildcard
     // from capturing literal path segments like "members", "admins", "clients".

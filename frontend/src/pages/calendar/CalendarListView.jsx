@@ -5,14 +5,6 @@ import { useTranslation } from 'react-i18next';
 
 const iconPropTypes = { className: PropTypes.string };
 
-function IconSearch({ className = 'w-4 h-4' }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
-    </svg>
-  );
-}
-
 function IconEdit({ className = 'w-4 h-4' }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
@@ -46,7 +38,6 @@ function IconLocation({ className = 'w-4 h-4' }) {
   );
 }
 
-IconSearch.propTypes = iconPropTypes;
 IconEdit.propTypes = iconPropTypes;
 IconTrash.propTypes = iconPropTypes;
 IconClock.propTypes = iconPropTypes;
@@ -59,8 +50,9 @@ function formatTime(isoString, locale) {
   return new Date(isoString).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 }
 
-function formatDayHeader(isoString, locale) {
-  return new Date(isoString).toLocaleDateString(locale, {
+function formatDayHeader(dateKey, locale) {
+  // T12:00:00 forces local-time parsing (avoids UTC midnight → prev-day shift in UTC-x zones)
+  return new Date(dateKey + 'T12:00:00').toLocaleDateString(locale, {
     weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
   });
 }
@@ -86,8 +78,6 @@ export default function CalendarListView({
   meta,
   page,
   onPageChange,
-  search,
-  onSearchChange,
   onEdit,
   onDelete,
   onDeleteConfirm,
@@ -102,20 +92,6 @@ export default function CalendarListView({
 
   return (
     <>
-      {/* Search */}
-      <div className="relative mb-6">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-          <IconSearch />
-        </div>
-        <input
-          type="text"
-          value={search}
-          onChange={onSearchChange}
-          placeholder={t('calendar.search_placeholder')}
-          className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-300 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-        />
-      </div>
-
       {/* Loading */}
       {loading && (
         <div className="flex items-center justify-center py-12">
@@ -130,7 +106,7 @@ export default function CalendarListView({
             <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
           </svg>
           <p className="mt-4 text-sm text-slate-500">
-            {search ? t('calendar.no_events_search') : t('calendar.no_events')}
+            {t('calendar.no_events')}
           </p>
         </div>
       )}
@@ -265,8 +241,6 @@ CalendarListView.propTypes = {
   meta: PropTypes.object,
   page: PropTypes.number.isRequired,
   onPageChange: PropTypes.func.isRequired,
-  search: PropTypes.string.isRequired,
-  onSearchChange: PropTypes.func.isRequired,
   onEdit: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
   onDeleteConfirm: PropTypes.func.isRequired,

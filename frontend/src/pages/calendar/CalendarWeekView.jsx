@@ -57,6 +57,74 @@ function getEventStyle(event) {
   };
 }
 
+// ─── Column layout for overlapping events ────────────────────────────────────
+
+/**
+ * Assigns { _col, _totalCols } to each event so overlapping events
+ * are laid out in side-by-side columns instead of stacking on top of each other.
+ * Returns a new array (does not mutate the originals).
+ */
+function layoutEvents(events) {
+  if (events.length === 0) return [];
+
+  // Sort by start time, then longest first
+  const sorted = [...events].sort((a, b) => {
+    const diff = new Date(a.start_at) - new Date(b.start_at);
+    if (diff !== 0) return diff;
+    return new Date(b.end_at) - new Date(a.end_at);
+  });
+
+  // columns[i] = end time of the last event placed in column i
+  const columns = [];
+  const placed = sorted.map((event) => {
+    const start = new Date(event.start_at);
+    const end = new Date(event.end_at);
+
+    // Find first column where event fits (no overlap)
+    let col = columns.findIndex((colEnd) => colEnd <= start);
+    if (col === -1) {
+      col = columns.length;
+      columns.push(end);
+    } else {
+      columns[col] = end;
+    }
+
+    return { ...event, _col: col };
+  });
+
+  // Group overlapping events and set _totalCols for each group
+  const groups = [];
+  let groupEnd = null;
+  let currentGroup = [];
+
+  for (const ev of placed) {
+    const evStart = new Date(ev.start_at);
+    const evEnd = new Date(ev.end_at);
+
+    if (groupEnd === null || evStart >= groupEnd) {
+      // New group
+      if (currentGroup.length > 0) groups.push(currentGroup);
+      currentGroup = [ev];
+      groupEnd = evEnd;
+    } else {
+      currentGroup.push(ev);
+      if (evEnd > groupEnd) groupEnd = evEnd;
+    }
+  }
+  if (currentGroup.length > 0) groups.push(currentGroup);
+
+  // Assign _totalCols per group
+  const result = [];
+  for (const group of groups) {
+    const maxCol = Math.max(...group.map((e) => e._col)) + 1;
+    for (const ev of group) {
+      result.push({ ...ev, _totalCols: maxCol });
+    }
+  }
+
+  return result;
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function CalendarWeekView({ currentDate, events, onEdit, onCreateWithDate }) {
@@ -186,7 +254,7 @@ export default function CalendarWeekView({ currentDate, events, onEdit, onCreate
             >
               {weekDays.map((day, dayIdx) => {
                 const key = toDateKey(day);
-                const dayTimed = timedByDay[key] ?? [];
+                const dayTimed = layoutEvents(timedByDay[key] ?? []);
                 return (
                   <div key={dayIdx} className="relative">
                     {dayTimed.map((event) => {
@@ -195,12 +263,14 @@ export default function CalendarWeekView({ currentDate, events, onEdit, onCreate
                         <button
                           key={event.id}
                           onClick={() => onEdit(event)}
-                          className="absolute left-0.5 right-0.5 rounded text-white text-xs px-1.5 py-0.5 overflow-hidden text-left pointer-events-auto hover:brightness-90 transition-all shadow-sm"
+                          className="absolute rounded text-white text-xs px-1.5 py-0.5 overflow-hidden text-left pointer-events-auto hover:brightness-90 transition-all shadow-sm"
                           style={{
                             backgroundColor: event.color ?? '#3B82F6',
                             top: style.top,
                             height: style.height,
                             minHeight: '20px',
+                            left: `calc(${(event._col / event._totalCols) * 100}% + 1px)`,
+                            width: `calc(${(1 / event._totalCols) * 100}% - 2px)`,
                           }}
                           title={event.title}
                         >
