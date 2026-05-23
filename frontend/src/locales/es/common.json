@@ -15,7 +15,8 @@
     "tracking": "Seguimiento",
     "service_catalog": "Catálogo de Servicios",
     "calendar": "Calendario",
-    "profile": "Mi Perfil"
+    "profile": "Mi Perfil",
+    "open_menu": "Abrir menú"
   },
   "auth": {
     "sign_in": "Ingresar",

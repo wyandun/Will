@@ -562,7 +562,7 @@ export default function DashboardPage() {
       })
       .catch(() => setError(t('common.unexpected_error')))
       .finally(() => setLoading(false));
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [t]);
 
   return (
     <div className="flex flex-col gap-6">

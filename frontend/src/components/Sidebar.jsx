@@ -87,7 +87,7 @@ export default function Sidebar({ open, onClose }) {
             to={item.path}
             end={item.path === '/'}
             className={linkClass}
-            onClick={onClose}
+            onClick={() => onClose?.()}
           >
             {item.icon}
             {t(item.labelKey)}

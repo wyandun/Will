@@ -15,7 +15,8 @@
     "tracking": "Tracking",
     "service_catalog": "Service Catalog",
     "calendar": "Calendar",
-    "profile": "My Profile"
+    "profile": "My Profile",
+    "open_menu": "Open menu"
   },
   "auth": {
     "sign_in": "Sign in",

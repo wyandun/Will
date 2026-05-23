@@ -220,7 +220,7 @@ export default function AuthenticatedLayout() {
           <button
             onClick={() => setSidebarOpen((v) => !v)}
             className="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors focus:outline-none"
-            aria-label="Open menu"
+            aria-label={t('nav.open_menu')}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
