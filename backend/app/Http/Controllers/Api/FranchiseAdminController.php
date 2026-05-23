@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\FranchiseAdmin\UpdateFranchiseAdminPasswordRequest;
 use App\Http\Requests\FranchiseAdmin\UpdateFranchiseAdminPermissionsRequest;
 use App\Http\Requests\FranchiseAdmin\UpdateFranchiseAdminRequest;
+use App\Http\Resources\FranchiseAdminResource;
 use App\Models\Franchise;
 use App\Models\User;
 use App\Models\UserPermission;
@@ -17,6 +18,13 @@ class FranchiseAdminController extends Controller
 {
     /**
      * Update a franchise admin's profile fields.
+     *
+     * Note: The authorize() + ensureBelongsToFranchise() two-step pattern is intentional.
+     * The policy checks role-level access (superadmin only), while ensureBelongsToFranchise()
+     * verifies franchise scoping and admin_sm role with distinct HTTP status codes (404/403).
+     * Merging both into the policy would lose the 404 distinction and require passing
+     * the Franchise model into every policy method. This pattern repeats across all
+     * franchise-scoped endpoints for consistency.
      */
     public function update(UpdateFranchiseAdminRequest $request, Franchise $franchise, User $user): JsonResponse
     {
@@ -29,7 +37,7 @@ class FranchiseAdminController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $user->fresh()->load('userPermissions'),
+            'data' => new FranchiseAdminResource($user->fresh()->load('userPermissions')),
             'message' => 'franchise_admin.updated_success',
         ]);
     }
@@ -56,6 +64,10 @@ class FranchiseAdminController extends Controller
 
     /**
      * Deactivate a franchise admin (soft delete) and revoke tokens.
+     *
+     * Note: The method is named destroy() following Laravel's resource controller convention
+     * for DELETE routes. "Deactivate" is the domain term (user-facing), while "destroy" is
+     * the framework convention. The soft delete behavior is an implementation detail.
      */
     public function destroy(Franchise $franchise, User $user): JsonResponse
     {
@@ -74,6 +86,15 @@ class FranchiseAdminController extends Controller
 
     /**
      * Restore a soft-deleted franchise admin.
+     *
+     * Note on $userId (int) vs User model binding: Laravel's route model binding excludes
+     * soft-deleted records by default (SoftDeletes global scope). Since this method targets
+     * a soft-deleted user, we receive the raw ID and query with withTrashed() manually.
+     *
+     * Note on User::class: The policy method restoreFranchiseAdmin(User $user) takes only
+     * the authenticated user (no target model) because the target doesn't exist in normal
+     * queries. Passing User::class is the standard Laravel convention for policies that
+     * don't require a model instance (same pattern as 'inviteUsers' policy).
      */
     public function restore(Franchise $franchise, int $userId): JsonResponse
     {
@@ -91,7 +112,7 @@ class FranchiseAdminController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $user->load('userPermissions'),
+            'data' => new FranchiseAdminResource($user->load('userPermissions')),
             'message' => 'franchise_admin.restored_success',
         ]);
     }
@@ -106,7 +127,11 @@ class FranchiseAdminController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $user->userPermissions,
+            'data' => $user->userPermissions->map(fn ($p) => [
+                'module' => $p->module,
+                'can_read' => $p->can_read,
+                'can_write' => $p->can_write,
+            ]),
         ]);
     }
 
@@ -122,13 +147,20 @@ class FranchiseAdminController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $user->fresh()->load('userPermissions'),
+            'data' => new FranchiseAdminResource($user->fresh()->load('userPermissions')),
             'message' => 'franchise_admin.permissions_updated_success',
         ]);
     }
 
     /**
      * Verify the user belongs to the given franchise and has the admin_sm role.
+     *
+     * Note on check order (404 before 403): This is intentional. The franchise membership
+     * check returns 404 to avoid confirming user existence across franchises, while the
+     * role check returns 403. Only superadmin reaches this code (policy layer blocks
+     * everyone else first), so the 404/403 distinction provides useful debugging info
+     * without any security risk — superadmin already has full visibility into franchise
+     * membership via other endpoints.
      */
     private function ensureBelongsToFranchise(User $user, Franchise $franchise): void
     {
