@@ -934,7 +934,7 @@ function Toast({ message, onDismiss }) {
   }, [onDismiss]);
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-800 text-white text-sm px-5 py-3 rounded-xl shadow-lg">
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-70 bg-slate-800 text-white text-sm px-5 py-3 rounded-xl shadow-lg">
       {message}
     </div>
   );

@@ -1,5 +1,20 @@
 @import "tailwindcss";
 
+/* Z-index layer scale — extend Tailwind's default (which stops at z-50)
+ *
+ *  z-10  local       positioned elements within a component
+ *  z-20  dropdown    small floating menus anchored to an element
+ *  z-30  search      wider dropdowns / autocomplete panels
+ *  z-40  overlay     full-screen modal backdrops
+ *  z-50  panel       modal dialogs, sidebar (mutually exclusive — no conflict)
+ *  z-60  header      always above sidebar and modals
+ *  z-70  toast       notifications, always above everything
+ */
+@theme {
+  --z-60: 60;
+  --z-70: 70;
+}
+
 @layer base {
   button {
     cursor: pointer;
