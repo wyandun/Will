@@ -35,6 +35,11 @@ class InvitationController extends Controller
             ->with(['roles', 'invitedBy:id,name'])
             ->orderByDesc('created_at');
 
+        // System-level roles (SUPERADMIN, SYSTEM_ADMIN, SYSTEM_ADMIN_READONLY) intentionally
+        // bypass franchise scoping to see all invitations across all franchises. This is
+        // required for platform-wide monitoring and audit. SYSTEM_ADMIN_READONLY can list
+        // but cannot send/resend/revoke (blocked by inviteUsers policy). Franchise-scoped
+        // roles (ADMIN_SM) are filtered to their own franchise below.
         if (! $authUser->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY])) {
             // Guard against null franchise: WHERE sm_franchise_id = NULL would
             // silently match other null-franchise rows (cross-tenant data leak).

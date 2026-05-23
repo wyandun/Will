@@ -37,6 +37,8 @@ class FranchiseAdminController extends Controller
 
         return response()->json([
             'success' => true,
+            // fresh() re-fetches from DB to ensure response reflects any DB-level
+            // defaults or mutators, guaranteeing consistency with persisted state.
             'data' => new FranchiseAdminResource($user->fresh()->load('userPermissions')),
             'message' => 'franchise_admin.updated_success',
         ]);
@@ -44,6 +46,13 @@ class FranchiseAdminController extends Controller
 
     /**
      * Reset a franchise admin's password and revoke existing tokens.
+     *
+     * Note: The save-then-revoke order is intentional. If save() fails, an exception
+     * is thrown and tokens remain valid (user keeps access with old password). If
+     * tokens()->delete() fails after save, the password is updated but old sessions
+     * remain — the admin can retry, and sessions expire naturally. Wrapping both in
+     * a DB transaction is unnecessary and potentially harmful (Sanctum tokens may
+     * use a separate connection).
      */
     public function resetPassword(UpdateFranchiseAdminPasswordRequest $request, Franchise $franchise, User $user): JsonResponse
     {
@@ -106,6 +115,9 @@ class FranchiseAdminController extends Controller
             ->firstOrFail();
 
         abort_unless($user->hasRole(Role::ADMIN_SM), 403);
+        // Translation keys (e.g. 'franchise_admin.not_deactivated') are passed as raw
+        // strings to abort(). The frontend translates them via i18next. This is the
+        // project-wide convention — see also SystemAdminController and InvitationController.
         abort_unless($user->trashed(), 422, 'franchise_admin.not_deactivated');
 
         $user->restore();
@@ -119,6 +131,10 @@ class FranchiseAdminController extends Controller
 
     /**
      * Get current module permissions for a franchise admin.
+     *
+     * Note: userPermissions is accessed via lazy load on a single model instance
+     * (not inside a collection loop), so this is a simple 1+1 query — not an N+1.
+     * Explicit eager loading (->load()) would be semantically identical here.
      */
     public function permissions(Franchise $franchise, User $user): JsonResponse
     {

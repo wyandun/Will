@@ -11,6 +11,13 @@ class UserPermission extends Model
 {
     /**
      * Canonical list of module-permission keys used across the system.
+     *
+     * This constant lives in the UserPermission model (not in config/ or an Enum)
+     * because it defines which modules get permission rows — persistence logic
+     * owned by this model. If modules grow beyond permissions (e.g., feature flags,
+     * nav config), consider extracting to config/modules.php or App\Enums\Module.
+     * PermissionsCoverageTest::test_sync_for_role_modules_match_all_modules_constant
+     * verifies this list stays in sync.
      */
     public const ALL_MODULES = [
         'feed',
