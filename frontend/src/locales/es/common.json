@@ -435,6 +435,12 @@
     "no_events_day": "Sin eventos",
     "week_of": "Semana del {{date}}",
     "more_events": "+{{count}} más",
+    "show_all_events": "Ver los {{count}} eventos",
+    "all_events_for": "Todos los eventos de {{date}}",
+    "new_event_on": "Nuevo evento",
+    "search_results_title": "Resultados para \"{{query}}\"",
+    "search_no_results": "Ningún evento coincide con \"{{query}}\"",
+    "clear_search": "Limpiar búsqueda",
     "fields": {
       "title": "Título",
       "title_placeholder": "Ej. Reunión de equipo",
@@ -514,7 +520,8 @@
     "tomorrow": "Mañana",
     "all_day": "Todo el día",
     "view_all": "Ver todos los eventos",
-    "no_events": "No hay eventos próximos"
+    "no_events": "No hay eventos próximos",
+    "page_of": "{{current}} / {{total}}"
   },
   "profile": {
     "page_title": "Perfil",

@@ -18,9 +18,6 @@ class FetchNewsJob implements ShouldQueue
 
     public int $timeout = 300;
 
-    // Routed to the 'news' queue — avoids competing with other job queues.
-    public string $queue = 'news';
-
     public function handle(RssNewsService $rss, AiNewsService $ai): void
     {
         // The lock is acquired atomically by NewsController::fetch() before dispatch.

@@ -1,5 +1,7 @@
 import PropTypes from 'prop-types';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import DayEventsPopover from './DayEventsPopover';
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 
@@ -56,6 +58,8 @@ const DAY_HEADERS_ES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 export default function CalendarMonthView({ year, month, events, onEdit, onCreateWithDate }) {
   const { i18n, t } = useTranslation('common');
   const dayHeaders = i18n.language === 'es' ? DAY_HEADERS_ES : DAY_HEADERS_EN;
+  const [popoverDay, setPopoverDay] = useState(null);
+  const [popoverAnchor, setPopoverAnchor] = useState(null);
 
   const cells = getMonthCells(year, month);
 
@@ -117,14 +121,33 @@ export default function CalendarMonthView({ year, month, events, onEdit, onCreat
               ))}
 
               {overflow > 0 && (
-                <span className="text-xs text-slate-400 px-1">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setPopoverAnchor(e.currentTarget); setPopoverDay(key); }}
+                  className="text-xs text-blue-600 hover:text-blue-800 hover:underline px-1 cursor-pointer font-medium"
+                  aria-label={t('calendar.show_all_events', { count: dayEvents.length })}
+                >
                   {t('calendar.more_events', { count: overflow })}
-                </span>
+                </button>
               )}
             </div>
           );
         })}
       </div>
+
+      {/* Day events popover */}
+      {popoverDay && (
+        <DayEventsPopover
+          date={cells.find((c) => {
+            const k = `${c.date.getFullYear()}-${String(c.date.getMonth() + 1).padStart(2, '0')}-${String(c.date.getDate()).padStart(2, '0')}`;
+            return k === popoverDay;
+          })?.date}
+          events={eventsByDay[popoverDay] ?? []}
+          onEdit={(event) => { setPopoverDay(null); onEdit(event); }}
+          onCreateWithDate={(d) => { setPopoverDay(null); onCreateWithDate(d); }}
+          onClose={() => setPopoverDay(null)}
+          anchorEl={popoverAnchor}
+        />
+      )}
     </div>
   );
 }
