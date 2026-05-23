@@ -171,6 +171,15 @@ export default function AuthenticatedLayout() {
     return () => document.removeEventListener('keydown', handleEsc);
   }, [sidebarOpen]);
 
+  // Close the mobile sidebar when the viewport reaches the lg breakpoint (1024px)
+  // so that sidebarOpen state does not stay dirty after a resize to desktop.
+  useEffect(() => {
+    const mql = window.matchMedia('(min-width: 1024px)');
+    const handler = (e) => { if (e.matches) setSidebarOpen(false); };
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -208,13 +217,13 @@ export default function AuthenticatedLayout() {
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/40 z-20 lg:hidden"
+          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Header — fixed full-width at top, always above sidebar */}
-      <header className="fixed top-0 left-0 right-0 h-14 bg-white border-b border-slate-200 z-40 flex items-center px-4 lg:px-6">
+      <header className="fixed top-0 left-0 right-0 h-14 bg-white border-b border-slate-200 z-60 flex items-center px-4 lg:px-6">
         {/* Left — hamburger (mobile) + logo */}
         <div className="flex items-center gap-2 shrink-0 lg:w-64">
           <button

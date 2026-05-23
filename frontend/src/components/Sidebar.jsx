@@ -78,7 +78,7 @@ export default function Sidebar({ open, onClose }) {
   const roleLabel = t(`roles.${role}`, { defaultValue: role });
 
   return (
-    <aside className={`fixed top-14 left-0 bottom-0 w-64 bg-slate-800 flex flex-col z-30 transition-transform duration-200 ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
+    <aside className={`fixed top-14 left-0 bottom-0 w-64 bg-slate-800 flex flex-col z-50 transition-transform duration-200 ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
         {navItems.map((item) => (
