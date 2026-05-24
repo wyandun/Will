@@ -30,9 +30,17 @@ class CompanyService
             'created_at', 'updated_at',
         ];
 
-        if ($authUser->hasRole(Role::SUPERADMIN)) {
+        if ($authUser->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY])) {
             return Company::select($columns)
                 ->with('franchise:id,name')
+                ->paginate(25);
+        }
+
+        // sb_owner/sb_employee see only their own company.
+        if ($authUser->hasAnyRole([Role::SB_OWNER, Role::SB_EMPLOYEE])) {
+            return Company::select($columns)
+                ->with('franchise:id,name')
+                ->where('id', $authUser->company_id)
                 ->paginate(25);
         }
 

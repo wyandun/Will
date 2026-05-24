@@ -28,11 +28,23 @@ class UserPolicy
     }
 
     /**
-     * superadmin, system_admin, system_admin_readonly (read), and admin_sm can access invitations.
+     * Roles that can access the invitation system (list, send, resend, revoke).
+     *
+     * SYSTEM_ADMIN_READONLY can list invitations but cannot send — blocked by
+     * Role::invitableByRole() returning [] in SendInvitationRequest validation.
+     * SB_OWNER and SUB_FRANCHISE_OWNER can invite subordinate roles only
+     * (sb_employee and sub_franchise_admin respectively).
      */
     public function inviteUsers(User $user): bool
     {
-        return $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY, Role::ADMIN_SM]);
+        return $user->hasAnyRole([
+            Role::SUPERADMIN,
+            Role::SYSTEM_ADMIN,
+            Role::SYSTEM_ADMIN_READONLY,
+            Role::ADMIN_SM,
+            Role::SB_OWNER,
+            Role::SUB_FRANCHISE_OWNER,
+        ]);
     }
 
     // ── Franchise admin management (superadmin only) ──────────────────────────
@@ -84,6 +96,16 @@ class UserPolicy
 
         if ($authUser->hasRole(Role::ADMIN_SM)) {
             return $authUser->sm_franchise_id === $target->sm_franchise_id;
+        }
+
+        if ($authUser->hasRole(Role::SB_OWNER)) {
+            return $authUser->company_id !== null
+                && $authUser->company_id === $target->company_id;
+        }
+
+        if ($authUser->hasRole(Role::SUB_FRANCHISE_OWNER)) {
+            return $authUser->sub_franchise_id !== null
+                && $authUser->sub_franchise_id === $target->sub_franchise_id;
         }
 
         return false;

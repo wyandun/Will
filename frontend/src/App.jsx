@@ -42,6 +42,7 @@ StubPage.propTypes = {
 // ─── Role guard ───────────────────────────────────────────────────────────────
 
 const ADMIN_ROLES = ['superadmin', 'system_admin', 'system_admin_readonly', 'admin_sm'];
+const OWNER_ROLES = [...ADMIN_ROLES, 'sb_owner', 'sub_franchise_owner'];
 
 /**
  * Renders children only when the current user holds one of the allowed roles.
@@ -84,7 +85,7 @@ export default function App() {
           <Route
             path="/franchises"
             element={
-              <RoleRoute roles={ADMIN_ROLES}>
+              <RoleRoute roles={[...ADMIN_ROLES, 'sub_franchise_owner']}>
                 <FranchisesPage />
               </RoleRoute>
             }
@@ -92,7 +93,7 @@ export default function App() {
           <Route
             path="/franchises/:id"
             element={
-              <RoleRoute roles={ADMIN_ROLES}>
+              <RoleRoute roles={[...ADMIN_ROLES, 'sub_franchise_owner']}>
                 <FranchiseDetailPage />
               </RoleRoute>
             }
@@ -100,7 +101,7 @@ export default function App() {
           <Route
             path="/companies"
             element={
-              <RoleRoute roles={ADMIN_ROLES}>
+              <RoleRoute roles={[...ADMIN_ROLES, 'sb_owner']}>
                 <CompaniesPage />
               </RoleRoute>
             }
@@ -108,7 +109,7 @@ export default function App() {
           <Route
             path="/users"
             element={
-              <RoleRoute roles={ADMIN_ROLES}>
+              <RoleRoute roles={OWNER_ROLES}>
                 <InvitationsPage />
               </RoleRoute>
             }

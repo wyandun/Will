@@ -10,8 +10,8 @@ use Illuminate\Auth\Access\Response;
 class CompanyPolicy
 {
     /**
-     * List companies: superadmin/system_admin/system_admin_readonly see all,
-     * admin_sm sees theirs.
+     * List companies: system roles see all, admin_sm sees their franchise's,
+     * sb_owner/sb_employee see only their own company.
      */
     public function viewAny(User $user): bool
     {
@@ -20,12 +20,14 @@ class CompanyPolicy
             Role::SYSTEM_ADMIN,
             Role::SYSTEM_ADMIN_READONLY,
             Role::ADMIN_SM,
+            Role::SB_OWNER,
+            Role::SB_EMPLOYEE,
         ]);
     }
 
     /**
-     * View a single company: superadmin/system_admin/system_admin_readonly always allowed;
-     * admin_sm only if the company belongs to their franchise.
+     * View a single company: system roles always allowed; admin_sm only if the
+     * company belongs to their franchise; sb_owner/sb_employee only their own.
      */
     public function view(User $user, Company $company): bool
     {
@@ -33,8 +35,16 @@ class CompanyPolicy
             return true;
         }
 
-        return $user->hasRole(Role::ADMIN_SM)
-            && (int) $user->sm_franchise_id === (int) $company->sm_franchise_id;
+        if ($user->hasRole(Role::ADMIN_SM)) {
+            return (int) $user->sm_franchise_id === (int) $company->sm_franchise_id;
+        }
+
+        if ($user->hasAnyRole([Role::SB_OWNER, Role::SB_EMPLOYEE])) {
+            return $user->company_id !== null
+                && (int) $user->company_id === (int) $company->id;
+        }
+
+        return false;
     }
 
     /**

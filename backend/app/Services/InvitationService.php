@@ -38,7 +38,7 @@ class InvitationService
      *  3. Email has a pending invitation        → validation error (already pending).
      *  4. Email is brand new                    → create user, assign role, notify.
      *
-     * @param  array{name: string, email: string, role: string, sm_franchise_id?: int|null}  $data
+     * @param  array{name: string, email: string, role: string, sm_franchise_id?: int|null, company_id?: int|null, sub_franchise_id?: int|null}  $data
      * @return array{user: User, activation_url: string|null}
      *
      * @throws ValidationException
@@ -85,9 +85,14 @@ class InvitationService
                 // Placeholder password — overwritten when the user accepts the invitation.
                 'password' => Hash::make(Str::random(32)),
                 'invitation_expires_at' => now()->addDays(self::EXPIRY_DAYS),
-                // Payload sm_franchise_id takes precedence (superadmin inviting to a specific
-                // franchise). Falls back to the inviter's own franchise for admin_sm inviters.
+                // Payload takes precedence, falls back to inviter's own value.
+                // This pattern applies to all three scoping fields:
+                // - sm_franchise_id: superadmin specifies franchise, admin_sm auto-inherits
+                // - company_id: admin_sm specifies company, sb_owner auto-inherits
+                // - sub_franchise_id: admin_sm specifies sub-franchise, sub_franchise_owner auto-inherits
                 'sm_franchise_id' => $data['sm_franchise_id'] ?? $invitedBy->sm_franchise_id,
+                'company_id' => $data['company_id'] ?? $invitedBy->company_id,
+                'sub_franchise_id' => $data['sub_franchise_id'] ?? $invitedBy->sub_franchise_id,
             ]);
 
             // Security: invitation_token and inviter_id are not mass-assignable — set explicitly
@@ -212,6 +217,8 @@ class InvitationService
                     'email' => $user->email,
                     'avatar_path' => $user->avatar_path ?? null,
                     'sm_franchise_id' => $user->sm_franchise_id ?? null,
+                    'company_id' => $user->company_id ?? null,
+                    'sub_franchise_id' => $user->sub_franchise_id ?? null,
                 ],
                 'token' => $plainToken,
                 'role' => $role,

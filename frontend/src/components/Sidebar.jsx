@@ -16,26 +16,28 @@ function IconLogout() {
 function buildNavItems(role, permissions) {
   const adminRoles = ['superadmin', 'admin_sm', 'system_admin', 'system_admin_readonly'];
   const isAdmin = adminRoles.includes(role);
+  const isSbOwner = role === 'sb_owner';
+  const isSubFranchiseOwner = role === 'sub_franchise_owner';
   const permMap = {};
   if (Array.isArray(permissions)) permissions.forEach((p) => { permMap[p.module] = p; });
   const canRead = (module) => permMap[module]?.can_read === true;
 
   const SHOW = {
-    dashboard:        true,
-    franchises:       isAdmin,
-    companies:        isAdmin,
+    dashboard:         true,
+    franchises:        isAdmin || isSubFranchiseOwner,
+    companies:         isAdmin || isSbOwner,
     'sb-applications': isAdmin,
-    users:            isAdmin,
-    system_admins:    role === 'superadmin',
-    feed:             isAdmin || canRead('feed'),
-    contracts:        isAdmin || canRead('contracts'),
-    repository:       isAdmin || canRead('repository'),
-    processes:        isAdmin || canRead('processes'),
-    accounting:       isAdmin || canRead('accounting'),
-    inventory:        isAdmin || canRead('inventory'),
-    tracking:         isAdmin || canRead('tracking'),
-    catalog:          isAdmin || canRead('catalog'),
-    calendar:         isAdmin || canRead('calendar'),
+    users:             isAdmin || isSbOwner || isSubFranchiseOwner,
+    system_admins:     role === 'superadmin',
+    feed:              isAdmin || canRead('feed'),
+    contracts:         isAdmin || canRead('contracts'),
+    repository:        isAdmin || canRead('repository'),
+    processes:         isAdmin || canRead('processes'),
+    accounting:        isAdmin || canRead('accounting'),
+    inventory:         isAdmin || canRead('inventory'),
+    tracking:          isAdmin || canRead('tracking'),
+    catalog:           isAdmin || canRead('catalog'),
+    calendar:          isAdmin || canRead('calendar'),
   };
 
   return NAV_SECTIONS.filter((s) => s.key !== 'profile' && SHOW[s.key]);

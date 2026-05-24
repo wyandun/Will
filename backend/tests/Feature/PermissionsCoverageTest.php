@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Models\Company;
 use App\Models\Franchise;
 use App\Models\User;
 use App\Models\UserPermission;
@@ -103,7 +104,7 @@ class PermissionsCoverageTest extends TestCase
         $this->assertTrue($perms->every(fn ($p) => $p->can_read === true && $p->can_write === false));
     }
 
-    public function test_sync_for_role_sb_owner_gets_read_only_on_all_modules(): void
+    public function test_sync_for_role_sb_owner_gets_read_all_write_some(): void
     {
         $user = User::factory()->create();
 
@@ -111,7 +112,17 @@ class PermissionsCoverageTest extends TestCase
 
         $perms = UserPermission::where('user_id', $user->id)->get();
         $this->assertCount(9, $perms);
-        $this->assertTrue($perms->every(fn ($p) => $p->can_read === true && $p->can_write === false));
+        $this->assertTrue($perms->every(fn ($p) => $p->can_read === true));
+
+        // sb_owner gets write on feed, calendar, contracts only.
+        $writeModules = ['feed', 'calendar', 'contracts'];
+        foreach ($perms as $p) {
+            if (in_array($p->module, $writeModules, true)) {
+                $this->assertTrue($p->can_write, "sb_owner should have write on {$p->module}");
+            } else {
+                $this->assertFalse($p->can_write, "sb_owner should NOT have write on {$p->module}");
+            }
+        }
     }
 
     public function test_sync_for_role_sb_employee_gets_read_only_on_all_modules(): void
@@ -299,13 +310,20 @@ class PermissionsCoverageTest extends TestCase
         $response->assertJsonPath('success', true);
     }
 
-    public function test_sb_owner_cannot_list_invitations(): void
+    public function test_sb_owner_can_list_invitations(): void
     {
-        $user = $this->createUserWithRole(Role::SB_OWNER);
+        $franchise = Franchise::factory()->create();
+        $company = Company::create([
+            'name' => 'Test Company',
+            'franchise_id' => $franchise->id,
+            'sm_franchise_id' => $franchise->id,
+        ]);
+        $user = $this->createUserWithRole(Role::SB_OWNER, ['company_id' => $company->id]);
 
         $response = $this->actingAs($user)->getJson('/api/v1/invitations');
 
-        $response->assertStatus(403);
+        $response->assertStatus(200);
+        $response->assertJsonPath('success', true);
     }
 
     public function test_sb_employee_cannot_list_invitations(): void

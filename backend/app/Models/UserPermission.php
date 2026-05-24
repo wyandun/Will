@@ -97,12 +97,21 @@ class UserPermission extends Model
         });
     }
 
+    /**
+     * Modules where sb_owner gets write access.
+     * All other non-admin roles remain read-only on everything.
+     */
+    private const SB_OWNER_WRITE_MODULES = ['feed', 'calendar', 'contracts'];
+
     public static function syncForRole(int $userId, string $role): void
     {
         DB::transaction(function () use ($userId, $role) {
-            $canWrite = in_array($role, [Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::ADMIN_SM], true);
+            $fullWrite = in_array($role, [Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::ADMIN_SM], true);
 
             foreach (self::ALL_MODULES as $module) {
+                $canWrite = $fullWrite
+                    || ($role === Role::SB_OWNER && in_array($module, self::SB_OWNER_WRITE_MODULES, true));
+
                 self::updateOrCreate(
                     ['user_id' => $userId, 'module' => $module],
                     ['can_read' => true, 'can_write' => $canWrite],

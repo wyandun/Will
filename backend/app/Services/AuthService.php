@@ -58,8 +58,11 @@ class AuthService
                 'name' => $user->name,
                 'email' => $user->email,
                 'avatar_url' => $user->avatar_url,
-                // Needed by the frontend to pre-fill the franchise dropdown for admin_sm.
+                // Scoping fields used by the frontend for role-based UI rendering
+                // and to pre-fill dropdowns (e.g., franchise selector for admin_sm).
                 'sm_franchise_id' => $user->sm_franchise_id ?? null,
+                'company_id' => $user->company_id ?? null,
+                'sub_franchise_id' => $user->sub_franchise_id ?? null,
             ],
             'token' => $token,
             'role' => $role,
@@ -94,8 +97,9 @@ class AuthService
                 'name' => $user->name,
                 'email' => $user->email,
                 'avatar_url' => $user->avatar_url,
-                // Needed by the frontend to pre-fill the franchise dropdown for admin_sm.
                 'sm_franchise_id' => $user->sm_franchise_id ?? null,
+                'company_id' => $user->company_id ?? null,
+                'sub_franchise_id' => $user->sub_franchise_id ?? null,
             ],
             'token' => null,
             'role' => $role,

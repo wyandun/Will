@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Models\Company;
 use App\Models\Franchise;
 use App\Models\User;
 use App\Notifications\UserInvitationNotification;
@@ -122,6 +123,18 @@ class InvitationTest extends TestCase
     private function createFranchise(array $attributes = []): Franchise
     {
         return Franchise::factory()->create($attributes);
+    }
+
+    private function createCompany(array $attributes = []): Company
+    {
+        // Ensure a franchise exists for the company's sm_franchise_id FK.
+        if (! isset($attributes['sm_franchise_id'])) {
+            $attributes['sm_franchise_id'] = $this->createFranchise()->id;
+        }
+
+        return Company::create(array_merge([
+            'name' => 'Test Company',
+        ], $attributes));
     }
 
     /** Default valid payload for sending an invitation. */
@@ -307,11 +320,14 @@ class InvitationTest extends TestCase
     public function test_admin_sm_can_send_an_invitation(): void
     {
         Notification::fake();
-        $adminSm = $this->createAdminSm();
+        $franchise = $this->createFranchise();
+        $company = $this->createCompany(['sm_franchise_id' => $franchise->id]);
+        $adminSm = $this->createAdminSm(['sm_franchise_id' => $franchise->id]);
 
         $response = $this->actingAs($adminSm)
             ->postJson('/api/v1/invitations', $this->validInvitePayload([
                 'email' => 'from_admin_sm@test.com',
+                'company_id' => $company->id,
             ]));
 
         $response->assertStatus(201);
@@ -666,7 +682,9 @@ class InvitationTest extends TestCase
         $admin = $this->createSystemAdmin();
 
         $response = $this->actingAs($admin)
-            ->postJson('/api/v1/invitations', $this->validInvitePayload());
+            ->postJson('/api/v1/invitations', $this->validInvitePayload([
+                'role' => Role::ADMIN_SM,
+            ]));
 
         $response->assertStatus(201);
     }
@@ -1234,12 +1252,14 @@ class InvitationTest extends TestCase
 
         // 1. Admin sends invitation
         $franchise = $this->createFranchise();
+        $company = $this->createCompany(['sm_franchise_id' => $franchise->id]);
         $adminSm = $this->createAdminSm(['email' => 'admin_sender@test.com', 'sm_franchise_id' => $franchise->id]);
         $sendResp = $this->actingAs($adminSm)
             ->postJson('/api/v1/invitations', [
                 'name' => 'Nuevo Usuario',
                 'email' => 'nuevo@test.com',
                 'role' => Role::SB_OWNER,
+                'company_id' => $company->id,
             ]);
 
         $sendResp->assertStatus(201);
@@ -1296,10 +1316,14 @@ class InvitationTest extends TestCase
     {
         Notification::fake();
         $franchise = $this->createFranchise();
+        $company = $this->createCompany(['sm_franchise_id' => $franchise->id]);
         $adminSm = $this->createAdminSm(['sm_franchise_id' => $franchise->id]);
 
         $this->actingAs($adminSm)
-            ->postJson('/api/v1/invitations', $this->validInvitePayload(['email' => 'franchise_check@test.com']));
+            ->postJson('/api/v1/invitations', $this->validInvitePayload([
+                'email' => 'franchise_check@test.com',
+                'company_id' => $company->id,
+            ]));
 
         $this->assertDatabaseHas('users', [
             'email' => 'franchise_check@test.com',
@@ -1537,5 +1561,212 @@ class InvitationTest extends TestCase
             'invitation_token' => null,
         ]);
         $this->assertNotNull($user->fresh()->invitation_accepted_at);
+    }
+
+    // ===========================================================================
+    // Role hierarchy — invitableByRole() restrictions
+    // ===========================================================================
+
+    public function test_admin_sm_can_invite_sb_owner_with_company_id(): void
+    {
+        Notification::fake();
+        $franchise = $this->createFranchise();
+        $company = $this->createCompany(['sm_franchise_id' => $franchise->id]);
+        $adminSm = $this->createAdminSm(['sm_franchise_id' => $franchise->id]);
+
+        $response = $this->actingAs($adminSm)
+            ->postJson('/api/v1/invitations', [
+                'name' => 'SB Owner',
+                'email' => 'sbowner@test.com',
+                'role' => Role::SB_OWNER,
+                'company_id' => $company->id,
+            ]);
+
+        $response->assertStatus(201);
+        $this->assertDatabaseHas('users', [
+            'email' => 'sbowner@test.com',
+            'company_id' => $company->id,
+            'sm_franchise_id' => $franchise->id,
+        ]);
+    }
+
+    public function test_admin_sm_can_invite_sub_franchise_owner_with_sub_franchise_id(): void
+    {
+        Notification::fake();
+        $franchise = $this->createFranchise();
+        $subFranchise = Franchise::factory()->create(['type' => 'sub']);
+        $adminSm = $this->createAdminSm(['sm_franchise_id' => $franchise->id]);
+
+        $response = $this->actingAs($adminSm)
+            ->postJson('/api/v1/invitations', [
+                'name' => 'Sub Franchise Owner',
+                'email' => 'subfrowner@test.com',
+                'role' => Role::SUB_FRANCHISE_OWNER,
+                'sub_franchise_id' => $subFranchise->id,
+            ]);
+
+        $response->assertStatus(201);
+        $this->assertDatabaseHas('users', [
+            'email' => 'subfrowner@test.com',
+            'sub_franchise_id' => $subFranchise->id,
+        ]);
+    }
+
+    public function test_sb_owner_can_invite_sb_employee(): void
+    {
+        Notification::fake();
+        $franchise = $this->createFranchise();
+        $company = $this->createCompany(['sm_franchise_id' => $franchise->id]);
+        $sbOwner = User::factory()->create(['company_id' => $company->id, 'sm_franchise_id' => $franchise->id]);
+        $sbOwner->assignRole(Role::SB_OWNER);
+
+        $response = $this->actingAs($sbOwner)
+            ->postJson('/api/v1/invitations', [
+                'name' => 'SB Employee',
+                'email' => 'sbemployee@test.com',
+                'role' => Role::SB_EMPLOYEE,
+            ]);
+
+        $response->assertStatus(201);
+        // company_id auto-inherited from inviter
+        $this->assertDatabaseHas('users', [
+            'email' => 'sbemployee@test.com',
+            'company_id' => $company->id,
+        ]);
+    }
+
+    public function test_sub_franchise_owner_can_invite_sub_franchise_admin(): void
+    {
+        Notification::fake();
+        $franchise = $this->createFranchise();
+        $subFranchise = Franchise::factory()->create(['type' => 'sub']);
+        $sfOwner = User::factory()->create([
+            'sub_franchise_id' => $subFranchise->id,
+            'sm_franchise_id' => $franchise->id,
+        ]);
+        $sfOwner->assignRole(Role::SUB_FRANCHISE_OWNER);
+
+        $response = $this->actingAs($sfOwner)
+            ->postJson('/api/v1/invitations', [
+                'name' => 'Sub Franchise Admin',
+                'email' => 'sfadmin@test.com',
+                'role' => Role::SUB_FRANCHISE_ADMIN,
+            ]);
+
+        $response->assertStatus(201);
+        // sub_franchise_id auto-inherited from inviter
+        $this->assertDatabaseHas('users', [
+            'email' => 'sfadmin@test.com',
+            'sub_franchise_id' => $subFranchise->id,
+        ]);
+    }
+
+    public function test_sb_owner_cannot_invite_admin_sm(): void
+    {
+        $franchise = $this->createFranchise();
+        $company = $this->createCompany(['sm_franchise_id' => $franchise->id]);
+        $sbOwner = User::factory()->create(['company_id' => $company->id, 'sm_franchise_id' => $franchise->id]);
+        $sbOwner->assignRole(Role::SB_OWNER);
+
+        $response = $this->actingAs($sbOwner)
+            ->postJson('/api/v1/invitations', [
+                'name' => 'Not Allowed',
+                'email' => 'notallowed@test.com',
+                'role' => Role::ADMIN_SM,
+            ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['role']);
+    }
+
+    public function test_admin_sm_cannot_invite_system_admin(): void
+    {
+        $franchise = $this->createFranchise();
+        $adminSm = $this->createAdminSm(['sm_franchise_id' => $franchise->id]);
+
+        $response = $this->actingAs($adminSm)
+            ->postJson('/api/v1/invitations', [
+                'name' => 'Not Allowed',
+                'email' => 'notallowed2@test.com',
+                'role' => Role::SYSTEM_ADMIN,
+            ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['role']);
+    }
+
+    // ===========================================================================
+    // Tenant isolation — sb_owner scoping
+    // ===========================================================================
+
+    public function test_sb_owner_sees_only_own_company_invitations(): void
+    {
+        $franchise = $this->createFranchise();
+        $companyA = $this->createCompany(['sm_franchise_id' => $franchise->id]);
+        $companyB = $this->createCompany(['sm_franchise_id' => $franchise->id, 'name' => 'Other Company']);
+
+        $sbOwner = User::factory()->create(['company_id' => $companyA->id, 'sm_franchise_id' => $franchise->id]);
+        $sbOwner->assignRole(Role::SB_OWNER);
+
+        // Own company
+        $this->createPendingInvitation(['email' => 'own_co@test.com', 'company_id' => $companyA->id]);
+        // Other company
+        $this->createPendingInvitation(['email' => 'other_co@test.com', 'company_id' => $companyB->id]);
+
+        $response = $this->actingAs($sbOwner)->getJson('/api/v1/invitations');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(1, 'data');
+        $response->assertJsonPath('data.0.email', 'own_co@test.com');
+    }
+
+    public function test_sb_owner_can_manage_own_company_invitation(): void
+    {
+        Notification::fake();
+        $franchise = $this->createFranchise();
+        $company = $this->createCompany(['sm_franchise_id' => $franchise->id]);
+
+        $sbOwner = User::factory()->create(['company_id' => $company->id, 'sm_franchise_id' => $franchise->id]);
+        $sbOwner->assignRole(Role::SB_OWNER);
+
+        $pending = $this->createPendingInvitation([
+            'email' => 'manage_co@test.com',
+            'company_id' => $company->id,
+        ]);
+
+        // Resend
+        $response = $this->actingAs($sbOwner)
+            ->postJson("/api/v1/invitations/{$pending->id}/resend");
+        $response->assertStatus(200);
+
+        // Revoke
+        $response = $this->actingAs($sbOwner)
+            ->deleteJson("/api/v1/invitations/{$pending->id}");
+        $response->assertStatus(200);
+    }
+
+    public function test_sb_owner_cannot_manage_other_company_invitation(): void
+    {
+        $franchise = $this->createFranchise();
+        $companyA = $this->createCompany(['sm_franchise_id' => $franchise->id]);
+        $companyB = $this->createCompany(['sm_franchise_id' => $franchise->id, 'name' => 'Other Company']);
+
+        $sbOwner = User::factory()->create(['company_id' => $companyA->id, 'sm_franchise_id' => $franchise->id]);
+        $sbOwner->assignRole(Role::SB_OWNER);
+
+        $pending = $this->createPendingInvitation([
+            'email' => 'other_manage@test.com',
+            'company_id' => $companyB->id,
+        ]);
+
+        // Resend — should be blocked
+        $response = $this->actingAs($sbOwner)
+            ->postJson("/api/v1/invitations/{$pending->id}/resend");
+        $response->assertStatus(403);
+
+        // Revoke — should be blocked
+        $response = $this->actingAs($sbOwner)
+            ->deleteJson("/api/v1/invitations/{$pending->id}");
+        $response->assertStatus(403);
     }
 }

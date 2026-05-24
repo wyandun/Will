@@ -40,7 +40,17 @@ class InvitationController extends Controller
         // required for platform-wide monitoring and audit. SYSTEM_ADMIN_READONLY can list
         // but cannot send/resend/revoke (blocked by inviteUsers policy). Franchise-scoped
         // roles (ADMIN_SM) are filtered to their own franchise below.
-        if (! $authUser->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY])) {
+        // SB_OWNER and SUB_FRANCHISE_OWNER are scoped to their company/sub-franchise.
+        if ($authUser->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY])) {
+            // No filter — system roles see all invitations.
+        } elseif ($authUser->hasRole(Role::SB_OWNER)) {
+            abort_if(is_null($authUser->company_id), 403, 'invitation.no_company_context');
+            $query->where('company_id', $authUser->company_id);
+        } elseif ($authUser->hasRole(Role::SUB_FRANCHISE_OWNER)) {
+            abort_if(is_null($authUser->sub_franchise_id), 403, 'invitation.no_sub_franchise_context');
+            $query->where('sub_franchise_id', $authUser->sub_franchise_id);
+        } else {
+            // ADMIN_SM and any other role: scoped to their franchise.
             // Guard against null franchise: WHERE sm_franchise_id = NULL would
             // silently match other null-franchise rows (cross-tenant data leak).
             abort_if(is_null($authUser->sm_franchise_id), 403, 'invitation.no_franchise_context');

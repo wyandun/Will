@@ -34,7 +34,8 @@ class EventPolicy
     }
 
     /**
-     * Superadmin, system_admin, or admin_sm with a franchise assigned can create events.
+     * Superadmin, system_admin, admin_sm (with franchise), or sb_owner (with company)
+     * can create events.
      */
     public function create(User $user): Response
     {
@@ -42,15 +43,19 @@ class EventPolicy
             return Response::allow();
         }
 
-        if (! $user->hasRole(Role::ADMIN_SM)) {
-            return Response::deny('policies.unauthorized');
+        if ($user->hasRole(Role::ADMIN_SM)) {
+            return $user->sm_franchise_id !== null
+                ? Response::allow()
+                : Response::deny('policies.franchise_required');
         }
 
-        if ($user->sm_franchise_id === null) {
-            return Response::deny('policies.franchise_required');
+        if ($user->hasRole(Role::SB_OWNER)) {
+            return $user->company_id !== null
+                ? Response::allow()
+                : Response::deny('policies.company_required');
         }
 
-        return Response::allow();
+        return Response::deny('policies.unauthorized');
     }
 
     /**

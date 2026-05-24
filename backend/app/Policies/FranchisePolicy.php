@@ -9,8 +9,8 @@ use App\Models\User;
 class FranchisePolicy
 {
     /**
-     * List franchises: superadmin/system_admin/system_admin_readonly see all,
-     * admin_sm sees theirs.
+     * List franchises: system roles see all, admin_sm sees theirs,
+     * sub_franchise_owner/sub_franchise_admin see their sub-franchise.
      */
     public function viewAny(User $user): bool
     {
@@ -19,12 +19,14 @@ class FranchisePolicy
             Role::SYSTEM_ADMIN,
             Role::SYSTEM_ADMIN_READONLY,
             Role::ADMIN_SM,
+            Role::SUB_FRANCHISE_OWNER,
+            Role::SUB_FRANCHISE_ADMIN,
         ]);
     }
 
     /**
-     * View a single franchise: superadmin/system_admin/system_admin_readonly always allowed;
-     * admin_sm only if the franchise is theirs.
+     * View a single franchise: system roles always allowed; admin_sm only theirs;
+     * sub_franchise_owner/sub_franchise_admin only their sub-franchise.
      */
     public function view(User $user, Franchise $franchise): bool
     {
@@ -32,8 +34,16 @@ class FranchisePolicy
             return true;
         }
 
-        return $user->hasRole(Role::ADMIN_SM)
-            && (int) $user->sm_franchise_id === (int) $franchise->id;
+        if ($user->hasRole(Role::ADMIN_SM)) {
+            return (int) $user->sm_franchise_id === (int) $franchise->id;
+        }
+
+        if ($user->hasAnyRole([Role::SUB_FRANCHISE_OWNER, Role::SUB_FRANCHISE_ADMIN])) {
+            return $user->sub_franchise_id !== null
+                && (int) $user->sub_franchise_id === (int) $franchise->id;
+        }
+
+        return false;
     }
 
     /**

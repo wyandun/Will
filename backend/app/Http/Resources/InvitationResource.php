@@ -29,6 +29,11 @@ class InvitationResource extends JsonResource
             'invitation_expires_at' => $this->invitation_expires_at?->toIso8601String(),
             'email_sent' => ! is_null($this->email_sent_at),
             'created_at' => $this->created_at?->toIso8601String(),
+            // Scoping fields — used by the frontend to display which entity
+            // (franchise, company, sub-franchise) each invitation belongs to.
+            'sm_franchise_id' => $this->sm_franchise_id,
+            'company_id' => $this->company_id,
+            'sub_franchise_id' => $this->sub_franchise_id,
         ];
     }
 }
