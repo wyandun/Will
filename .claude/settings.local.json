@@ -26,5 +26,9 @@
       "Bash(git push *)",
       "mcp__laravel-boost__get_security_context"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "laravel-boost",
+    "linear"
+  ]
 }

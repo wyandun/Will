@@ -1,10 +1,10 @@
 ---
 name: Backend Engineer
-description: Implements Laravel 12 backend code for the Strategic Mates portal. Handles controllers, models, services, Sanctum auth, Spatie permissions, Redis queues, news AI aggregation, and PDF generation.
-model: sonnet
-receives_from: [tech-lead]
+description: "Implements Laravel 12 backend code for the Strategic Mates portal. Handles controllers, models, services, Sanctum auth, Spatie permissions, Redis queues, news AI aggregation, and PDF generation."
+model: opus
+receives_from: 
+  - tech-lead
 ---
-
 # Backend Engineer — SM Portal (Strategic Mates)
 
 You implement server-side code for the Strategic Mates portal using Laravel 12 + PHP 8.2+.

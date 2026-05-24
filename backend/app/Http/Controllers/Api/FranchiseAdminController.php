@@ -12,6 +12,7 @@ use App\Models\Franchise;
 use App\Models\User;
 use App\Models\UserPermission;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class FranchiseAdminController extends Controller
@@ -47,22 +48,21 @@ class FranchiseAdminController extends Controller
     /**
      * Reset a franchise admin's password and revoke existing tokens.
      *
-     * Note: The save-then-revoke order is intentional. If save() fails, an exception
-     * is thrown and tokens remain valid (user keeps access with old password). If
-     * tokens()->delete() fails after save, the password is updated but old sessions
-     * remain — the admin can retry, and sessions expire naturally. Wrapping both in
-     * a DB transaction is unnecessary and potentially harmful (Sanctum tokens may
-     * use a separate connection).
+     * Both operations target the same PostgreSQL connection (sm_portal), so
+     * a transaction ensures atomicity: if token revocation fails, the password
+     * change rolls back and the user retains their old credentials + sessions.
      */
     public function resetPassword(UpdateFranchiseAdminPasswordRequest $request, Franchise $franchise, User $user): JsonResponse
     {
         $this->authorize('updateFranchiseAdmin', $user);
         $this->ensureBelongsToFranchise($user, $franchise);
 
-        $user->password = Hash::make($request->validated('password'));
-        $user->save();
+        DB::transaction(function () use ($user, $request) {
+            $user->password = Hash::make($request->validated('password'));
+            $user->save();
 
-        $user->tokens()->delete();
+            $user->tokens()->delete();
+        });
 
         return response()->json([
             'success' => true,
@@ -114,10 +114,11 @@ class FranchiseAdminController extends Controller
             ->where('sm_franchise_id', $franchise->id)
             ->firstOrFail();
 
+        // Spatie roles live in the model_has_roles pivot table, unaffected by soft deletes.
+        // hasRole() works correctly on trashed models.
         abort_unless($user->hasRole(Role::ADMIN_SM), 403);
-        // Translation keys (e.g. 'franchise_admin.not_deactivated') are passed as raw
-        // strings to abort(). The frontend translates them via i18next. This is the
-        // project-wide convention — see also SystemAdminController and InvitationController.
+        // A concurrent restore() is a no-op at the DB level (UPDATE SET deleted_at=NULL
+        // on an already-NULL row). The 422 guard is a UX convenience, not a safety lock.
         abort_unless($user->trashed(), 422, 'franchise_admin.not_deactivated');
 
         $user->restore();
@@ -134,7 +135,13 @@ class FranchiseAdminController extends Controller
      *
      * Note: userPermissions is accessed via lazy load on a single model instance
      * (not inside a collection loop), so this is a simple 1+1 query — not an N+1.
-     * Explicit eager loading (->load()) would be semantically identical here.
+     * Explicit eager loading (->load()) would be semantically identical here since
+     * $user comes from route model binding (fresh instance, no pre-loaded relations).
+     *
+     * The response format intentionally differs from updatePermissions(): this endpoint
+     * returns a flat permissions array (lightweight read), while updatePermissions()
+     * returns a full FranchiseAdminResource (the frontend refreshes the admin card
+     * after mutation). Both serialize the same {module, can_read, can_write} shape.
      */
     public function permissions(Franchise $franchise, User $user): JsonResponse
     {

@@ -1,10 +1,10 @@
 ---
 name: Frontend Engineer
-description: Implements React 18 frontend for the Strategic Mates portal. Handles components, Zustand state, React Router v7, Tailwind v4, API integration with Laravel Sanctum, custom calendar views, and i18n (EN/ES).
-model: sonnet
-receives_from: [tech-lead]
+description: "Implements React 18 frontend for the Strategic Mates portal. Handles components, Zustand state, React Router v7, Tailwind v4, API integration with Laravel Sanctum, custom calendar views, and i18n (EN/ES)."
+model: opus
+receives_from: 
+  - tech-lead
 ---
-
 # Frontend Engineer — SM Portal (Strategic Mates)
 
 You build React 18 components and pages for the Strategic Mates portal SPA.
