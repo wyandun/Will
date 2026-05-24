@@ -15,8 +15,9 @@ class FranchiseService
     /**
      * Return franchises scoped to the authenticated user's role, paginated.
      *
-     * - superadmin  → all franchises
+     * - superadmin / system_admin / system_admin_readonly → all franchises
      * - admin_sm    → only the franchise they belong to (via sm_franchise_id)
+     * - sb_owner    → only sub-franchises (type='sub') linked to their company
      */
     public function list(User $authUser): LengthAwarePaginator
     {
@@ -42,8 +43,19 @@ class FranchiseService
                 'companies as clients_count',
             ]);
 
-        if ($authUser->hasRole(Role::SUPERADMIN)) {
+        // System-level roles see all franchises (no scoping).
+        if ($authUser->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY])) {
             return $query->paginate($perPage);
+        }
+
+        // sb_owner: only sub-franchises linked to their company.
+        if ($authUser->hasRole(Role::SB_OWNER)) {
+            abort_if(is_null($authUser->company_id), 403, 'franchises.no_company_context');
+
+            return $query
+                ->where('type', 'sub')
+                ->where('parent_company_id', $authUser->company_id)
+                ->paginate($perPage);
         }
 
         // admin_sm sees only their own franchise.

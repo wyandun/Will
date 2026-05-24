@@ -30,9 +30,20 @@ class FranchiseMemberService
             ->get(['id', 'name', 'email', 'phone', 'job_title', 'area', 'avatar_path', 'last_seen_at', 'invitation_accepted_at', 'created_at', 'deleted_at']);
 
         $clients = User::where('sm_franchise_id', $franchise->id)
-            ->role([Role::SB_OWNER, Role::BB_EMPLOYEE])
-            ->with('roles:name')
-            ->get(['id', 'name', 'email', 'phone', 'job_title', 'avatar_path', 'last_seen_at', 'invitation_accepted_at', 'created_at'])
+            ->role([Role::SB_OWNER, Role::BB_EMPLOYEE, Role::SUB_FRANCHISE_OWNER, Role::SUB_FRANCHISE_ADMIN])
+            ->with(['roles:name', 'userPermissions:id,user_id,module,can_read,can_write'])
+            ->get(['id', 'name', 'email', 'phone', 'job_title', 'avatar_path', 'last_seen_at', 'invitation_accepted_at', 'created_at', 'sub_franchise_id'])
+            ->each(function ($client) {
+                $client->setAttribute('role', $client->getRoleNames()->first());
+                $client->unsetRelation('roles');
+            });
+
+        $deactivatedClients = User::withTrashed()
+            ->where('sm_franchise_id', $franchise->id)
+            ->whereNotNull('deleted_at')
+            ->role([Role::SB_OWNER, Role::BB_EMPLOYEE, Role::SUB_FRANCHISE_OWNER, Role::SUB_FRANCHISE_ADMIN])
+            ->with(['roles:name', 'userPermissions:id,user_id,module,can_read,can_write'])
+            ->get(['id', 'name', 'email', 'phone', 'job_title', 'avatar_path', 'last_seen_at', 'invitation_accepted_at', 'created_at', 'deleted_at', 'sub_franchise_id'])
             ->each(function ($client) {
                 $client->setAttribute('role', $client->getRoleNames()->first());
                 $client->unsetRelation('roles');
@@ -48,6 +59,7 @@ class FranchiseMemberService
             'admins' => $admins,
             'deactivated_admins' => $deactivatedAdmins,
             'clients' => $clients,
+            'deactivated_clients' => $deactivatedClients,
         ];
     }
 }

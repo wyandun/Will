@@ -29,7 +29,7 @@ function fromLevel(level) {
   }
 }
 
-export default function AdminPermissionsModal({ admin, franchiseId, onClose, onSave }) {
+export default function AdminPermissionsModal({ admin, franchiseId, onClose, onSave, memberType }) {
   const { t } = useTranslation('common');
 
   const [permissions, setPermissions] = useState({});
@@ -40,7 +40,10 @@ export default function AdminPermissionsModal({ admin, franchiseId, onClose, onS
   useEffect(() => {
     async function load() {
       try {
-        const data = await franchisesApi.getAdminPermissions(franchiseId, admin.id);
+        const getPerms = memberType === 'client'
+          ? franchisesApi.getClientPermissions
+          : franchisesApi.getAdminPermissions;
+        const data = await getPerms(franchiseId, admin.id);
         const map = {};
         data.forEach((p) => { map[p.module] = permLevel(p); });
         // Fill missing modules with no_access
@@ -206,4 +209,9 @@ AdminPermissionsModal.propTypes = {
   franchiseId: PropTypes.number.isRequired,
   onClose: PropTypes.func.isRequired,
   onSave: PropTypes.func.isRequired,
+  memberType: PropTypes.oneOf(['admin', 'client']),
+};
+
+AdminPermissionsModal.defaultProps = {
+  memberType: 'admin',
 };

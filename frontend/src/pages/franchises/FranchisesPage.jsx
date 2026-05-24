@@ -202,6 +202,7 @@ export default function FranchisesPage() {
   const navigate = useNavigate();
   const role = useAuthStore((s) => s.role);
   const isSuperadmin = role === 'superadmin' || role === 'system_admin';
+  const isSbOwner = role === 'sb_owner';
 
   const [franchises, setFranchises] = useState([]);
   const [franchisesTotal, setFranchisesTotal] = useState(null);
@@ -209,9 +210,10 @@ export default function FranchisesPage() {
   const [fetchError, setFetchError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Modal state
+  // Modal state — mode: 'sm' (default) | 'sub' (sb_owner creating sub-franchise)
   const [modalFranchise, setModalFranchise] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState('sm');
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
 
@@ -247,22 +249,33 @@ export default function FranchisesPage() {
 
   function openCreateModal() {
     setModalFranchise(null);
+    setModalMode('sm');
+    setIsModalOpen(true);
+  }
+
+  function openCreateSubModal() {
+    setModalFranchise(null);
+    setModalMode('sub');
     setIsModalOpen(true);
   }
 
   function openEditModal(franchise) {
     setModalFranchise(franchise);
+    setModalMode('sm');
     setIsModalOpen(true);
   }
 
   function closeModal() {
     setIsModalOpen(false);
     setModalFranchise(null);
+    setModalMode('sm');
   }
 
   async function handleSave(payload, id) {
     if (id !== undefined) {
       await franchisesApi.updateFranchise(id, payload);
+    } else if (modalMode === 'sub') {
+      await franchisesApi.createSubFranchise(payload);
     } else {
       await franchisesApi.createFranchise(payload);
     }
@@ -348,6 +361,17 @@ export default function FranchisesPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
               </svg>
               {t('franchises.new')}
+            </button>
+          )}
+          {isSbOwner && (
+            <button
+              onClick={openCreateSubModal}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              {t('franchises.new_sub')}
             </button>
           )}
         </div>
@@ -444,6 +468,7 @@ export default function FranchisesPage() {
           franchise={modalFranchise}
           onClose={closeModal}
           onSave={handleSave}
+          mode={modalMode}
         />
       )}
     </>

@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\FeedController;
 use App\Http\Controllers\Api\FranchiseAdminController;
+use App\Http\Controllers\Api\FranchiseClientController;
 use App\Http\Controllers\Api\FranchiseController;
 use App\Http\Controllers\Api\FranchiseMemberController;
 use App\Http\Controllers\Api\InvitationController;
@@ -67,7 +68,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // Franchises
     // Sub-routes declared BEFORE apiResource to prevent the {franchise} wildcard
     // from capturing literal path segments like "members", "admins", "clients".
-    // Franchise admin management (superadmin only)
+    // Franchise admin management (superadmin + admin_sm)
     Route::prefix('franchises/{franchise}/admins/{user}')->group(function () {
         Route::patch('/', [FranchiseAdminController::class, 'update']);
         Route::patch('/password', [FranchiseAdminController::class, 'resetPassword']);
@@ -77,7 +78,21 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::put('/permissions', [FranchiseAdminController::class, 'updatePermissions']);
     });
 
+    // Franchise client management (superadmin + admin_sm)
+    Route::prefix('franchises/{franchise}/clients/{user}')->group(function () {
+        Route::patch('/', [FranchiseClientController::class, 'update']);
+        Route::patch('/password', [FranchiseClientController::class, 'resetPassword']);
+        Route::delete('/', [FranchiseClientController::class, 'destroy']);
+        Route::patch('/restore', [FranchiseClientController::class, 'restore']);
+        Route::get('/permissions', [FranchiseClientController::class, 'permissions']);
+        Route::put('/permissions', [FranchiseClientController::class, 'updatePermissions']);
+    });
+
+    // Sub-franchise creation — BEFORE apiResource to prevent {franchise} from capturing 'sub'
+    Route::post('franchises/sub', [FranchiseController::class, 'storeSub']);
+
     Route::patch('franchises/{franchise}/toggle-status', [FranchiseController::class, 'toggleStatus']);
+    Route::get('franchises/{franchise}/sub-franchises', [FranchiseMemberController::class, 'subFranchises']);
     Route::get('franchises/{franchise}/members', [FranchiseMemberController::class, 'members']);
     Route::apiResource('franchises', FranchiseController::class);
 

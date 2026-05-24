@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Franchise\StoreFranchiseRequest;
+use App\Http\Requests\Franchise\StoreSubFranchiseRequest;
 use App\Http\Requests\Franchise\UpdateFranchiseRequest;
 use App\Http\Resources\FranchiseResource;
 use App\Models\Franchise;
@@ -127,6 +128,23 @@ class FranchiseController extends Controller
     public function store(StoreFranchiseRequest $request): JsonResponse
     {
         $this->authorize('create', Franchise::class);
+
+        $franchise = $this->franchiseService->create($request->validated());
+
+        return response()->json([
+            'success' => true,
+            'data' => new FranchiseResource($franchise),
+            'message' => 'franchises.created_success',
+        ], 201);
+    }
+
+    /**
+     * Create a sub-franchise owned by the authenticated sb_owner.
+     * The request forces type='sub' and parent_company_id from the user's context.
+     */
+    public function storeSub(StoreSubFranchiseRequest $request): JsonResponse
+    {
+        $this->authorize('createSub', Franchise::class);
 
         $franchise = $this->franchiseService->create($request->validated());
 

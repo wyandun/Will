@@ -6,9 +6,10 @@ import { TIMEZONE_OPTIONS } from '../../utils/timezones';
 const FRANCHISE_FIELDS = ['name', 'email', 'phone', 'country', 'timezone', 'address'];
 const EMPTY_FORM = Object.fromEntries(FRANCHISE_FIELDS.map(f => [f, '']));
 
-export default function FranchiseFormModal({ franchise, onClose, onSave }) {
+export default function FranchiseFormModal({ franchise, onClose, onSave, mode }) {
   const { t } = useTranslation('common');
   const isEditing = franchise !== null;
+  const isSubMode = mode === 'sub';
 
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
@@ -62,7 +63,8 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
     const payload = { name: form.name.trim() };
 
     if (!isEditing) {
-      payload.type = 'sm';
+      // type is forced server-side for sub mode, but send for clarity
+      payload.type = isSubMode ? 'sub' : 'sm';
     }
 
     // En edición siempre enviar todos los campos (permite blanquear valores)
@@ -110,7 +112,7 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
           <h2 className="text-base font-semibold text-slate-800">
-            {isEditing ? t('franchises.edit_title') : t('franchises.new_title')}
+            {isEditing ? t('franchises.edit_title') : isSubMode ? t('franchises.new_sub_title') : t('franchises.new_title')}
           </h2>
           <button
             type="button"
@@ -273,7 +275,7 @@ export default function FranchiseFormModal({ franchise, onClose, onSave }) {
               className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isSubmitting
-                ? isEditing ? t('common.saving') : t('franchises.creating')
+                ? isEditing ? t('common.saving') : (isSubMode ? t('franchises.creating_sub') : t('franchises.creating'))
                 : isEditing ? t('common.save') : t('franchises.create')}
             </button>
           </div>
@@ -295,4 +297,9 @@ FranchiseFormModal.propTypes = {
   }),
   onClose: PropTypes.func.isRequired,
   onSave: PropTypes.func.isRequired,
+  mode: PropTypes.oneOf(['sm', 'sub']),
+};
+
+FranchiseFormModal.defaultProps = {
+  mode: 'sm',
 };

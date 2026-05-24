@@ -73,4 +73,33 @@ export const franchisesApi = {
 
   updateAdminPermissions: (franchiseId, userId, permissions) =>
     apiClient.put(`/franchises/${franchiseId}/admins/${userId}/permissions`, { permissions }).then((res) => res.data),
+
+  // ── Franchise client management ─────────────────────────────────────────
+
+  updateClient: (franchiseId, userId, data) =>
+    apiClient.patch(`/franchises/${franchiseId}/clients/${userId}`, data).then((res) => res.data.data),
+
+  resetClientPassword: (franchiseId, userId, data) =>
+    apiClient.patch(`/franchises/${franchiseId}/clients/${userId}/password`, data).then((res) => res.data),
+
+  deactivateClient: (franchiseId, userId) =>
+    apiClient.delete(`/franchises/${franchiseId}/clients/${userId}`).then((res) => res.data),
+
+  restoreClient: (franchiseId, userId) =>
+    apiClient.patch(`/franchises/${franchiseId}/clients/${userId}/restore`).then((res) => res.data),
+
+  getClientPermissions: (franchiseId, userId) =>
+    apiClient.get(`/franchises/${franchiseId}/clients/${userId}/permissions`).then((res) => res.data.data),
+
+  updateClientPermissions: (franchiseId, userId, permissions) =>
+    apiClient.put(`/franchises/${franchiseId}/clients/${userId}/permissions`, { permissions }).then((res) => res.data),
+
+  // ── Sub-franchise creation ──────────────────────────────────────────────
+
+  createSubFranchise: (data) =>
+    apiClient.post('/franchises/sub', data).then((res) => res.data.data),
+
+  // ── Sub-franchise listing for a given SM franchise ──────────────────────
+  getSubFranchisesForFranchise: (franchiseId) =>
+    apiClient.get(`/franchises/${franchiseId}/sub-franchises`).then((res) => res.data.data ?? []),
 };

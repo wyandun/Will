@@ -9,6 +9,7 @@ import AddAdminModal from './AddAdminModal';
 import AddClientModal from './AddClientModal';
 import AdminPermissionsModal from './AdminPermissionsModal';
 import EditAdminModal from './EditAdminModal';
+import EditClientModal from './EditClientModal';
 import FranchiseFormModal from './FranchiseFormModal';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -66,8 +67,10 @@ const AREA_COLORS = {
 };
 
 const ROLE_COLORS = {
-  sb_owner:    'bg-cyan-50 text-cyan-700 ring-cyan-600/20',
-  bb_employee: 'bg-violet-50 text-violet-700 ring-violet-600/20',
+  sb_owner:             'bg-cyan-50 text-cyan-700 ring-cyan-600/20',
+  bb_employee:          'bg-violet-50 text-violet-700 ring-violet-600/20',
+  sub_franchise_owner:  'bg-amber-50 text-amber-700 ring-amber-600/20',
+  sub_franchise_admin:  'bg-orange-50 text-orange-700 ring-orange-600/20',
 };
 
 // ─── Member row ───────────────────────────────────────────────────────────────
@@ -145,6 +148,8 @@ export default function FranchiseDetailPage() {
   const isAdminSm = role === 'admin_sm';
   const canAdd = isSuperadmin || (isAdminSm && user?.sm_franchise_id === parseInt(id, 10));
   const canManage = isSuperadmin || (isAdminSm && user?.sm_franchise_id === parseInt(id, 10));
+  // Client management: superadmin + admin_sm (same as admin management)
+  const canManageClients = isSuperadmin || (isAdminSm && user?.sm_franchise_id === parseInt(id, 10));
 
   const [franchise, setFranchise] = useState(null);
   const [members, setMembers] = useState(null);
@@ -161,6 +166,12 @@ export default function FranchiseDetailPage() {
   const [permissionsAdmin, setPermissionsAdmin] = useState(null);
   const [deactivatingId, setDeactivatingId] = useState(null);
   const [restoringId, setRestoringId] = useState(null);
+
+  // Client management state
+  const [editingClient, setEditingClient] = useState(null);
+  const [permissionsClient, setPermissionsClient] = useState(null);
+  const [deactivatingClientId, setDeactivatingClientId] = useState(null);
+  const [restoringClientId, setRestoringClientId] = useState(null);
 
   // Pending invitations state
   const [activationUrls, setActivationUrls] = useState({});
@@ -335,6 +346,59 @@ export default function FranchiseDetailPage() {
     }
   }
 
+  // ── Client management handlers ────────────────────────────────────────────
+
+  async function handleEditClient(profilePayload, passwordPayload, clientId, fId) {
+    await franchisesApi.updateClient(fId, clientId, profilePayload);
+    if (passwordPayload) {
+      await franchisesApi.resetClientPassword(fId, clientId, passwordPayload);
+    }
+    setEditingClient(null);
+    setSuccessMessage(t('franchise_detail.client_updated'));
+    setTimeout(() => setSuccessMessage(''), 4000);
+    await loadData();
+  }
+
+  async function handleSaveClientPermissions(permissionsPayload, clientId, fId) {
+    await franchisesApi.updateClientPermissions(fId, clientId, permissionsPayload);
+    setPermissionsClient(null);
+    setSuccessMessage(t('franchise_detail.client_permissions_updated'));
+    setTimeout(() => setSuccessMessage(''), 4000);
+    await loadData();
+  }
+
+  async function handleDeactivateClient(client) {
+    if (!window.confirm(t('franchise_detail.client_deactivate_confirm', { name: client.name }))) return;
+    setDeactivatingClientId(client.id);
+    try {
+      await franchisesApi.deactivateClient(parseInt(id, 10), client.id);
+      setSuccessMessage(t('franchise_detail.client_deactivated'));
+      setTimeout(() => setSuccessMessage(''), 4000);
+      await loadData();
+    } catch (error) {
+      const msgKey = error?.response?.data?.message;
+      window.alert(msgKey ? t(msgKey, { defaultValue: msgKey }) : t('common.unexpected_error'));
+    } finally {
+      setDeactivatingClientId(null);
+    }
+  }
+
+  async function handleRestoreClient(client) {
+    if (!window.confirm(t('franchise_detail.client_activate_confirm', { name: client.name }))) return;
+    setRestoringClientId(client.id);
+    try {
+      await franchisesApi.restoreClient(parseInt(id, 10), client.id);
+      setSuccessMessage(t('franchise_detail.client_restored'));
+      setTimeout(() => setSuccessMessage(''), 4000);
+      await loadData();
+    } catch (error) {
+      const msgKey = error?.response?.data?.message;
+      window.alert(msgKey ? t(msgKey, { defaultValue: msgKey }) : t('common.unexpected_error'));
+    } finally {
+      setRestoringClientId(null);
+    }
+  }
+
   // ── Derived data ──────────────────────────────────────────────────────────
 
   const admins = members?.admins ?? [];
@@ -345,6 +409,7 @@ export default function FranchiseDetailPage() {
   const isActive = franchise?.is_active ?? members?.is_active;
 
   const deactivatedAdmins = members?.deactivated_admins ?? [];
+  const deactivatedClients = members?.deactivated_clients ?? [];
 
   const pendingAdmins = admins
     .filter((a) => !a.invitation_accepted_at)
@@ -707,7 +772,7 @@ export default function FranchiseDetailPage() {
 
               {activeTab === 'clients' && (
                 <>
-                  {clients.length === 0 ? (
+                  {clients.length === 0 && deactivatedClients.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-16 text-center">
                       <svg className="w-10 h-10 text-slate-300 mb-3" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 0h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" />
@@ -715,20 +780,122 @@ export default function FranchiseDetailPage() {
                       <p className="text-sm text-slate-500">{t('franchise_detail.no_clients')}</p>
                     </div>
                   ) : (
-                    <ul className="divide-y divide-slate-100 px-5">
-                      {clients.map((client) => {
-                        const roleKey = client.role === 'sb_owner' ? 'sb_owner' : 'bb_employee';
-                        return (
-                          <MemberRow
-                            key={client.id}
-                            member={client}
-                            badgeLabel={t(`roles.${roleKey}`)}
-                            badgeColor={`${ROLE_COLORS[roleKey] ?? 'bg-slate-50 text-slate-600 ring-slate-600/20'} ring-1 ring-inset`}
-                            t={t}
-                          />
-                        );
-                      })}
-                    </ul>
+                    <>
+                      {clients.length > 0 && (
+                        <ul className="divide-y divide-slate-100 px-5">
+                          {clients.map((client) => {
+                            const roleKey = client.role ?? 'sb_owner';
+                            return (
+                              <li key={client.id} className="flex items-center gap-4 py-3 px-1">
+                                {/* Avatar */}
+                                <div className={`w-10 h-10 rounded-full ${getAvatarColor(client.name)} flex items-center justify-center shrink-0`}>
+                                  <span className="text-white text-sm font-semibold">{getInitials(client.name)}</span>
+                                </div>
+                                {/* Name + email */}
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-slate-800 truncate">{client.name}</p>
+                                  <p className="text-xs text-slate-400 truncate">{client.email}</p>
+                                </div>
+                                {/* Role badge */}
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset shrink-0 ${ROLE_COLORS[roleKey] ?? 'bg-slate-50 text-slate-600 ring-slate-600/20'}`}>
+                                  {t(`roles.${roleKey}`)}
+                                </span>
+                                {/* Job title */}
+                                {client.job_title && (
+                                  <span className="hidden sm:block text-xs text-slate-400 shrink-0 max-w-[120px] truncate">
+                                    {client.job_title}
+                                  </span>
+                                )}
+                                {/* Last seen */}
+                                <div className="shrink-0 text-right">
+                                  {client.last_seen_at ? (
+                                    <span className="text-xs text-slate-400">{formatLastSeen(client.last_seen_at)}</span>
+                                  ) : (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/20">
+                                      {t('franchise_detail.pending')}
+                                    </span>
+                                  )}
+                                </div>
+                                {/* Action buttons (superadmin + admin_sm) */}
+                                {canManageClients && (
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    {/* Edit */}
+                                    <button
+                                      onClick={() => setEditingClient(client)}
+                                      title={t('franchise_detail.edit_client')}
+                                      className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+                                      </svg>
+                                    </button>
+                                    {/* Permissions */}
+                                    <button
+                                      onClick={() => setPermissionsClient(client)}
+                                      title={t('franchise_detail.permissions_title')}
+                                      className="p-1.5 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50 transition-colors"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                                      </svg>
+                                    </button>
+                                    {/* Deactivate */}
+                                    <button
+                                      onClick={() => handleDeactivateClient(client)}
+                                      disabled={deactivatingClientId === client.id}
+                                      title={t('franchise_detail.deactivate_client')}
+                                      className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+
+                      {/* Deactivated clients */}
+                      {canManageClients && deactivatedClients.length > 0 && (
+                        <div className={clients.length > 0 ? 'border-t border-slate-200' : ''}>
+                          <div className="px-5 py-3 bg-slate-50">
+                            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                              {t('franchise_detail.deactivated_clients_label')} ({deactivatedClients.length})
+                            </p>
+                          </div>
+                          <ul className="divide-y divide-slate-100 px-5">
+                            {deactivatedClients.map((client) => (
+                              <li key={client.id} className="flex items-center gap-4 py-3 px-1 opacity-60">
+                                {/* Avatar */}
+                                <div className="w-10 h-10 rounded-full bg-slate-300 flex items-center justify-center shrink-0">
+                                  <span className="text-white text-sm font-semibold">{getInitials(client.name)}</span>
+                                </div>
+                                {/* Name + email */}
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-slate-500 truncate">{client.name}</p>
+                                  <p className="text-xs text-slate-400 truncate">{client.email}</p>
+                                </div>
+                                {/* Deactivated badge */}
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset bg-red-50 text-red-700 ring-red-600/20 shrink-0">
+                                  {t('franchise_detail.deactivated')}
+                                </span>
+                                {/* Restore button */}
+                                <button
+                                  onClick={() => handleRestoreClient(client)}
+                                  disabled={restoringClientId === client.id}
+                                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+                                >
+                                  {restoringClientId === client.id ? '...' : t('franchise_detail.activate_client')}
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </>
                   )}
                 </>
               )}
@@ -835,6 +1002,7 @@ export default function FranchiseDetailPage() {
         <AddClientModal
           onClose={() => setIsAddClientOpen(false)}
           onSave={handleSaveClient}
+          franchiseId={parseInt(id, 10)}
         />
       )}
       {isModalOpen && franchise && (
@@ -858,6 +1026,23 @@ export default function FranchiseDetailPage() {
           franchiseId={parseInt(id, 10)}
           onClose={() => setPermissionsAdmin(null)}
           onSave={handleSavePermissions}
+        />
+      )}
+      {editingClient && (
+        <EditClientModal
+          client={editingClient}
+          franchiseId={parseInt(id, 10)}
+          onClose={() => setEditingClient(null)}
+          onSave={handleEditClient}
+        />
+      )}
+      {permissionsClient && (
+        <AdminPermissionsModal
+          admin={permissionsClient}
+          franchiseId={parseInt(id, 10)}
+          onClose={() => setPermissionsClient(null)}
+          onSave={handleSaveClientPermissions}
+          memberType="client"
         />
       )}
     </>

@@ -81,6 +81,55 @@ class UserPolicy
         return $user->hasRole(Role::SUPERADMIN);
     }
 
+    // ── Client management (superadmin + admin_sm) ────────────────────────────────
+
+    public function updateFranchiseClient(User $user, User $client): bool
+    {
+        if (! $client->hasAnyRole([Role::SB_OWNER, Role::BB_EMPLOYEE, Role::SUB_FRANCHISE_OWNER, Role::SUB_FRANCHISE_ADMIN])) {
+            return false;
+        }
+
+        if ($user->hasRole(Role::SUPERADMIN)) {
+            return true;
+        }
+
+        return $user->hasRole(Role::ADMIN_SM)
+            && $user->sm_franchise_id === $client->sm_franchise_id;
+    }
+
+    public function deleteFranchiseClient(User $user, User $client): bool
+    {
+        if (! $client->hasAnyRole([Role::SB_OWNER, Role::BB_EMPLOYEE, Role::SUB_FRANCHISE_OWNER, Role::SUB_FRANCHISE_ADMIN])) {
+            return false;
+        }
+
+        if ($user->hasRole(Role::SUPERADMIN)) {
+            return true;
+        }
+
+        return $user->hasRole(Role::ADMIN_SM)
+            && $user->sm_franchise_id === $client->sm_franchise_id;
+    }
+
+    public function restoreFranchiseClient(User $user): bool
+    {
+        return $user->hasAnyRole([Role::SUPERADMIN, Role::ADMIN_SM]);
+    }
+
+    public function updateFranchiseClientPermissions(User $user, User $client): bool
+    {
+        if (! $client->hasAnyRole([Role::SB_OWNER, Role::BB_EMPLOYEE, Role::SUB_FRANCHISE_OWNER, Role::SUB_FRANCHISE_ADMIN])) {
+            return false;
+        }
+
+        if ($user->hasRole(Role::SUPERADMIN)) {
+            return true;
+        }
+
+        return $user->hasRole(Role::ADMIN_SM)
+            && $user->sm_franchise_id === $client->sm_franchise_id;
+    }
+
     // ── Invitations ─────────────────────────────────────────────────────────────
 
     /**

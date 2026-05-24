@@ -10,7 +10,7 @@ class FranchisePolicy
 {
     /**
      * List franchises: system roles see all, admin_sm sees theirs,
-     * sub_franchise_owner/sub_franchise_admin see their sub-franchise.
+     * sb_owner sees their sub-franchises, sub_franchise_owner/sub_franchise_admin see their sub-franchise.
      */
     public function viewAny(User $user): bool
     {
@@ -19,6 +19,7 @@ class FranchisePolicy
             Role::SYSTEM_ADMIN,
             Role::SYSTEM_ADMIN_READONLY,
             Role::ADMIN_SM,
+            Role::SB_OWNER,
             Role::SUB_FRANCHISE_OWNER,
             Role::SUB_FRANCHISE_ADMIN,
         ]);
@@ -26,7 +27,7 @@ class FranchisePolicy
 
     /**
      * View a single franchise: system roles always allowed; admin_sm only theirs;
-     * sub_franchise_owner/sub_franchise_admin only their sub-franchise.
+     * sb_owner only sub-franchises of their company; sub_franchise_owner/admin only their sub-franchise.
      */
     public function view(User $user, Franchise $franchise): bool
     {
@@ -36,6 +37,11 @@ class FranchisePolicy
 
         if ($user->hasRole(Role::ADMIN_SM)) {
             return (int) $user->sm_franchise_id === (int) $franchise->id;
+        }
+
+        if ($user->hasRole(Role::SB_OWNER)) {
+            return $user->company_id !== null
+                && (int) $user->company_id === (int) $franchise->parent_company_id;
         }
 
         if ($user->hasAnyRole([Role::SUB_FRANCHISE_OWNER, Role::SUB_FRANCHISE_ADMIN])) {
@@ -61,11 +67,20 @@ class FranchisePolicy
     }
 
     /**
-     * Create a franchise: superadmin/system_admin only.
+     * Create a franchise (SM type): superadmin/system_admin only.
      */
     public function create(User $user): bool
     {
         return $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN]);
+    }
+
+    /**
+     * Create a sub-franchise: sb_owner (scoped to their company), superadmin, system_admin.
+     * The StoreSubFranchiseRequest enforces type='sub' and parent_company_id from context.
+     */
+    public function createSub(User $user): bool
+    {
+        return $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SB_OWNER]);
     }
 
     /**
