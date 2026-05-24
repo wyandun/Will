@@ -69,6 +69,21 @@ class UserPolicy
         return $user->hasRole(Role::SUPERADMIN);
     }
 
+    /**
+     * Separated from updateFranchiseAdminPermissions to decouple read and write
+     * authorization. Both currently check the same roles (superadmin + target is
+     * admin_sm), but keeping them distinct ensures a future write-specific restriction
+     * won't accidentally break the GET /permissions endpoint.
+     */
+    public function viewFranchiseAdminPermissions(User $user, User $admin): bool
+    {
+        if (! $admin->hasRole(Role::ADMIN_SM)) {
+            return false;
+        }
+
+        return $user->hasRole(Role::SUPERADMIN);
+    }
+
     // ── Invitations ─────────────────────────────────────────────────────────────
 
     /**

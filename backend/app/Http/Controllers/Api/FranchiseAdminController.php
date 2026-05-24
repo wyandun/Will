@@ -74,6 +74,10 @@ class FranchiseAdminController extends Controller
     /**
      * Deactivate a franchise admin (soft delete) and revoke tokens.
      *
+     * Both operations target the same PostgreSQL connection (sm_portal), so
+     * a transaction ensures atomicity: if the soft delete fails, token
+     * revocation rolls back and the user retains their active sessions.
+     *
      * Note: The method is named destroy() following Laravel's resource controller convention
      * for DELETE routes. "Deactivate" is the domain term (user-facing), while "destroy" is
      * the framework convention. The soft delete behavior is an implementation detail.
@@ -83,8 +87,10 @@ class FranchiseAdminController extends Controller
         $this->authorize('deleteFranchiseAdmin', $user);
         $this->ensureBelongsToFranchise($user, $franchise);
 
-        $user->tokens()->delete();
-        $user->delete();
+        DB::transaction(function () use ($user) {
+            $user->tokens()->delete();
+            $user->delete();
+        });
 
         return response()->json([
             'success' => true,
@@ -99,6 +105,11 @@ class FranchiseAdminController extends Controller
      * Note on $userId (int) vs User model binding: Laravel's route model binding excludes
      * soft-deleted records by default (SoftDeletes global scope). Since this method targets
      * a soft-deleted user, we receive the raw ID and query with withTrashed() manually.
+     *
+     * Note on ensureBelongsToFranchise(): This method cannot use the shared helper because
+     * it requires withTrashed() querying. The franchise scope check is performed inline via
+     * ->where('sm_franchise_id', $franchise->id)->firstOrFail() (equivalent 404 behavior),
+     * and the role check via abort_unless($user->hasRole(...), 403).
      *
      * Note on User::class: The policy method restoreFranchiseAdmin(User $user) takes only
      * the authenticated user (no target model) because the target doesn't exist in normal
@@ -145,7 +156,7 @@ class FranchiseAdminController extends Controller
      */
     public function permissions(Franchise $franchise, User $user): JsonResponse
     {
-        $this->authorize('updateFranchiseAdminPermissions', $user);
+        $this->authorize('viewFranchiseAdminPermissions', $user);
         $this->ensureBelongsToFranchise($user, $franchise);
 
         return response()->json([
@@ -160,6 +171,10 @@ class FranchiseAdminController extends Controller
 
     /**
      * Batch-update module permissions for a franchise admin.
+     *
+     * Note: Module names are validated against UserPermission::ALL_MODULES allowlist
+     * in the FormRequest layer (Rule::in). Arbitrary module injection is blocked
+     * before this method executes. The model's updateForUser() trusts validated input.
      */
     public function updatePermissions(UpdateFranchiseAdminPermissionsRequest $request, Franchise $franchise, User $user): JsonResponse
     {
