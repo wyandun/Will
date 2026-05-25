@@ -175,6 +175,40 @@ class FranchiseClientTest extends TestCase
         $this->assertNotSoftDeleted('users', ['id' => $unrelatedInvestor->id]);
     }
 
+    public function test_cascade_deactivation_revokes_investor_tokens_in_bulk(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = Franchise::factory()->create();
+        $company = Company::create([
+            'name' => 'Bulk Cascade LLC',
+            'sm_franchise_id' => $franchise->id,
+        ]);
+
+        $sbOwner = $this->createClient($franchise, Role::SB_OWNER, ['company_id' => $company->id]);
+
+        // Seed many investors, each with an active Sanctum token, so the bulk
+        // path is meaningfully exercised vs a per-model loop.
+        $investors = collect();
+        for ($i = 0; $i < 15; $i++) {
+            $investor = $this->createClient($franchise, Role::BB_EMPLOYEE, ['company_id' => $company->id]);
+            $investor->createToken('test');
+            $investors->push($investor);
+        }
+
+        $response = $this->actingAs($superadmin)
+            ->deleteJson("/api/v1/franchises/{$franchise->id}/clients/{$sbOwner->id}");
+
+        $response->assertStatus(200);
+
+        foreach ($investors as $investor) {
+            $this->assertSoftDeleted('users', ['id' => $investor->id]);
+            $this->assertDatabaseMissing('personal_access_tokens', [
+                'tokenable_type' => User::class,
+                'tokenable_id' => $investor->id,
+            ]);
+        }
+    }
+
     // ===========================================================================
     // RESTORE  PATCH /api/v1/franchises/{franchise}/clients/{user}/restore
     // ===========================================================================

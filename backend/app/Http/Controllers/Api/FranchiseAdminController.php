@@ -51,6 +51,11 @@ class FranchiseAdminController extends Controller
      * Both operations target the same PostgreSQL connection (sm_portal), so
      * a transaction ensures atomicity: if token revocation fails, the password
      * change rolls back and the user retains their old credentials + sessions.
+     *
+     * Note: Intentional duplication with FranchiseClientController::resetPassword().
+     * A shared trait would require 5+ abstract hooks (policy name, role allowlist,
+     * Resource class, message prefix, cascade behavior) and net-zero LOC savings
+     * while hiding the SB_OWNER→investor cascade behind indirection.
      */
     public function resetPassword(UpdateFranchiseAdminPasswordRequest $request, Franchise $franchise, User $user): JsonResponse
     {
@@ -128,8 +133,11 @@ class FranchiseAdminController extends Controller
         // Spatie roles live in the model_has_roles pivot table, unaffected by soft deletes.
         // hasRole() works correctly on trashed models.
         abort_unless($user->hasRole(Role::ADMIN_SM), 403);
-        // A concurrent restore() is a no-op at the DB level (UPDATE SET deleted_at=NULL
-        // on an already-NULL row). The 422 guard is a UX convenience, not a safety lock.
+        // No lockForUpdate needed: restore() is a single idempotent UPDATE
+        // (deleted_at=NULL) with no dependent writes; the trashed() guard is
+        // UX-only, and destroy() already wraps its token-revoke + soft-delete in
+        // its own transaction. All 4 concurrent destroy/restore interleavings
+        // converge to a consistent state — see audit decision in commit history.
         abort_unless($user->trashed(), 422, 'franchise_admin.not_deactivated');
 
         $user->restore();
@@ -159,6 +167,12 @@ class FranchiseAdminController extends Controller
         $this->authorize('viewFranchiseAdminPermissions', $user);
         $this->ensureBelongsToFranchise($user, $franchise);
 
+        // Inline permissions shape (module/can_read/can_write) is intentionally
+        // duplicated across 4 sites (this method, FranchiseClientController::permissions,
+        // and the `permissions` block in both *Resource classes). The 3-field
+        // projection has been stable since the user_permissions migration; a
+        // dedicated UserPermissionResource would add indirection without reducing
+        // maintenance surface (a new field is still a grep-and-add in 4 places).
         return response()->json([
             'success' => true,
             'data' => $user->userPermissions->map(fn ($p) => [
