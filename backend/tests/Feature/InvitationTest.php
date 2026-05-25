@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Models\Company;
 use App\Models\Franchise;
 use App\Models\User;
 use App\Notifications\UserInvitationNotification;
@@ -642,16 +643,16 @@ class InvitationTest extends TestCase
             // bb_employee invitations require a sb_owner_id whose company_id is set,
             // so we seed a SB Owner+Company in the test franchise for the link.
             if ($role === Role::BB_EMPLOYEE) {
-                $company = \App\Models\Company::create([
+                $company = Company::create([
                     'name' => 'Test LLC for investor invite',
                     'sm_franchise_id' => $franchise->id,
                 ]);
-                $owner = \App\Models\User::factory()->create([
+                $owner = User::factory()->create([
                     'sm_franchise_id' => $franchise->id,
                     'company_id' => $company->id,
                     'invitation_accepted_at' => now(),
                 ]);
-                \Spatie\Permission\Models\Role::firstOrCreate(['name' => Role::SB_OWNER, 'guard_name' => 'web']);
+                SpatieRole::firstOrCreate(['name' => Role::SB_OWNER, 'guard_name' => 'web']);
                 $owner->assignRole(Role::SB_OWNER);
                 $extra = ['sm_franchise_id' => $franchise->id, 'sb_owner_id' => $owner->id];
             }
