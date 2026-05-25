@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\FeedController;
 use App\Http\Controllers\Api\FranchiseAdminController;
+use App\Http\Controllers\Api\FranchiseClientController;
 use App\Http\Controllers\Api\FranchiseController;
 use App\Http\Controllers\Api\FranchiseMemberController;
 use App\Http\Controllers\Api\InvitationController;
@@ -75,6 +76,16 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::patch('/restore', [FranchiseAdminController::class, 'restore']);
         Route::get('/permissions', [FranchiseAdminController::class, 'permissions']);
         Route::put('/permissions', [FranchiseAdminController::class, 'updatePermissions']);
+    });
+
+    // Franchise client management (superadmin + admin_sm)
+    Route::prefix('franchises/{franchise}/clients/{user}')->group(function () {
+        Route::patch('/', [FranchiseClientController::class, 'update']);
+        Route::patch('/password', [FranchiseClientController::class, 'resetPassword']);
+        Route::delete('/', [FranchiseClientController::class, 'destroy']);
+        Route::patch('/restore', [FranchiseClientController::class, 'restore']);
+        Route::get('/permissions', [FranchiseClientController::class, 'permissions']);
+        Route::put('/permissions', [FranchiseClientController::class, 'updatePermissions']);
     });
 
     Route::patch('franchises/{franchise}/toggle-status', [FranchiseController::class, 'toggleStatus']);

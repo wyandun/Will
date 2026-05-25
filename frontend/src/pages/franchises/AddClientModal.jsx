@@ -7,9 +7,9 @@ const CLIENT_ROLE_OPTIONS = [
   { value: 'bb_employee', labelKey: 'roles.bb_employee' },
 ];
 
-export default function AddClientModal({ onClose, onSave }) {
+export default function AddClientModal({ onClose, onSave, defaultRole }) {
   const { t } = useTranslation('common');
-  const [form, setForm] = useState({ name: '', email: '', role: '' });
+  const [form, setForm] = useState({ name: '', email: '', role: defaultRole || '' });
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -119,25 +119,27 @@ export default function AddClientModal({ onClose, onSave }) {
               {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
             </div>
 
-            {/* Role */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                {t('franchise_detail.field_role')} <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="role"
-                value={form.role}
-                onChange={handleChange}
-                disabled={isSubmitting}
-                className={`w-full rounded-lg border px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 transition appearance-none bg-white ${errors.role ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
-              >
-                <option value="">—</option>
-                {CLIENT_ROLE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>
-                ))}
-              </select>
-              {errors.role && <p className="mt-1 text-xs text-red-600">{errors.role}</p>}
-            </div>
+            {/* Role — hidden when defaultRole is provided (tab determines role) */}
+            {!defaultRole && (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  {t('franchise_detail.field_role')} <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="role"
+                  value={form.role}
+                  onChange={handleChange}
+                  disabled={isSubmitting}
+                  className={`w-full rounded-lg border px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 transition appearance-none bg-white ${errors.role ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
+                >
+                  <option value="">—</option>
+                  {CLIENT_ROLE_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>
+                  ))}
+                </select>
+                {errors.role && <p className="mt-1 text-xs text-red-600">{errors.role}</p>}
+              </div>
+            )}
           </div>
 
           {/* Footer */}
@@ -167,4 +169,5 @@ export default function AddClientModal({ onClose, onSave }) {
 AddClientModal.propTypes = {
   onClose: PropTypes.func.isRequired,
   onSave: PropTypes.func.isRequired,
+  defaultRole: PropTypes.oneOf(['sb_owner', 'bb_employee']),
 };

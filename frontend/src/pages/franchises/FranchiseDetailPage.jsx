@@ -9,6 +9,7 @@ import AddAdminModal from './AddAdminModal';
 import AddClientModal from './AddClientModal';
 import AdminPermissionsModal from './AdminPermissionsModal';
 import EditAdminModal from './EditAdminModal';
+import EditClientModal from './EditClientModal';
 import FranchiseFormModal from './FranchiseFormModal';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -152,7 +153,7 @@ export default function FranchiseDetailPage() {
   const [fetchError, setFetchError] = useState('');
   const [activeTab, setActiveTab] = useState('admins');
   const [isAddAdminOpen, setIsAddAdminOpen] = useState(false);
-  const [isAddClientOpen, setIsAddClientOpen] = useState(false);
+  const [addClientRole, setAddClientRole] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -161,6 +162,12 @@ export default function FranchiseDetailPage() {
   const [permissionsAdmin, setPermissionsAdmin] = useState(null);
   const [deactivatingId, setDeactivatingId] = useState(null);
   const [restoringId, setRestoringId] = useState(null);
+
+  // Client management state
+  const [editingClient, setEditingClient] = useState(null);
+  const [permissionsClient, setPermissionsClient] = useState(null);
+  const [deactivatingClientId, setDeactivatingClientId] = useState(null);
+  const [restoringClientId, setRestoringClientId] = useState(null);
 
   // Pending invitations state
   const [activationUrls, setActivationUrls] = useState({});
@@ -231,7 +238,7 @@ export default function FranchiseDetailPage() {
     if (result?.data?.activation_url && result?.data?.user?.id) {
       setActivationUrls((prev) => ({ ...prev, [result.data.user.id]: result.data.activation_url }));
     }
-    setIsAddClientOpen(false);
+    setAddClientRole(null);
     setSuccessMessage(t('franchise_detail.client_invited'));
     setTimeout(() => setSuccessMessage(''), 4000);
     await loadData();
@@ -335,16 +342,82 @@ export default function FranchiseDetailPage() {
     }
   }
 
+  // ── Client management handlers ────────────────────────────────────────────
+
+  async function handleEditClient(profilePayload, passwordPayload, clientId, fId) {
+    await franchisesApi.updateClient(fId, clientId, profilePayload);
+    if (passwordPayload) {
+      await franchisesApi.resetClientPassword(fId, clientId, passwordPayload);
+    }
+    setEditingClient(null);
+    setSuccessMessage(t('franchise_detail.client_updated'));
+    setTimeout(() => setSuccessMessage(''), 4000);
+    await loadData();
+  }
+
+  async function handleSaveClientPermissions(permissionsPayload, clientId, fId) {
+    await franchisesApi.updateClientPermissions(fId, clientId, permissionsPayload);
+    setPermissionsClient(null);
+    setSuccessMessage(t('franchise_detail.client_permissions_updated'));
+    setTimeout(() => setSuccessMessage(''), 4000);
+    await loadData();
+  }
+
+  async function handleDeactivateClient(client) {
+    const isSbOwner = client.role === 'sb_owner';
+    const message = isSbOwner
+      ? `${t('franchise_detail.deactivate_client_confirm', { name: client.name })}\n\n${t('franchise_detail.deactivate_sb_owner_warning')}`
+      : t('franchise_detail.deactivate_client_confirm', { name: client.name });
+    if (!window.confirm(message)) return;
+    setDeactivatingClientId(client.id);
+    try {
+      await franchisesApi.deactivateClient(parseInt(id, 10), client.id);
+      setSuccessMessage(t('franchise_detail.client_deactivated'));
+      setTimeout(() => setSuccessMessage(''), 4000);
+      await loadData();
+    } catch (error) {
+      const msgKey = error?.response?.data?.message;
+      const msg = msgKey ? t(msgKey, { defaultValue: msgKey }) : t('common.unexpected_error');
+      window.alert(msg);
+    } finally {
+      setDeactivatingClientId(null);
+    }
+  }
+
+  async function handleRestoreClient(client) {
+    if (!window.confirm(t('franchise_detail.activate_client_confirm', { name: client.name }))) return;
+    setRestoringClientId(client.id);
+    try {
+      await franchisesApi.restoreClient(parseInt(id, 10), client.id);
+      setSuccessMessage(t('franchise_detail.client_restored'));
+      setTimeout(() => setSuccessMessage(''), 4000);
+      await loadData();
+    } catch (error) {
+      const msgKey = error?.response?.data?.message;
+      const msg = msgKey ? t(msgKey, { defaultValue: msgKey }) : t('common.unexpected_error');
+      window.alert(msg);
+    } finally {
+      setRestoringClientId(null);
+    }
+  }
+
   // ── Derived data ──────────────────────────────────────────────────────────
 
   const admins = members?.admins ?? [];
   const clients = members?.clients ?? [];
   const adminsCount = members?.admins_count ?? admins.length;
-  const clientsCount = members?.clients_count ?? clients.length;
   const franchiseName = franchise?.name ?? members?.franchise_name ?? '';
   const isActive = franchise?.is_active ?? members?.is_active;
 
   const deactivatedAdmins = members?.deactivated_admins ?? [];
+  const deactivatedClients = members?.deactivated_clients ?? [];
+
+  const activeClients = clients.filter((c) => c.invitation_accepted_at);
+  const sbOwners = activeClients.filter((c) => c.role === 'sb_owner');
+  const investors = activeClients.filter((c) => c.role === 'bb_employee');
+  const deactivatedSbOwners = deactivatedClients.filter((c) => c.role === 'sb_owner');
+  const deactivatedInvestors = deactivatedClients.filter((c) => c.role === 'bb_employee');
+  const companies = members?.companies ?? [];
 
   const pendingAdmins = admins
     .filter((a) => !a.invitation_accepted_at)
@@ -511,65 +584,54 @@ export default function FranchiseDetailPage() {
 
             {/* Tabs + Add button */}
             <div className="flex items-center justify-between">
-              <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
-                <button
-                  onClick={() => setActiveTab('admins')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === 'admins'
-                      ? 'bg-white text-slate-800 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700'
-                  }`}
-                >
-                  {t('franchise_detail.tab_admins')}
-                  <span className={`ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-semibold ${
-                    activeTab === 'admins' ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-500'
-                  }`}>
-                    {adminsCount}
-                  </span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('clients')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === 'clients'
-                      ? 'bg-white text-slate-800 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700'
-                  }`}
-                >
-                  {t('franchise_detail.tab_clients')}
-                  <span className={`ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-semibold ${
-                    activeTab === 'clients' ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-500'
-                  }`}>
-                    {clientsCount}
-                  </span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('pending')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === 'pending'
-                      ? 'bg-white text-slate-800 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700'
-                  }`}
-                >
-                  {t('franchise_detail.tab_pending')}
-                  {pendingCount > 0 && (
-                    <span className={`ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-semibold ${
-                      activeTab === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-500'
-                    }`}>
-                      {pendingCount}
-                    </span>
-                  )}
-                </button>
+              <div className="flex gap-1 bg-slate-100 rounded-lg p-1 flex-wrap">
+                {[
+                  { key: 'admins', label: t('franchise_detail.tab_admins'), count: adminsCount },
+                  { key: 'sb_owners', label: t('franchise_detail.tab_sb_owners'), count: sbOwners.length },
+                  { key: 'investors', label: t('franchise_detail.tab_investors'), count: investors.length },
+                  { key: 'companies', label: t('franchise_detail.tab_companies'), count: companies.length },
+                  { key: 'pending', label: t('franchise_detail.tab_pending'), count: pendingCount },
+                ].map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      activeTab === tab.key
+                        ? 'bg-white text-slate-800 shadow-sm'
+                        : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    {tab.label}
+                    {(tab.count > 0 || tab.key !== 'pending') && (
+                      <span className={`ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-semibold ${
+                        activeTab === tab.key
+                          ? tab.key === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
+                          : 'bg-slate-200 text-slate-500'
+                      }`}>
+                        {tab.count}
+                      </span>
+                    )}
+                  </button>
+                ))}
               </div>
 
-              {canAdd && activeTab !== 'pending' && (
+              {canAdd && ['admins', 'sb_owners', 'investors'].includes(activeTab) && (
                 <button
-                  onClick={() => activeTab === 'admins' ? setIsAddAdminOpen(true) : setIsAddClientOpen(true)}
+                  onClick={() => {
+                    if (activeTab === 'admins') setIsAddAdminOpen(true);
+                    else if (activeTab === 'sb_owners') setAddClientRole('sb_owner');
+                    else setAddClientRole('bb_employee');
+                  }}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                   </svg>
-                  {activeTab === 'admins' ? t('franchise_detail.add_admin') : t('franchise_detail.add_client')}
+                  {activeTab === 'admins'
+                    ? t('franchise_detail.add_admin')
+                    : activeTab === 'sb_owners'
+                      ? t('franchise_detail.add_sb_owner')
+                      : t('franchise_detail.add_investor')}
                 </button>
               )}
             </div>
@@ -705,29 +767,201 @@ export default function FranchiseDetailPage() {
                 </>
               )}
 
-              {activeTab === 'clients' && (
+              {activeTab === 'sb_owners' && (
                 <>
-                  {clients.length === 0 ? (
+                  {sbOwners.length === 0 && deactivatedSbOwners.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-16 text-center">
                       <svg className="w-10 h-10 text-slate-300 mb-3" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 0h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" />
                       </svg>
-                      <p className="text-sm text-slate-500">{t('franchise_detail.no_clients')}</p>
+                      <p className="text-sm text-slate-500">{t('franchise_detail.no_sb_owners')}</p>
+                    </div>
+                  ) : (
+                    <>
+                      {sbOwners.length > 0 && (
+                        <ul className="divide-y divide-slate-100 px-5">
+                          {sbOwners.map((client) => (
+                            <li key={client.id} className="flex items-center gap-4 py-3 px-1">
+                              <div className={`w-10 h-10 rounded-full ${getAvatarColor(client.name)} flex items-center justify-center shrink-0`}>
+                                <span className="text-white text-sm font-semibold">{getInitials(client.name)}</span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-slate-800 truncate">{client.name}</p>
+                                <p className="text-xs text-slate-400 truncate">{client.email}</p>
+                              </div>
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset shrink-0 ${ROLE_COLORS.sb_owner}`}>
+                                {t('roles.sb_owner')}
+                              </span>
+                              {client.job_title && (
+                                <span className="hidden sm:block text-xs text-slate-400 shrink-0 max-w-[120px] truncate">{client.job_title}</span>
+                              )}
+                              <div className="shrink-0 text-right">
+                                {client.last_seen_at ? (
+                                  <span className="text-xs text-slate-400">{formatLastSeen(client.last_seen_at)}</span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/20">{t('franchise_detail.pending')}</span>
+                                )}
+                              </div>
+                              {canManage && (
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button onClick={() => setEditingClient(client)} title={t('franchise_detail.edit_client')} className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" /></svg>
+                                  </button>
+                                  <button onClick={() => setPermissionsClient(client)} title={t('franchise_detail.permissions_title')} className="p-1.5 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50 transition-colors">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" /></svg>
+                                  </button>
+                                  <button onClick={() => handleDeactivateClient(client)} disabled={deactivatingClientId === client.id} title={t('franchise_detail.deactivate_client')} className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                                  </button>
+                                </div>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {canManage && deactivatedSbOwners.length > 0 && (
+                        <div className={sbOwners.length > 0 ? 'border-t border-slate-200' : ''}>
+                          <div className="px-5 py-3 bg-slate-50">
+                            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t('franchise_detail.deactivated')} ({deactivatedSbOwners.length})</p>
+                          </div>
+                          <ul className="divide-y divide-slate-100 px-5">
+                            {deactivatedSbOwners.map((client) => (
+                              <li key={client.id} className="flex items-center gap-4 py-3 px-1 opacity-60">
+                                <div className="w-10 h-10 rounded-full bg-slate-300 flex items-center justify-center shrink-0">
+                                  <span className="text-white text-sm font-semibold">{getInitials(client.name)}</span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-slate-500 truncate">{client.name}</p>
+                                  <p className="text-xs text-slate-400 truncate">{client.email}</p>
+                                </div>
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset bg-red-50 text-red-700 ring-red-600/20 shrink-0">{t('franchise_detail.deactivated')}</span>
+                                <button onClick={() => handleRestoreClient(client)} disabled={restoringClientId === client.id} className="px-3 py-1.5 rounded-lg text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0">
+                                  {restoringClientId === client.id ? '...' : t('franchise_detail.activate_client')}
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
+
+              {activeTab === 'investors' && (
+                <>
+                  {investors.length === 0 && deactivatedInvestors.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                      <svg className="w-10 h-10 text-slate-300 mb-3" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 0h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" />
+                      </svg>
+                      <p className="text-sm text-slate-500">{t('franchise_detail.no_investors')}</p>
+                    </div>
+                  ) : (
+                    <>
+                      {investors.length > 0 && (
+                        <ul className="divide-y divide-slate-100 px-5">
+                          {investors.map((client) => (
+                            <li key={client.id} className="flex items-center gap-4 py-3 px-1">
+                              <div className={`w-10 h-10 rounded-full ${getAvatarColor(client.name)} flex items-center justify-center shrink-0`}>
+                                <span className="text-white text-sm font-semibold">{getInitials(client.name)}</span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-slate-800 truncate">{client.name}</p>
+                                <p className="text-xs text-slate-400 truncate">{client.email}</p>
+                              </div>
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset shrink-0 ${ROLE_COLORS.bb_employee}`}>
+                                {t('roles.bb_employee')}
+                              </span>
+                              {client.job_title && (
+                                <span className="hidden sm:block text-xs text-slate-400 shrink-0 max-w-[120px] truncate">{client.job_title}</span>
+                              )}
+                              <div className="shrink-0 text-right">
+                                {client.last_seen_at ? (
+                                  <span className="text-xs text-slate-400">{formatLastSeen(client.last_seen_at)}</span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/20">{t('franchise_detail.pending')}</span>
+                                )}
+                              </div>
+                              {canManage && (
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button onClick={() => setEditingClient(client)} title={t('franchise_detail.edit_client')} className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" /></svg>
+                                  </button>
+                                  <button onClick={() => setPermissionsClient(client)} title={t('franchise_detail.permissions_title')} className="p-1.5 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50 transition-colors">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" /></svg>
+                                  </button>
+                                  <button onClick={() => handleDeactivateClient(client)} disabled={deactivatingClientId === client.id} title={t('franchise_detail.deactivate_client')} className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                                  </button>
+                                </div>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {canManage && deactivatedInvestors.length > 0 && (
+                        <div className={investors.length > 0 ? 'border-t border-slate-200' : ''}>
+                          <div className="px-5 py-3 bg-slate-50">
+                            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t('franchise_detail.deactivated')} ({deactivatedInvestors.length})</p>
+                          </div>
+                          <ul className="divide-y divide-slate-100 px-5">
+                            {deactivatedInvestors.map((client) => (
+                              <li key={client.id} className="flex items-center gap-4 py-3 px-1 opacity-60">
+                                <div className="w-10 h-10 rounded-full bg-slate-300 flex items-center justify-center shrink-0">
+                                  <span className="text-white text-sm font-semibold">{getInitials(client.name)}</span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-slate-500 truncate">{client.name}</p>
+                                  <p className="text-xs text-slate-400 truncate">{client.email}</p>
+                                </div>
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset bg-red-50 text-red-700 ring-red-600/20 shrink-0">{t('franchise_detail.deactivated')}</span>
+                                <button onClick={() => handleRestoreClient(client)} disabled={restoringClientId === client.id} className="px-3 py-1.5 rounded-lg text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0">
+                                  {restoringClientId === client.id ? '...' : t('franchise_detail.activate_client')}
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
+
+              {activeTab === 'companies' && (
+                <>
+                  {companies.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                      <svg className="w-10 h-10 text-slate-300 mb-3" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 0h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" />
+                      </svg>
+                      <p className="text-sm text-slate-500">{t('franchise_detail.no_companies')}</p>
                     </div>
                   ) : (
                     <ul className="divide-y divide-slate-100 px-5">
-                      {clients.map((client) => {
-                        const roleKey = client.role === 'sb_owner' ? 'sb_owner' : 'bb_employee';
-                        return (
-                          <MemberRow
-                            key={client.id}
-                            member={client}
-                            badgeLabel={t(`roles.${roleKey}`)}
-                            badgeColor={`${ROLE_COLORS[roleKey] ?? 'bg-slate-50 text-slate-600 ring-slate-600/20'} ring-1 ring-inset`}
-                            t={t}
-                          />
-                        );
-                      })}
+                      {companies.map((company) => (
+                        <li key={company.id} className="flex items-center gap-4 py-3 px-1">
+                          <div className={`w-10 h-10 rounded-full ${getAvatarColor(company.name)} flex items-center justify-center shrink-0`}>
+                            <span className="text-white text-sm font-semibold">{getInitials(company.name)}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-slate-800 truncate">{company.name}</p>
+                            {company.email && <p className="text-xs text-slate-400 truncate">{company.email}</p>}
+                          </div>
+                          {company.tax_id && (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset bg-slate-50 text-slate-600 ring-slate-600/20 shrink-0">
+                              {company.tax_id}
+                            </span>
+                          )}
+                          {company.industry && (
+                            <span className="hidden sm:block text-xs text-slate-400 shrink-0 max-w-[120px] truncate">{company.industry}</span>
+                          )}
+                          {company.phone && (
+                            <span className="hidden sm:block text-xs text-slate-400 shrink-0">{company.phone}</span>
+                          )}
+                        </li>
+                      ))}
                     </ul>
                   )}
                 </>
@@ -831,10 +1065,11 @@ export default function FranchiseDetailPage() {
           onSave={handleSaveAdmin}
         />
       )}
-      {isAddClientOpen && (
+      {addClientRole && (
         <AddClientModal
-          onClose={() => setIsAddClientOpen(false)}
+          onClose={() => setAddClientRole(null)}
           onSave={handleSaveClient}
+          defaultRole={addClientRole}
         />
       )}
       {isModalOpen && franchise && (
@@ -858,6 +1093,23 @@ export default function FranchiseDetailPage() {
           franchiseId={parseInt(id, 10)}
           onClose={() => setPermissionsAdmin(null)}
           onSave={handleSavePermissions}
+        />
+      )}
+      {editingClient && (
+        <EditClientModal
+          client={editingClient}
+          franchiseId={parseInt(id, 10)}
+          onClose={() => setEditingClient(null)}
+          onSave={handleEditClient}
+        />
+      )}
+      {permissionsClient && (
+        <AdminPermissionsModal
+          admin={permissionsClient}
+          franchiseId={parseInt(id, 10)}
+          memberType="client"
+          onClose={() => setPermissionsClient(null)}
+          onSave={handleSaveClientPermissions}
         />
       )}
     </>
