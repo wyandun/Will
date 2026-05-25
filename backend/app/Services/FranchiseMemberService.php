@@ -31,7 +31,7 @@ class FranchiseMemberService
 
         $clients = User::where('sm_franchise_id', $franchise->id)
             ->role([Role::SB_OWNER, Role::BB_EMPLOYEE])
-            ->with(['roles:name', 'userPermissions:id,user_id,module,can_read,can_write'])
+            ->with(['roles:name', 'company:id,name,tax_id,phone', 'userPermissions:id,user_id,module,can_read,can_write'])
             ->get(['id', 'name', 'email', 'phone', 'job_title', 'company_id', 'avatar_path', 'last_seen_at', 'invitation_accepted_at', 'created_at'])
             ->each(function ($client) {
                 $client->setAttribute('role', $client->getRoleNames()->first());
@@ -42,7 +42,7 @@ class FranchiseMemberService
             ->where('sm_franchise_id', $franchise->id)
             ->whereNotNull('deleted_at')
             ->role([Role::SB_OWNER, Role::BB_EMPLOYEE])
-            ->with('roles:name')
+            ->with(['roles:name', 'company:id,name,tax_id,phone'])
             ->get(['id', 'name', 'email', 'phone', 'job_title', 'company_id', 'avatar_path', 'last_seen_at', 'invitation_accepted_at', 'created_at', 'deleted_at'])
             ->each(function ($client) {
                 $client->setAttribute('role', $client->getRoleNames()->first());

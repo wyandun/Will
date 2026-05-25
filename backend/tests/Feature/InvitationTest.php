@@ -131,6 +131,7 @@ class InvitationTest extends TestCase
             'name' => 'Ana García',
             'email' => 'ana@example.com',
             'role' => Role::SB_OWNER,
+            'company_name' => 'Acme LLC',
         ], $overrides);
     }
 
@@ -637,6 +638,23 @@ class InvitationTest extends TestCase
             $extra = $role === Role::ADMIN_SM
                 ? ['sm_franchise_id' => $franchise->id]
                 : [];
+
+            // bb_employee invitations require a sb_owner_id whose company_id is set,
+            // so we seed a SB Owner+Company in the test franchise for the link.
+            if ($role === Role::BB_EMPLOYEE) {
+                $company = \App\Models\Company::create([
+                    'name' => 'Test LLC for investor invite',
+                    'sm_franchise_id' => $franchise->id,
+                ]);
+                $owner = \App\Models\User::factory()->create([
+                    'sm_franchise_id' => $franchise->id,
+                    'company_id' => $company->id,
+                    'invitation_accepted_at' => now(),
+                ]);
+                \Spatie\Permission\Models\Role::firstOrCreate(['name' => Role::SB_OWNER, 'guard_name' => 'web']);
+                $owner->assignRole(Role::SB_OWNER);
+                $extra = ['sm_franchise_id' => $franchise->id, 'sb_owner_id' => $owner->id];
+            }
 
             $response = $this->actingAs($superadmin)
                 ->postJson('/api/v1/invitations', $this->validInvitePayload(array_merge([
@@ -1240,6 +1258,7 @@ class InvitationTest extends TestCase
                 'name' => 'Nuevo Usuario',
                 'email' => 'nuevo@test.com',
                 'role' => Role::SB_OWNER,
+                'company_name' => 'Nuevo LLC',
             ]);
 
         $sendResp->assertStatus(201);
@@ -1500,6 +1519,7 @@ class InvitationTest extends TestCase
                 'email' => 'duplicate@test.com',
                 'role' => Role::SB_OWNER,
                 'sm_franchise_id' => $franchiseB->id,
+                'company_name' => 'Dup LLC',
             ]);
 
         // Email is globally unique — must be rejected regardless of franchise

@@ -21,6 +21,7 @@ class FranchiseClientResource extends JsonResource
             'phone' => $this->phone,
             'job_title' => $this->job_title,
             'company_id' => $this->company_id,
+            'company' => new CompanyResource($this->whenLoaded('company')),
             'avatar_url' => $this->avatar_url,
             'role' => $this->getRoleNames()->first(),
             'sm_franchise_id' => $this->sm_franchise_id,

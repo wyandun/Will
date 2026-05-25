@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\InvitationController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\SystemAdminController;
+use App\Http\Controllers\Api\UserSearchController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/ping', fn () => response()->json(['status' => 'ok']));
@@ -103,6 +104,9 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::apiResource('system-admins', SystemAdminController::class)->only(['index', 'store', 'update', 'destroy']);
 
     Route::apiResource('events', EventController::class)->middleware('module.permission:calendar');
+
+    // Lightweight user search for "Add Guests" in calendar events.
+    Route::get('users/search', UserSearchController::class);
 
     // Invitations — protected management endpoints
     Route::get('invitations', [InvitationController::class, 'index']);

@@ -1070,6 +1070,7 @@ export default function FranchiseDetailPage() {
           onClose={() => setAddClientRole(null)}
           onSave={handleSaveClient}
           defaultRole={addClientRole}
+          sbOwners={sbOwners}
         />
       )}
       {isModalOpen && franchise && (

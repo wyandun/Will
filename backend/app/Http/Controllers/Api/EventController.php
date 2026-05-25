@@ -51,7 +51,7 @@ class EventController extends Controller
     {
         $this->authorize('view', $event);
 
-        $event->load('creator');
+        $event->load(['creator', 'attendees']);
 
         return response()->json([
             'success' => true,
