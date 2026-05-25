@@ -40,7 +40,7 @@ class InvitationService
      *  3. Email has a pending invitation        → validation error (already pending).
      *  4. Email is brand new                    → create user, assign role, notify.
      *
-     * @param  array{name: string, email: string, role: string, sm_franchise_id?: int|null}  $data
+     * @param  array{name: string, email: string, role: string, sm_franchise_id?: int|null, job_title?: string|null, company_name?: string|null, company_tax_id?: string|null, company_phone?: string|null, sb_owner_id?: int|null}  $data
      * @return array{user: User, activation_url: string|null}
      *
      * @throws ValidationException

@@ -42,7 +42,7 @@ class EventResource extends JsonResource
                 'name' => $u->name,
                 'email' => $u->email,
                 'avatar_url' => $u->avatar_url,
-                'rsvp_status' => $u->pivot->rsvp_status,
+                'rsvp_status' => $u->getAttribute('pivot')?->rsvp_status,
             ])),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
