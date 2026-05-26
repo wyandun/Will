@@ -4,6 +4,7 @@ namespace App\Http\Requests\CatalogItem;
 
 use App\Enums\CatalogLevel;
 use App\Enums\CatalogServiceType;
+use App\Models\CatalogItem;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -73,7 +74,16 @@ abstract class CatalogItemRequest extends FormRequest
             return;
         }
 
-        $levelEnum = CatalogLevel::tryFrom((string) $this->input('level'));
+        // On update ($strict=false), if level is absent resolve it from the
+        // existing model so that PATCH {parent_id: null} on a deliverable is
+        // still caught even when level is omitted from the payload.
+        if (! $hasLevel && ! $strict) {
+            $existing = $this->route('catalogItem');
+            $levelEnum = $existing instanceof CatalogItem ? $existing->level : null;
+        } else {
+            $levelEnum = CatalogLevel::tryFrom((string) $this->input('level'));
+        }
+
         $parentId = $this->input('parent_id');
 
         if ($levelEnum === CatalogLevel::Bundle && $parentId !== null) {
