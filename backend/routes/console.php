@@ -10,7 +10,7 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Artisan::command('news:fetch', function () {
-    FetchNewsJob::dispatch();
+    FetchNewsJob::dispatch()->onQueue('news');
     $this->info('FetchNewsJob dispatched to queue.');
 })->purpose('Dispatch the news fetch + AI summarization job');
 
