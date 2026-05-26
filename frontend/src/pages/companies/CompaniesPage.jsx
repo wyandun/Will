@@ -196,6 +196,7 @@ export default function CompaniesPage() {
         {/* Table */}
         {!isLoading && !fetchError && companies.length > 0 && (
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200">
               <thead>
                 <tr className="bg-slate-50">
@@ -264,6 +265,7 @@ export default function CompaniesPage() {
                 ))}
               </tbody>
             </table>
+            </div>
 
             {/* Row count footer */}
             <div className="px-5 py-3 border-t border-slate-100 bg-slate-50">

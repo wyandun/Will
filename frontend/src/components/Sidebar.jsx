@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/authStore';
@@ -43,7 +44,7 @@ function buildNavItems(role, permissions) {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export default function Sidebar() {
+export default function Sidebar({ open, onClose }) {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
@@ -77,7 +78,7 @@ export default function Sidebar() {
   const roleLabel = t(`roles.${role}`, { defaultValue: role });
 
   return (
-    <aside className="fixed top-14 left-0 bottom-0 w-64 bg-slate-800 flex flex-col z-20">
+    <aside className={`fixed top-14 left-0 bottom-0 w-64 bg-slate-800 flex flex-col z-50 transition-transform duration-200 ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
         {navItems.map((item) => (
@@ -86,6 +87,7 @@ export default function Sidebar() {
             to={item.path}
             end={item.path === '/'}
             className={linkClass}
+            onClick={() => onClose?.()}
           >
             {item.icon}
             {t(item.labelKey)}
@@ -100,6 +102,7 @@ export default function Sidebar() {
           to="/profile"
           title={t('nav.profile')}
           className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shrink-0 hover:bg-blue-500 transition-colors overflow-hidden"
+          onClick={() => onClose?.()}
         >
           {user?.avatar_url ? (
             <img src={user.avatar_url} alt={user.name} className="w-full h-full object-cover" />
@@ -132,3 +135,8 @@ export default function Sidebar() {
     </aside>
   );
 }
+
+Sidebar.propTypes = {
+  open: PropTypes.bool,
+  onClose: PropTypes.func,
+};
