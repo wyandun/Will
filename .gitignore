@@ -51,9 +51,7 @@ docs/Linear/
 docs/Home_Issues_Analysis.md
 docs/guia_base_de_datos_2026-04-18.md
 
-# MCP server (local-only tooling, not part of the project)
+# MCP servers (local-only tooling, not part of the project)
 mcp-servers/
-# Pero necesito TODOS los archivos para desarrollo local
-!mcp-servers/
-# Excepto node_modules que nunca deben subirse
-mcp-servers/**/node_modules/
+LARAVEL_BOOST_MCP.md
+.mcp.json

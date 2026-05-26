@@ -21,6 +21,8 @@ class EventController extends Controller
         $this->authorize('viewAny', Event::class);
 
         $validated = $request->validated();
+        // Default matches ListEventsRequest (min:5, max:200). Clamping is enforced
+        // at the Request layer; EventService trusts its callers.
         $perPage = (int) ($validated['per_page'] ?? 10);
 
         $events = $this->eventService->list(
@@ -49,7 +51,7 @@ class EventController extends Controller
     {
         $this->authorize('view', $event);
 
-        $event->load('creator');
+        $event->load(['creator', 'attendees']);
 
         return response()->json([
             'success' => true,

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Models\Company;
 use App\Models\Franchise;
 use App\Models\User;
 use App\Notifications\UserInvitationNotification;
@@ -131,6 +132,7 @@ class InvitationTest extends TestCase
             'name' => 'Ana García',
             'email' => 'ana@example.com',
             'role' => Role::SB_OWNER,
+            'company_name' => 'Acme LLC',
         ], $overrides);
     }
 
@@ -260,13 +262,13 @@ class InvitationTest extends TestCase
         $response->assertStatus(403);
     }
 
-    public function test_system_admin_is_forbidden_from_invitation_index(): void
+    public function test_system_admin_can_access_invitation_index(): void
     {
         $admin = $this->createSystemAdmin();
 
         $response = $this->actingAs($admin)->getJson('/api/v1/invitations');
 
-        $response->assertStatus(403);
+        $response->assertStatus(200);
     }
 
     public function test_index_returns_403_if_user_has_null_franchise(): void
@@ -638,6 +640,23 @@ class InvitationTest extends TestCase
                 ? ['sm_franchise_id' => $franchise->id]
                 : [];
 
+            // bb_employee invitations require a sb_owner_id whose company_id is set,
+            // so we seed a SB Owner+Company in the test franchise for the link.
+            if ($role === Role::BB_EMPLOYEE) {
+                $company = Company::create([
+                    'name' => 'Test LLC for investor invite',
+                    'sm_franchise_id' => $franchise->id,
+                ]);
+                $owner = User::factory()->create([
+                    'sm_franchise_id' => $franchise->id,
+                    'company_id' => $company->id,
+                    'invitation_accepted_at' => now(),
+                ]);
+                SpatieRole::firstOrCreate(['name' => Role::SB_OWNER, 'guard_name' => 'web']);
+                $owner->assignRole(Role::SB_OWNER);
+                $extra = ['sm_franchise_id' => $franchise->id, 'sb_owner_id' => $owner->id];
+            }
+
             $response = $this->actingAs($superadmin)
                 ->postJson('/api/v1/invitations', $this->validInvitePayload(array_merge([
                     'email' => "role_test_{$i}@test.com",
@@ -660,14 +679,15 @@ class InvitationTest extends TestCase
         $response->assertStatus(403);
     }
 
-    public function test_system_admin_cannot_send_invitations(): void
+    public function test_system_admin_can_send_invitations(): void
     {
+        Notification::fake();
         $admin = $this->createSystemAdmin();
 
         $response = $this->actingAs($admin)
             ->postJson('/api/v1/invitations', $this->validInvitePayload());
 
-        $response->assertStatus(403);
+        $response->assertStatus(201);
     }
 
     // ===========================================================================
@@ -1239,6 +1259,7 @@ class InvitationTest extends TestCase
                 'name' => 'Nuevo Usuario',
                 'email' => 'nuevo@test.com',
                 'role' => Role::SB_OWNER,
+                'company_name' => 'Nuevo LLC',
             ]);
 
         $sendResp->assertStatus(201);
@@ -1499,6 +1520,7 @@ class InvitationTest extends TestCase
                 'email' => 'duplicate@test.com',
                 'role' => Role::SB_OWNER,
                 'sm_franchise_id' => $franchiseB->id,
+                'company_name' => 'Dup LLC',
             ]);
 
         // Email is globally unique — must be rejected regardless of franchise

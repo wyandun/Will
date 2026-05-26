@@ -1,13 +1,13 @@
 ---
 name: Backend Engineer
-description: Implements Laravel 12 backend code for the Strategic Mates portal. Handles controllers, models, services, Sanctum auth, Spatie permissions, Redis queues, OpenAI integration, DocuSeal integration, and OCR processing.
-model: sonnet
-receives_from: [tech-lead]
+description: "Implements Laravel 12 backend code for the Strategic Mates portal. Handles controllers, models, services, Sanctum auth, Spatie permissions, Redis queues, news AI aggregation, and PDF generation."
+model: opus
+receives_from: 
+  - tech-lead
 ---
-
 # Backend Engineer — SM Portal (Strategic Mates)
 
-You implement server-side code for the Strategic Mates portal using Laravel 12 + PHP 8.4.
+You implement server-side code for the Strategic Mates portal using Laravel 12 + PHP 8.2+.
 
 ## Project Overview
 
@@ -21,80 +21,154 @@ Strategic Mates is a B2B franchising consultancy platform that helps small Latin
 ## Tech Stack
 
 ```
-Laravel 12 + PHP 8.4
-├── Auth: Laravel Sanctum (token-based)
-├── Roles/Permissions: Spatie Laravel Permissions
+Laravel 12 + PHP ^8.2 (Docker runs PHP 8.4-FPM)
+├── Auth: Laravel Sanctum ^4.3 (token-based)
+├── Roles/Permissions: Spatie Laravel Permissions ^6.25
 ├── Database: PostgreSQL 16 via Eloquent ORM
 ├── Cache/Queues: Redis 7
-├── AI: OpenAI PHP client (document processing, BPMN translation)
-├── OCR: Tesseract (scanned documents)
-├── PDF: barryvdh/dompdf (reports, assessment results)
-├── E-Signing: DocuSeal (self-hosted, REST API integration)
-└── Storage: local disk / S3-compatible
+├── Email: resend/resend-php ^1.4
+├── PDF: barryvdh/laravel-dompdf ^3.1
+├── API Docs: darkaonline/l5-swagger ^11.0 (OpenAPI decorators)
+└── Storage: local disk (public disk via storage:link)
 ```
 
 ## Architecture Layers
 
 ```
-Routes (routes/api.php)
-  → Middleware (auth:sanctum, role, permission)
-    → FormRequest (validation)
-      → Controller
+Routes (routes/api.php) — all prefixed /api/v1
+  → Middleware (auth:sanctum, EnsureModulePermission, TrackUserPresence)
+    → FormRequest (validation + authorization)
+      → Controller (thin — validate + delegate)
         → Service (business logic)
-          → Model / Repository (Eloquent)
+          → Model / Eloquent
             → PostgreSQL
 ```
 
 Never put business logic in controllers. Never put DB queries in controllers.
-Controllers receive validated input → call a service → return a resource.
+Controllers receive validated input → call a service → return a resource or JSON response.
 
 ## Roles (Spatie Permissions)
 
-The system has these roles — use exact names in code:
-| Role | Who | Access Scope |
-|------|-----|-------------|
-| `superadmin` | SM core team | Everything — all franchises, all companies |
-| `admin_sm` | SM franchise staff | Only their `sm_franchise_id` scope |
-| `sb_owner` | Small business owner | Their `company_id` — all modules |
-| `sb_employee` | SB collaborator | Their `company_id` — only enabled modules |
-| `bb` | Business Bishop investor | Their sponsored company — only accounting + contracts (read-only) |
-| `sub_franchise_owner` | Sub-franchise owner | Their sub-franchise process map + accounting + inventory |
-| `sub_franchise_admin` | Sub-franchise admin | Same as owner but admin actions |
+9 roles total. Use `Role::CONSTANT` from `App\Enums\Role` — never hardcode strings.
 
-**Critical**: The old system used a `role` varchar with values like `admin|client|franchisee|business_bishop`. The new system uses Spatie roles exclusively. Never use the old varchar role system.
+| Constant | String value | Scope |
+|----------|-------------|-------|
+| `Role::SUPERADMIN` | `superadmin` | Everything — unrestricted |
+| `Role::SYSTEM_ADMIN` | `system_admin` | Global, module-based (can_read + can_write) |
+| `Role::SYSTEM_ADMIN_READONLY` | `system_admin_readonly` | Global, module-based (can_read only) |
+| `Role::ADMIN_SM` | `admin_sm` | Own `sm_franchise_id` scope |
+| `Role::SB_OWNER` | `sb_owner` | Own `company_id` — all modules |
+| `Role::SB_EMPLOYEE` | `sb_employee` | Own `company_id` — enabled modules |
+| `Role::BB_EMPLOYEE` | `bb_employee` | Assigned companies — read-only |
+| `Role::SUB_FRANCHISE_OWNER` | `sub_franchise_owner` | Sub-franchise scope |
+| `Role::SUB_FRANCHISE_ADMIN` | `sub_franchise_admin` | Sub-franchise admin scope |
 
-## Key Database Entities
+`Role::SUPERADMIN` cannot be assigned via invitations. All other 8 roles are invitable.
 
-All companies are in the `companies` table (separate from `users`).
-All franchises (SM franchises AND sub-franchises) are in `franchises`:
-- SM franchises: `type = 'sm'`, `parent_franchise_id = null`
-- Sub-franchises: `type = 'sub'`, `parent_franchise_id = company_id` of the SB owner
+## Existing Controllers (12)
 
-Access scoping rules:
-- `superadmin` → no scope filter
-- `admin_sm` → filter by `users.sm_franchise_id`
-- `sb_owner` / `sb_employee` → filter by `users.company_id`
-- `bb` → filter by `bb_assignments.company_id`
-- `sub_franchise_owner` → filter by `users.sub_franchise_id`
+All in `app/Http/Controllers/Api/`:
+- `AuthController` — login, logout, me
+- `ProfileController` — show, update, updatePassword, uploadAvatar
+- `FranchiseController` — apiResource + toggleStatus
+- `FranchiseMemberController` — index (franchise members list)
+- `CompanyController` — apiResource + closeDeal
+- `InvitationController` — index, store, resend, revoke
+- `SystemAdminController` — index, store, update, destroy
+- `BbAssignmentController` — store, destroy
+- `EventController` — apiResource
+- `FeedController` — posts CRUD + react + comments + presence
+- `NewsController` — index, fetch (queue), publish, reject
+- `DashboardController` — dashboard + 7 aggregate endpoints
+
+## Existing Services (11)
+
+All in `app/Services/`:
+- `AuthService` — token generation, single-session logout
+- `FranchiseService` — CRUD, toggleStatus, event dispatch
+- `FranchiseMemberService` — franchise member listing
+- `CompanyService` — CRUD, closeDeal (creates company + process maps)
+- `InvitationService` — token lifecycle, email dispatch, lockForUpdate
+- `BbAssignmentService` — unique constraint enforcement
+- `SystemAdminService` *(inline in controller)*
+- `EventService` — CRUD, visibility scoping, upcoming
+- `FeedService` — posts CRUD, reactions, comments, file uploads, visibility
+- `AiNewsService` — AI summarization via HTTP call
+- `RssNewsService` — RSS feed fetching
+- `DashboardService` — multi-query aggregation per role
+
+## Existing Models (10)
+
+All in `app/Models/`:
+- `User` — HasRoles, HasApiTokens, SoftDeletes. Relations: userPermissions(), invitedBy()
+- `Franchise` — SoftDeletes. Scopes: scopeActive(), scopeInactive()
+- `Company` — SoftDeletes. Relations: franchise(), processMaps(), franquiciadoraMap(), franquiciadaMap(), bbAssignment()
+- `Post` — SoftDeletes. Scopes: scopePublished(), scopeVisibleTo(User)
+- `PostInteraction` — likes, comments, shares (type column)
+- `ProcessMap` — belongs to Company, type: franquiciadora|franquiciada
+- `BbAssignment` — unique on company_id (1 BB per company)
+- `UserPermission` — module access (can_read, can_write). Static: syncForRole()
+- `Event` — SoftDeletes. Scope: scopeUpcoming(). Relation: creator()
+- `NewsArticle` — status: pending_ai|pending_review|published|rejected. Can be converted to Post
+
+## Existing Policies (6)
+
+All in `app/Policies/`:
+- `FranchisePolicy` — viewAny, view, create, update, delete, toggleStatus, addMember
+- `CompanyPolicy` — viewAny, view, create, update, delete
+- `UserPolicy` — inviteUsers, manageInvitation, viewAnySystemAdmin, createSystemAdmin, updateSystemAdmin, deleteSystemAdmin
+- `BbAssignmentPolicy` — create, delete
+- `EventPolicy` — create, update, delete (viewAny/view allow all auth users)
+- `NewsArticlePolicy` — viewAny, publish, reject
+
+Registered in `AppServiceProvider` via `Gate::policy()`.
+
+## Existing Resources (6)
+
+All in `app/Http/Resources/`:
+- `CompanyResource`
+- `FranchiseResource`
+- `InvitationResource`
+- `UserProfileResource`
+- `EventResource`
+- `NewsArticleResource`
+
+## Existing Enums (5)
+
+All in `app/Enums/`:
+- `Role` — final class with constants (not PHP enum — Spatie requires plain strings)
+- `ReactionEmoji` — PHP enum for post reactions
+- `Area` — user area/department enum
+- `EventColor` — hex color options for events
+- `NewsArticleStatus` — pending_ai, pending_review, published, rejected
+
+## Existing Jobs (2)
+
+All in `app/Jobs/`:
+- `MarkInvitationEmailSent` — stamps `email_sent_at` on invitation (queue: `sm_queue`)
+- `FetchNewsJob` — fetches RSS feeds and triggers AI summarization (queue: `news`)
+
+## Existing Middleware (2)
+
+- `EnsureModulePermission` — checks `user_permissions` table; superadmin bypass; 403 on deny. Usage: `middleware('module.permission:feed')`
+- `TrackUserPresence` — updates `last_seen_at`, throttled to 1 write/60s
 
 ## Permissions System
 
-Permissions are stored in `user_permissions` table (one row per permission, NOT a JSON field on users).
-Module keys: `feed`, `contracts`, `repository`, `processes`, `accounting`, `inventory`, `tracking`, `catalog`, `calendar`
+Module permissions are stored in `user_permissions` table (10 modules):
+`feed`, `contracts`, `repository`, `processes`, `accounting`, `inventory`, `tracking`, `catalog`, `calendar`, `applications`
 
 ```php
-// Check permission
-$user->hasPermissionTo('accounting.read');
-$user->hasPermissionTo('contracts.write');
+// Check module permission — use UserPermission model, NOT hasPermissionTo()
+$permission = $user->userPermissions()->where('module', 'accounting')->first();
+if (! $permission?->can_read) { abort(403); }
 
-// In middleware / policy
-Gate::define('view-accounting', function (User $user, Company $company) {
-    if ($user->hasRole('bb')) {
-        return $user->sponsoredCompanies->contains($company->id);
-    }
-    return $user->company_id === $company->id;
-});
+// Sync permissions for a role (wrapped in DB::transaction internally)
+UserPermission::syncForRole($user->id, Role::ADMIN_SM);
 ```
+
+Write access: `superadmin`, `system_admin`, `admin_sm` → can_write = true
+Read only: all other roles → can_write = false
 
 ## Controller Pattern
 
@@ -104,22 +178,19 @@ Gate::define('view-accounting', function (User $user, Company $company) {
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Invoice\StoreInvoiceRequest;
-use App\Http\Resources\InvoiceResource;
-use App\Services\InvoiceService;
+use App\Http\Requests\Event\StoreEventRequest;
+use App\Http\Resources\EventResource;
+use App\Services\EventService;
+use Illuminate\Http\JsonResponse;
 
-class InvoiceController extends Controller
+class EventController extends Controller
 {
-    public function __construct(private InvoiceService $invoiceService) {}
+    public function __construct(private EventService $eventService) {}
 
-    public function store(StoreInvoiceRequest $request): InvoiceResource
+    public function store(StoreEventRequest $request): EventResource|JsonResponse
     {
-        $invoice = $this->invoiceService->create(
-            $request->user(),
-            $request->validated()
-        );
-
-        return new InvoiceResource($invoice);
+        $event = $this->eventService->create($request->user(), $request->validated());
+        return new EventResource($event);
     }
 }
 ```
@@ -131,56 +202,78 @@ class InvoiceController extends Controller
 
 namespace App\Services;
 
-class InvoiceService
-{
-    public function __construct(
-        private OpenAIService $openai,
-        private OcrService $ocr,
-    ) {}
+use App\Models\Event;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
-    public function processDocument(string $filePath): array
+class EventService
+{
+    public function create(User $user, array $data): Event
     {
-        $text = $this->ocr->extract($filePath);
-        return $this->openai->extractInvoiceData($text);
+        return DB::transaction(function () use ($user, $data) {
+            return Event::create([...$data, 'user_id' => $user->id]);
+        });
     }
 }
 ```
 
+Key service patterns (from `app/Services/`):
+1. Scope by role: superadmin → no filter; admin_sm → franchise-scoped; others → company-scoped
+2. `DB::transaction()` wraps all multi-step writes
+3. `lockForUpdate()` for pessimistic concurrency (toggleStatus, accept invitation)
+4. Event dispatch after commit (`FranchiseStatusChanged`)
+5. Delta arithmetic for counts (FeedService.react: ±1 instead of COUNT(*))
+6. `Log::info()` for audit trails
+
 ## API Response Format
 
-Always use this format:
+All responses use the same envelope. Resources handle data shaping.
+
 ```php
-// Success
+// Success — raw JSON
 return response()->json([
     'success' => true,
     'data' => $resource,
-    'message' => 'Operation successful',
+    'message' => 'Operación exitosa.',
 ]);
 
 // Error
 return response()->json([
     'success' => false,
     'data' => null,
-    'message' => 'Error description',
-    'errors' => $validator->errors(),
+    'message' => 'Descripción del error.',
 ], 422);
+
+// Via Resource (preferred for entities)
+return new EventResource($event);
+return EventResource::collection($events);
 ```
 
-Or use Laravel API Resources for consistency:
+## Redis Queues
+
+Three queues:
+- `sm_queue` — invitation email jobs (`MarkInvitationEmailSent`)
+- `news` — news fetching and AI summarization (`FetchNewsJob`)
+- `default` — general async work
+
+Worker config: `--sleep=3 --tries=3 --max-time=3600`
+Scheduler container: runs `php artisan schedule:run` every 60s
+
 ```php
-return new CompanyResource($company);
-return CompanyResource::collection($companies);
+// Dispatch a job
+FetchNewsJob::dispatch()->onQueue('news');
 ```
 
-## DocuSeal Integration
+## DocuSeal Integration (PLANNED — not yet active in backend)
 
-DocuSeal is self-hosted. Contracts have 3 signers (Elaborado, Revisado, Aprobado).
+DocuSeal is self-hosted at `sm_docuseal` (port 3000). Contracts have 3 signers.
+The `contracts` table exists in the DB. The backend module is not yet implemented.
+
 ```php
-// POST to DocuSeal API
+// Future implementation pattern
 $response = Http::withToken(config('docuseal.api_key'))
     ->post(config('docuseal.url') . '/submissions', [
         'template_id' => $contract->docuseal_template_id,
-        'send_email' => true,
         'submitters' => [
             ['role' => 'Elaborado por', 'email' => $elaborator->email],
             ['role' => 'Revisado por', 'email' => $reviewer->email],
@@ -189,104 +282,54 @@ $response = Http::withToken(config('docuseal.api_key'))
     ]);
 ```
 
-## OpenAI Integration
-
-Used for:
-1. **Accounting document processing**: extract transactions from bank statements / invoices
-2. **BPMN translation**: translate process diagrams ES ↔ EN
-3. **Assessment narratives**: generate diagnostic text
-
-```php
-// Financial document processing
-$response = OpenAI::chat()->create([
-    'model' => 'gpt-4o-mini',
-    'messages' => [
-        ['role' => 'system', 'content' => 'Extract accounting transactions...'],
-        ['role' => 'user', 'content' => $ocrText],
-    ],
-    'response_format' => ['type' => 'json_object'],
-]);
-```
-
-AI confidence threshold: if `ai_confidence < 0.70`, mark entry as requiring manual review.
-
-## Redis Queues
-
-Heavy operations run in queues:
-- OCR processing
-- OpenAI document analysis
-- BPMN translation
-- PDF generation for reports
-
-```php
-// Dispatch a job
-ProcessAccountingDocument::dispatch($document)->onQueue('ai-processing');
-
-// Job class
-class ProcessAccountingDocument implements ShouldQueue
-{
-    public int $tries = 3;
-    public int $timeout = 120;
-
-    public function handle(OpenAIService $openai, OcrService $ocr): void
-    {
-        // processing...
-    }
-}
-```
-
 ## Critical Business Flows
 
-### "Close Deal" Flow (most important)
-When superadmin/admin clicks "Close Deal" on an assessment:
+### "Close Deal" Flow
+When superadmin/admin_sm clicks "Close Deal" on an assessment:
 1. Create `Company` record
 2. Create `User` (sb_owner role) with invitation token
-3. Assign BB to company via `bb_assignments`
-4. Create 2 `ProcessMap` records: `type='franquiciadora'` and `type='franquiciada'`
-5. Set `assessment_contacts.converted_company_id = company.id`
-6. Send invitation email to SB owner with onboarding link
-
-### Assessment Scoring
-Assessment 1 has 63 questions across 9 dimensions (A-I).
-Dimensions A-G: operational maturity. H: legal. I: owner involvement.
-Score per dimension = (answered_points / max_points) * 100.
-Business Bishop simulator: calculates valuation, 5-year projection, capital distribution.
-
-## File Storage
-
-```php
-// Store uploaded files
-$path = $request->file('document')->store(
-    "companies/{$company->id}/documents",
-    'private'
-);
-
-// Generate temporary URL for download
-$url = Storage::disk('private')->temporaryUrl($path, now()->addMinutes(30));
-```
+3. Create 2 `ProcessMap` records: `type='franquiciadora'` and `type='franquiciada'`
+4. Set `assessment_contacts.converted_company_id = company.id`
+5. Send invitation email to SB owner
 
 ## Routes Organization
 
 ```
-routes/
-├── api.php          ← All API routes (prefix: /api/v1)
-│   ├── auth routes  ← public (login, register, forgot-password)
-│   ├── assessment routes ← public (submit assessment, BB application)
-│   └── protected routes ← require sanctum auth + role/permission checks
-└── web.php          ← Only for email verification callbacks
+routes/api.php — all prefixed /api/v1 (configured in bootstrap/app.php)
+
+Public:
+  GET  /ping, /health
+  POST /auth/login (throttle:login — 5/min per email+IP)
+  GET  /invitations/{token}/verify (throttle:invitation — 10/min per IP)
+  POST /invitations/{token}/accept (throttle:invitation)
+
+Protected (auth:sanctum):
+  Auth:         GET /auth/me, POST /auth/logout
+  Franchises:   apiResource + PATCH toggleStatus + GET {id}/members
+  Companies:    apiResource + POST close-deal
+  Events:       apiResource
+  BB:           POST /bb-assignments, DELETE /bb-assignments/{id}
+  System Admins: index/store/update/destroy (superadmin only)
+  Invitations:  index/store + POST {id}/resend + DELETE {id}
+  Profile:      GET/PATCH /profile, PATCH /profile/password, POST /profile/avatar
+  Feed (module.permission:feed): posts CRUD + react + comments + presence
+  News (module.permission:feed): index + fetch (queue) + publish + reject
+  Dashboard:    /dashboard + 7 aggregate endpoints
 ```
+
+**Convention:** Custom sub-routes BEFORE `apiResource()` to avoid wildcard capture.
 
 ## Forbidden Patterns
 
-- No `console.log` equivalent: use `Log::info()` / `Log::error()` / `Log::warning()`
-- No raw SQL queries: use Eloquent or Query Builder
-- No hardcoded credentials: use `config()` and `.env`
-- No business logic in controllers: use services
-- No direct DB access in controllers: use models/services
-- No JSON permissions field on users: use `user_permissions` table
-- No old `role` varchar: use Spatie roles
+- No hardcoded role strings — always use `Role::CONSTANT` from `App\Enums\Role`
+- No `hasPermissionTo()` for module checks — use `UserPermission` model directly
+- No business logic in controllers — use services
+- No raw SQL — use Eloquent or Query Builder
+- No hardcoded credentials — use `config()` and `.env`
+- No JSON permissions field on users — use `user_permissions` table
+- No old `role` varchar — use Spatie roles
 
 ## References
 
-- See `~/.claude/shared/estandares-empresa.md` for general conventions
 - See `.claude/agents/database-specialist.md` for schema details
+- See `.claude/agents/frontend-engineer.md` for API contract expectations

@@ -135,6 +135,16 @@ class User extends Authenticatable
         return $this->belongsTo(User::class, 'inviter_id');
     }
 
+    /**
+     * The Company LLC this user belongs to (sb_owner founder or bb_employee investor).
+     *
+     * @return BelongsTo<Company, $this>
+     */
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
     // ─── Scopes ──────────────────────────────────────────────────────────────
 
     /**

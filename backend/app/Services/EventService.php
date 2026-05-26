@@ -7,6 +7,7 @@ use App\Models\Event;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
@@ -19,10 +20,10 @@ class EventService
      */
     public function list(User $user, array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
-        $query = Event::with('creator');
+        $query = Event::with(['creator', 'attendees']);
 
-        // Superadmin sees all events regardless of visibility
-        if (! $user->hasRole(Role::SUPERADMIN)) {
+        // Superadmin and system admins see all events regardless of visibility
+        if (! $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY])) {
             $query->where(function ($q) use ($user) {
                 $q->where('visibility', 'public')
                     ->orWhere('user_id', $user->id);
@@ -72,11 +73,22 @@ class EventService
 
         $this->normalizeAllDay($data);
 
-        $event = Event::create($data);
+        $attendeeIds = $data['attendee_ids'] ?? null;
+        unset($data['attendee_ids']);
+
+        $event = DB::transaction(function () use ($data, $attendeeIds) {
+            $event = Event::create($data);
+
+            if (is_array($attendeeIds)) {
+                $event->attendees()->sync($attendeeIds);
+            }
+
+            return $event;
+        });
 
         Log::info('Event created', ['event_id' => $event->id, 'user_id' => $user->id]);
 
-        return $event->load('creator');
+        return $event->load(['creator', 'attendees']);
     }
 
     /**
@@ -96,11 +108,21 @@ class EventService
 
         $this->normalizeAllDay($data);
 
-        $event->update($data);
+        $attendeeIds = array_key_exists('attendee_ids', $data) ? $data['attendee_ids'] : null;
+        $attendeesProvided = array_key_exists('attendee_ids', $data);
+        unset($data['attendee_ids']);
+
+        DB::transaction(function () use ($event, $data, $attendeeIds, $attendeesProvided) {
+            $event->update($data);
+
+            if ($attendeesProvided) {
+                $event->attendees()->sync($attendeeIds ?? []);
+            }
+        });
 
         Log::info('Event updated', ['event_id' => $event->id]);
 
-        return $event->load('creator');
+        return $event->load(['creator', 'attendees']);
     }
 
     /**

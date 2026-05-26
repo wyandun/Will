@@ -7,6 +7,7 @@ use App\Enums\Role;
 use App\Models\Event;
 use App\Models\Franchise;
 use App\Models\User;
+use App\Models\UserPermission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role as SpatieRole;
 use Tests\TestCase;
@@ -25,13 +26,20 @@ class EventTest extends TestCase
 
         $user = User::factory()->create();
         $user->assignRole(Role::SUPERADMIN);
+        UserPermission::syncForRole($user->id, Role::SUPERADMIN);
 
         return $user;
     }
 
     private function createUser(array $attrs = []): User
     {
-        return User::factory()->create($attrs);
+        SpatieRole::firstOrCreate(['name' => Role::SB_OWNER, 'guard_name' => 'web']);
+
+        $user = User::factory()->create($attrs);
+        $user->assignRole(Role::SB_OWNER);
+        UserPermission::syncForRole($user->id, Role::SB_OWNER);
+
+        return $user;
     }
 
     private function createAdminSm(?int $franchiseId = null): User
@@ -41,6 +49,7 @@ class EventTest extends TestCase
         $franchise = $franchiseId ? Franchise::find($franchiseId) : Franchise::factory()->create();
         $user = User::factory()->create(['sm_franchise_id' => $franchise->id]);
         $user->assignRole(Role::ADMIN_SM);
+        UserPermission::syncForRole($user->id, Role::ADMIN_SM);
 
         return $user;
     }
@@ -423,7 +432,7 @@ class EventTest extends TestCase
 
     public function test_event_requires_title(): void
     {
-        $user = $this->createUser();
+        $user = $this->createAdminSm();
 
         $response = $this->actingAs($user)->postJson(
             '/api/v1/events',
@@ -436,7 +445,7 @@ class EventTest extends TestCase
 
     public function test_event_date_validation_end_before_start(): void
     {
-        $user = $this->createUser();
+        $user = $this->createAdminSm();
 
         $response = $this->actingAs($user)->postJson('/api/v1/events', $this->validEventData([
             'start_at' => '2026-06-01 10:00:00',
@@ -449,7 +458,7 @@ class EventTest extends TestCase
 
     public function test_event_validates_timezone(): void
     {
-        $user = $this->createUser();
+        $user = $this->createAdminSm();
 
         $response = $this->actingAs($user)->postJson('/api/v1/events', $this->validEventData([
             'timezone' => 'Invalid/Timezone',
@@ -461,7 +470,7 @@ class EventTest extends TestCase
 
     public function test_event_validates_color_in_allowed_list(): void
     {
-        $user = $this->createUser();
+        $user = $this->createAdminSm();
 
         $response = $this->actingAs($user)->postJson('/api/v1/events', $this->validEventData([
             'color' => '#000000',
@@ -669,7 +678,7 @@ class EventTest extends TestCase
 
     public function test_creator_can_update_own_event(): void
     {
-        $user = $this->createUser();
+        $user = $this->createAdminSm();
         $event = Event::factory()->create(['user_id' => $user->id]);
 
         $response = $this->actingAs($user)->putJson("/api/v1/events/{$event->id}", [
@@ -708,7 +717,7 @@ class EventTest extends TestCase
 
     public function test_update_partial_only_title(): void
     {
-        $user = $this->createUser();
+        $user = $this->createAdminSm();
         $event = Event::factory()->create([
             'user_id' => $user->id,
             'title' => 'Original Title',
@@ -726,7 +735,7 @@ class EventTest extends TestCase
 
     public function test_update_all_fields(): void
     {
-        $user = $this->createUser();
+        $user = $this->createAdminSm();
         $event = Event::factory()->create(['user_id' => $user->id]);
 
         $response = $this->actingAs($user)->putJson("/api/v1/events/{$event->id}", [
@@ -751,7 +760,7 @@ class EventTest extends TestCase
 
     public function test_update_start_at_and_end_at_validates_order(): void
     {
-        $user = $this->createUser();
+        $user = $this->createAdminSm();
         $event = Event::factory()->create(['user_id' => $user->id]);
 
         $response = $this->actingAs($user)->putJson("/api/v1/events/{$event->id}", [
@@ -769,7 +778,7 @@ class EventTest extends TestCase
 
     public function test_creator_can_delete_own_event(): void
     {
-        $user = $this->createUser();
+        $user = $this->createAdminSm();
         $event = Event::factory()->create(['user_id' => $user->id]);
 
         $response = $this->actingAs($user)->deleteJson("/api/v1/events/{$event->id}");
@@ -943,7 +952,7 @@ class EventTest extends TestCase
 
     public function test_update_only_end_at_with_valid_date_succeeds(): void
     {
-        $user = $this->createUser();
+        $user = $this->createAdminSm();
         $event = Event::factory()->create([
             'user_id' => $user->id,
             'start_at' => '2026-06-01 09:00:00',
@@ -960,7 +969,7 @@ class EventTest extends TestCase
 
     public function test_update_only_end_at_before_existing_start_at_fails(): void
     {
-        $user = $this->createUser();
+        $user = $this->createAdminSm();
         $event = Event::factory()->create([
             'user_id' => $user->id,
             'start_at' => '2026-06-01 09:00:00',

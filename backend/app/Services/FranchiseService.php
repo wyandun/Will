@@ -39,7 +39,11 @@ class FranchiseService
                         $r->where('name', Role::ADMIN_SM);
                     });
                 },
-                'companies as clients_count',
+                'users as clients_count' => function ($q) {
+                    $q->whereHas('roles', function ($r) {
+                        $r->whereIn('name', [Role::SB_OWNER, Role::BB_EMPLOYEE]);
+                    });
+                },
             ]);
 
         if ($authUser->hasRole(Role::SUPERADMIN)) {

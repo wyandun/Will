@@ -261,8 +261,9 @@ class SystemAdminTest extends TestCase
         $user = User::where('email', 'testadmin@example.com')->first();
         $permissions = UserPermission::where('user_id', $user->id)->get();
 
-        // 9 modules defined in ALL_MODULES
-        $this->assertCount(9, $permissions);
+        $expectedModules = ['feed', 'contracts', 'repository', 'processes', 'accounting', 'inventory', 'tracking', 'catalog', 'calendar'];
+        $this->assertCount(count($expectedModules), $permissions);
+        $this->assertEqualsCanonicalizing($expectedModules, $permissions->pluck('module')->all());
         $this->assertTrue($permissions->every(fn ($p) => $p->can_read === true));
         $this->assertTrue($permissions->every(fn ($p) => $p->can_write === true));
     }
@@ -280,7 +281,9 @@ class SystemAdminTest extends TestCase
         $user = User::where('email', 'readonlyperm@test.com')->first();
         $permissions = UserPermission::where('user_id', $user->id)->get();
 
-        $this->assertCount(9, $permissions);
+        $expectedModules = ['feed', 'contracts', 'repository', 'processes', 'accounting', 'inventory', 'tracking', 'catalog', 'calendar'];
+        $this->assertCount(count($expectedModules), $permissions);
+        $this->assertEqualsCanonicalizing($expectedModules, $permissions->pluck('module')->all());
         $this->assertTrue($permissions->every(fn ($p) => $p->can_read === true));
         $this->assertTrue($permissions->every(fn ($p) => $p->can_write === false));
     }

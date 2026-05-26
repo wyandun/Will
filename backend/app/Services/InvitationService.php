@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\Role;
+use App\Models\Company;
 use App\Models\User;
 use App\Models\UserPermission;
 use App\Notifications\UserInvitationNotification;
@@ -38,7 +40,7 @@ class InvitationService
      *  3. Email has a pending invitation        → validation error (already pending).
      *  4. Email is brand new                    → create user, assign role, notify.
      *
-     * @param  array{name: string, email: string, role: string, sm_franchise_id?: int|null}  $data
+     * @param  array{name: string, email: string, role: string, sm_franchise_id?: int|null, job_title?: string|null, company_name?: string|null, company_tax_id?: string|null, company_phone?: string|null, sb_owner_id?: int|null}  $data
      * @return array{user: User, activation_url: string|null}
      *
      * @throws ValidationException
@@ -78,23 +80,53 @@ class InvitationService
         // Rate-limited by throttle:invitation (10/min per IP).
         $token = Str::random(64);
 
-        try {
-            $user = User::create([
-                'name' => $data['name'],
-                'email' => $data['email'],
-                // Placeholder password — overwritten when the user accepts the invitation.
-                'password' => Hash::make(Str::random(32)),
-                'invitation_expires_at' => now()->addDays(self::EXPIRY_DAYS),
-                // Payload sm_franchise_id takes precedence (superadmin inviting to a specific
-                // franchise). Falls back to the inviter's own franchise for admin_sm inviters.
-                'sm_franchise_id' => $data['sm_franchise_id'] ?? $invitedBy->sm_franchise_id,
-            ]);
+        $franchiseId = $data['sm_franchise_id'] ?? $invitedBy->sm_franchise_id;
 
-            // Security: invitation_token and inviter_id are not mass-assignable — set explicitly
-            // to prevent token injection via any mass-assignment path.
-            $user->invitation_token = $token;
-            $user->inviter_id = $invitedBy->id;
-            $user->save();
+        try {
+            $user = DB::transaction(function () use ($data, $token, $invitedBy, $franchiseId) {
+                $companyId = null;
+
+                // SB Owner: auto-create the Company LLC and link it to the new owner.
+                // companies.sm_franchise_id is NOT NULL, so skip Company creation when
+                // no franchise context is available (legacy tests / edge cases).
+                if ($data['role'] === Role::SB_OWNER && ! empty($data['company_name']) && $franchiseId) {
+                    $company = Company::create([
+                        'name' => $data['company_name'],
+                        'tax_id' => $data['company_tax_id'] ?? null,
+                        'phone' => $data['company_phone'] ?? null,
+                        'sm_franchise_id' => $franchiseId,
+                    ]);
+                    $companyId = $company->id;
+                }
+
+                // Investor: derive company_id from the chosen SB Owner.
+                if ($data['role'] === Role::BB_EMPLOYEE && ! empty($data['sb_owner_id'])) {
+                    $owner = User::findOrFail($data['sb_owner_id']);
+                    abort_if(! $owner->company_id, 422, 'invitation.sb_owner_missing_company');
+                    $companyId = $owner->company_id;
+                }
+
+                $user = User::create([
+                    'name' => $data['name'],
+                    'email' => $data['email'],
+                    // Placeholder password — overwritten when the user accepts the invitation.
+                    'password' => Hash::make(Str::random(32)),
+                    'invitation_expires_at' => now()->addDays(self::EXPIRY_DAYS),
+                    // Payload sm_franchise_id takes precedence (superadmin inviting to a specific
+                    // franchise). Falls back to the inviter's own franchise for admin_sm inviters.
+                    'sm_franchise_id' => $franchiseId,
+                    'company_id' => $companyId,
+                    'job_title' => $data['job_title'] ?? null,
+                ]);
+
+                // Security: invitation_token and inviter_id are not mass-assignable — set explicitly
+                // to prevent token injection via any mass-assignment path.
+                $user->invitation_token = $token;
+                $user->inviter_id = $invitedBy->id;
+                $user->save();
+
+                return $user;
+            });
         } catch (QueryException $e) {
             // Race condition: another request created an active user with the same email
             // between validation and this write. Detect duplicate key errors (23000 for SQLite,
@@ -109,6 +141,7 @@ class InvitationService
         }
 
         $user->assignRole($data['role']);
+        UserPermission::syncForRole($user->id, $data['role']);
 
         return $this->notify($user, $invitedBy);
     }

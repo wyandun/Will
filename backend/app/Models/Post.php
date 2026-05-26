@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Role;
 use Carbon\Carbon;
 use Database\Factories\PostFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -122,7 +123,7 @@ class Post extends Model
     /**
      * Restrict to posts visible to the given user based on their role and scope.
      *
-     * - superadmin  : all posts
+     * - superadmin / system_admin / system_admin_readonly : all posts
      * - admin_sm    : global + own franchise
      * - all others  : global + franchise of their company
      *
@@ -131,7 +132,7 @@ class Post extends Model
      */
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->hasRole('superadmin')) {
+        if ($user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY])) {
             return $query;
         }
 
