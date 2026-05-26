@@ -28,6 +28,10 @@ class UpdateEventRequest extends AuthenticatedRequest
             'color' => ['sometimes', 'string', Rule::in(EventColor::values())],
             'visibility' => ['sometimes', 'string', Rule::in(['private', 'franchise', 'public'])],
             'type' => ['sometimes', 'string', Rule::in(['casual', 'meeting', 'deadline', 'reminder', 'training'])],
+            'rrule' => ['nullable', 'string', 'max:500'],
+            'reminder_minutes' => ['nullable', 'integer', 'min:0', 'max:43200'],
+            'attendee_ids' => ['sometimes', 'nullable', 'array'],
+            'attendee_ids.*' => ['integer', 'distinct', 'exists:users,id'],
         ];
     }
 }

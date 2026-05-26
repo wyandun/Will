@@ -2,13 +2,22 @@
 
 namespace App\Http\Requests\Feed;
 
+use App\Enums\Role;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StorePostRequest extends FormRequest
 {
+    /**
+     * Authorization is layered: the module.permission:feed middleware enforces
+     * can_write=true for POST/PUT/DELETE before this method is reached.
+     * SYSTEM_ADMIN_READONLY is blocked at the middleware level (can_write=false).
+     * This role check adds defense-in-depth at the request layer.
+     *
+     * Update/delete authorization lives in FeedService (owner-or-admin check).
+     */
     public function authorize(): bool
     {
-        return $this->user()->hasAnyRole(['superadmin', 'admin_sm']);
+        return $this->user()->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::ADMIN_SM]);
     }
 
     /**

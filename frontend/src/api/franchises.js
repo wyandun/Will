@@ -41,10 +41,56 @@ export const franchisesApi = {
     apiClient.delete(`/franchises/${id}`).then((res) => res.data),
 
   /**
+   * Get a single franchise by ID.
+   * @param {number} id
+   */
+  getFranchise: (id) =>
+    apiClient.get(`/franchises/${id}`).then((res) => res.data.data),
+
+  /**
    * Get all members (admins + clients) of a franchise.
    * @param {number} id
    */
   getMembers: (id) =>
     apiClient.get(`/franchises/${id}/members`).then((res) => res.data.data),
 
+  // ── Franchise admin management ──────────────────────────────────────────
+
+  updateAdmin: (franchiseId, userId, data) =>
+    apiClient.patch(`/franchises/${franchiseId}/admins/${userId}`, data).then((res) => res.data.data),
+
+  resetAdminPassword: (franchiseId, userId, data) =>
+    apiClient.patch(`/franchises/${franchiseId}/admins/${userId}/password`, data).then((res) => res.data),
+
+  deactivateAdmin: (franchiseId, userId) =>
+    apiClient.delete(`/franchises/${franchiseId}/admins/${userId}`).then((res) => res.data),
+
+  restoreAdmin: (franchiseId, userId) =>
+    apiClient.patch(`/franchises/${franchiseId}/admins/${userId}/restore`).then((res) => res.data),
+
+  getAdminPermissions: (franchiseId, userId) =>
+    apiClient.get(`/franchises/${franchiseId}/admins/${userId}/permissions`).then((res) => res.data.data),
+
+  updateAdminPermissions: (franchiseId, userId, permissions) =>
+    apiClient.put(`/franchises/${franchiseId}/admins/${userId}/permissions`, { permissions }).then((res) => res.data),
+
+  // ── Franchise client management ────────────────────────────────────────────
+
+  updateClient: (franchiseId, userId, data) =>
+    apiClient.patch(`/franchises/${franchiseId}/clients/${userId}`, data).then((res) => res.data.data),
+
+  resetClientPassword: (franchiseId, userId, data) =>
+    apiClient.patch(`/franchises/${franchiseId}/clients/${userId}/password`, data).then((res) => res.data),
+
+  deactivateClient: (franchiseId, userId) =>
+    apiClient.delete(`/franchises/${franchiseId}/clients/${userId}`).then((res) => res.data),
+
+  restoreClient: (franchiseId, userId) =>
+    apiClient.patch(`/franchises/${franchiseId}/clients/${userId}/restore`).then((res) => res.data),
+
+  getClientPermissions: (franchiseId, userId) =>
+    apiClient.get(`/franchises/${franchiseId}/clients/${userId}/permissions`).then((res) => res.data.data),
+
+  updateClientPermissions: (franchiseId, userId, permissions) =>
+    apiClient.put(`/franchises/${franchiseId}/clients/${userId}/permissions`, { permissions }).then((res) => res.data),
 };

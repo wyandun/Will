@@ -6,12 +6,15 @@ use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\FeedController;
+use App\Http\Controllers\Api\FranchiseAdminController;
+use App\Http\Controllers\Api\FranchiseClientController;
 use App\Http\Controllers\Api\FranchiseController;
 use App\Http\Controllers\Api\FranchiseMemberController;
 use App\Http\Controllers\Api\InvitationController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\SystemAdminController;
+use App\Http\Controllers\Api\UserSearchController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/ping', fn () => response()->json(['status' => 'ok']));
@@ -66,6 +69,26 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // Franchises
     // Sub-routes declared BEFORE apiResource to prevent the {franchise} wildcard
     // from capturing literal path segments like "members", "admins", "clients".
+    // Franchise admin management (superadmin only)
+    Route::prefix('franchises/{franchise}/admins/{user}')->group(function () {
+        Route::patch('/', [FranchiseAdminController::class, 'update']);
+        Route::patch('/password', [FranchiseAdminController::class, 'resetPassword']);
+        Route::delete('/', [FranchiseAdminController::class, 'destroy']);
+        Route::patch('/restore', [FranchiseAdminController::class, 'restore']);
+        Route::get('/permissions', [FranchiseAdminController::class, 'permissions']);
+        Route::put('/permissions', [FranchiseAdminController::class, 'updatePermissions']);
+    });
+
+    // Franchise client management (superadmin + admin_sm)
+    Route::prefix('franchises/{franchise}/clients/{user}')->group(function () {
+        Route::patch('/', [FranchiseClientController::class, 'update']);
+        Route::patch('/password', [FranchiseClientController::class, 'resetPassword']);
+        Route::delete('/', [FranchiseClientController::class, 'destroy']);
+        Route::patch('/restore', [FranchiseClientController::class, 'restore']);
+        Route::get('/permissions', [FranchiseClientController::class, 'permissions']);
+        Route::put('/permissions', [FranchiseClientController::class, 'updatePermissions']);
+    });
+
     Route::patch('franchises/{franchise}/toggle-status', [FranchiseController::class, 'toggleStatus']);
     Route::get('franchises/{franchise}/members', [FranchiseMemberController::class, 'members']);
     Route::apiResource('franchises', FranchiseController::class);
@@ -80,7 +103,10 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
     Route::apiResource('system-admins', SystemAdminController::class)->only(['index', 'store', 'update', 'destroy']);
 
-    Route::apiResource('events', EventController::class);
+    Route::apiResource('events', EventController::class)->middleware('module.permission:calendar');
+
+    // Lightweight user search for "Add Guests" in calendar events.
+    Route::get('users/search', UserSearchController::class);
 
     // Invitations — protected management endpoints
     Route::get('invitations', [InvitationController::class, 'index']);
@@ -97,7 +123,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     });
 
     // Feed
-    Route::prefix('feed')->group(function () {
+    Route::prefix('feed')->middleware('module.permission:feed')->group(function () {
         Route::get('/posts', [FeedController::class, 'posts']);
         Route::get('/presence', [FeedController::class, 'presence']);
         Route::post('/posts', [FeedController::class, 'store']);
@@ -110,7 +136,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     });
 
     // News (AI-curated from RSS — superadmin/admin_sm only)
-    Route::prefix('news')->group(function () {
+    Route::prefix('news')->middleware('module.permission:feed')->group(function () {
         Route::get('/articles', [NewsController::class, 'index']);
         Route::post('/fetch', [NewsController::class, 'fetch']);
         Route::post('/articles/{newsArticle}/publish', [NewsController::class, 'publish']);

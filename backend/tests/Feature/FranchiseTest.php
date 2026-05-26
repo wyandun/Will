@@ -433,14 +433,32 @@ class FranchiseTest extends TestCase
         $response->assertJsonValidationErrors(['timezone']);
     }
 
-    public function test_admin_sm_cannot_update_franchise(): void
+    public function test_admin_sm_can_update_own_franchise(): void
     {
-        $franchise = Franchise::factory()->create();
+        $franchise = Franchise::factory()->create(['name' => 'Original Name']);
         $admin = $this->createAdminSm($franchise);
 
-        // Send a valid payload so FormRequest validation passes and the policy is reached.
         $response = $this->actingAs($admin)
             ->putJson("/api/v1/franchises/{$franchise->id}", [
+                'name' => 'Updated Name',
+                'country' => 'Mexico',
+                'timezone' => 'America/Mexico_City',
+                'phone' => '+52 55 1234 5678',
+                'address' => 'Calle Falsa 123',
+            ]);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.name', 'Updated Name');
+    }
+
+    public function test_admin_sm_cannot_update_other_franchise(): void
+    {
+        $ownFranchise = Franchise::factory()->create();
+        $otherFranchise = Franchise::factory()->create();
+        $admin = $this->createAdminSm($ownFranchise);
+
+        $response = $this->actingAs($admin)
+            ->putJson("/api/v1/franchises/{$otherFranchise->id}", [
                 'name' => 'Hacked',
                 'country' => 'Mexico',
                 'timezone' => 'America/Mexico_City',
@@ -524,13 +542,26 @@ class FranchiseTest extends TestCase
         $response->assertJsonPath('message', 'franchises.activated_success');
     }
 
-    public function test_admin_sm_cannot_toggle_franchise_status(): void
+    public function test_admin_sm_can_toggle_own_franchise_status(): void
     {
-        $franchise = Franchise::factory()->create();
+        $franchise = Franchise::factory()->create(['is_active' => true]);
         $admin = $this->createAdminSm($franchise);
 
         $response = $this->actingAs($admin)
             ->patchJson("/api/v1/franchises/{$franchise->id}/toggle-status");
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.is_active', false);
+    }
+
+    public function test_admin_sm_cannot_toggle_other_franchise_status(): void
+    {
+        $ownFranchise = Franchise::factory()->create();
+        $otherFranchise = Franchise::factory()->create();
+        $admin = $this->createAdminSm($ownFranchise);
+
+        $response = $this->actingAs($admin)
+            ->patchJson("/api/v1/franchises/{$otherFranchise->id}/toggle-status");
 
         $response->assertStatus(403);
     }

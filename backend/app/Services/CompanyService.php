@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\Role;
 use App\Models\Company;
 use App\Models\ProcessMap;
 use App\Models\User;
@@ -29,7 +30,7 @@ class CompanyService
             'created_at', 'updated_at',
         ];
 
-        if ($authUser->hasRole('superadmin')) {
+        if ($authUser->hasRole(Role::SUPERADMIN)) {
             return Company::select($columns)
                 ->with('franchise:id,name')
                 ->paginate(25);

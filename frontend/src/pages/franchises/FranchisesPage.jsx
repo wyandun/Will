@@ -201,7 +201,7 @@ export default function FranchisesPage() {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
   const role = useAuthStore((s) => s.role);
-  const isSuperadmin = role === 'superadmin';
+  const isSuperadmin = role === 'superadmin' || role === 'system_admin';
 
   const [franchises, setFranchises] = useState([]);
   const [franchisesTotal, setFranchisesTotal] = useState(null);

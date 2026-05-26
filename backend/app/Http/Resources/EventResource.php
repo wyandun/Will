@@ -31,10 +31,19 @@ class EventResource extends JsonResource
             'color' => $this->color,
             'visibility' => $this->visibility,
             'type' => $this->type,
+            'rrule' => $this->rrule,
+            'reminder_minutes' => $this->reminder_minutes,
             'created_by' => $this->whenLoaded('creator', fn () => [
                 'id' => $this->creator->id,
                 'name' => $this->creator->name,
             ]),
+            'attendees' => $this->whenLoaded('attendees', fn () => $this->attendees->map(fn ($u) => [
+                'id' => $u->id,
+                'name' => $u->name,
+                'email' => $u->email,
+                'avatar_url' => $u->avatar_url,
+                'rsvp_status' => $u->getAttribute('pivot')?->rsvp_status,
+            ])),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

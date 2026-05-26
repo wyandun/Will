@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\Role;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
@@ -213,7 +214,7 @@ class FeedService
             throw new NotFoundHttpException('Comment not found.');
         }
 
-        if ((int) $comment->user_id !== $user->id && ! $user->hasRole('superadmin')) {
+        if ((int) $comment->user_id !== $user->id && ! $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN])) {
             Log::warning('Unauthorized comment delete attempt', [
                 'user_id' => $user->id,
                 'comment_id' => $commentId,
@@ -251,7 +252,7 @@ class FeedService
             });
 
         // Visibility scoping
-        if (! $user->hasRole('superadmin')) {
+        if (! $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY])) {
             $franchiseId = $user->sm_franchise_id;
             $query->where(function ($q) use ($franchiseId) {
                 $q->where('posts.visibility', 'global')
@@ -410,9 +411,9 @@ class FeedService
             ]);
 
         // Scope which users are visible to this user
-        if ($user->hasRole('superadmin')) {
+        if ($user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY])) {
             // no filter
-        } elseif ($user->hasRole('admin_sm')) {
+        } elseif ($user->hasRole(Role::ADMIN_SM)) {
             $baseQuery->where('users.sm_franchise_id', $user->sm_franchise_id);
         } else {
             $baseQuery->where('users.company_id', $user->company_id);
@@ -551,7 +552,7 @@ class FeedService
             throw new NotFoundHttpException('Post not found.');
         }
 
-        if ((int) $post->author_id !== $user->id && ! $user->hasRole('superadmin')) {
+        if ((int) $post->author_id !== $user->id && ! $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN])) {
             Log::warning('Unauthorized post update attempt', [
                 'user_id' => $user->id,
                 'post_id' => $postId,
@@ -628,7 +629,7 @@ class FeedService
             throw new NotFoundHttpException('Post not found.');
         }
 
-        if ((int) $post->author_id !== $user->id && ! $user->hasRole('superadmin')) {
+        if ((int) $post->author_id !== $user->id && ! $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN])) {
             Log::warning('Unauthorized post delete attempt', [
                 'user_id' => $user->id,
                 'post_id' => $postId,

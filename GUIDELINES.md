@@ -69,20 +69,23 @@ All routes prefixed `/api/v1` (set in bootstrap/app.php).
 
 **Convention:** Custom sub-routes BEFORE `apiResource()` to avoid wildcard capture.
 
-### Controllers (9)
+### Controllers (12)
 | Controller | Service | Key Pattern |
 |---|---|---|
 | AuthController | AuthService | Token gen, single-session logout |
 | FranchiseController | FranchiseService | Policy auth, event dispatch |
+| FranchiseMemberController | FranchiseMemberService | Franchise member listing |
 | CompanyController | CompanyService | Transaction-wrapped closeDeal |
 | InvitationController | InvitationService | Token lifecycle, lockForUpdate |
 | FeedController | FeedService | File uploads, emoji reactions |
+| NewsController | AiNewsService + RssNewsService | AI news fetch/publish/reject |
 | BbAssignmentController | BbAssignmentService | Unique constraint enforcement |
 | SystemAdminController | (direct User ops) | Module permission sync |
 | ProfileController | (direct) | Avatar upload w/ disk storage |
 | DashboardController | DashboardService | Multi-query aggregation |
+| EventController | EventService | Calendar events CRUD + scoping |
 
-### Services (7) — Key Patterns
+### Services (11) — Key Patterns
 1. **Scope resolution by role**: superadmin → no filter; admin_sm → franchise-scoped; SB/BB → company-scoped
 2. **DB::transaction()** wraps all multi-step writes
 3. **lockForUpdate()** for pessimistic concurrency (toggleStatus, accept invitation)
@@ -98,8 +101,8 @@ All routes prefixed `/api/v1` (set in bootstrap/app.php).
 - **BbAssignment** → unique on company_id (1 BB per company)
 - **UserPermission** → per-user module access (can_read, can_write)
 
-### Policies (4)
-- FranchisePolicy, CompanyPolicy, UserPolicy, BbAssignmentPolicy
+### Policies (6)
+- FranchisePolicy, CompanyPolicy, UserPolicy, BbAssignmentPolicy, EventPolicy, NewsArticlePolicy
 - Registered in AppServiceProvider via `Gate::policy()`
 - Pattern: superadmin gets all; admin_sm gets franchise-scoped; others restricted
 
@@ -115,9 +118,13 @@ All shaped through API Resources.
 
 ### Queue
 - Driver: Redis
-- Named queue: `sm_queue` for invitation jobs
+- Queues: `sm_queue` (invitations), `news` (RSS + AI jobs), `default` (general)
 - Worker container: `--sleep=3 --tries=3 --max-time=3600`
-- Job: MarkInvitationEmailSent (stamps email_sent_at on NotificationSent event)
+- Scheduler container: `php artisan schedule:run` every 60s (`sm_scheduler`)
+- Jobs: `MarkInvitationEmailSent` (stamps email_sent_at), `FetchNewsJob` (RSS + AI summarization)
+
+### Resources (6)
+- CompanyResource, FranchiseResource, InvitationResource, UserProfileResource, EventResource, NewsArticleResource
 
 ### Testing (Backend)
 - PHPUnit 11, SQLite in-memory, RefreshDatabase trait
@@ -168,22 +175,32 @@ src/
 /invite/:token            → AcceptInvitationPage (public)
 / (ProtectedRoute + AuthenticatedLayout)
   ├── /                   → DashboardPage
-  ├── /franchises         → RoleRoute[superadmin, admin_sm] → FranchisesPage
-  ├── /companies          → RoleRoute[superadmin, admin_sm] → CompaniesPage
-  ├── /users              → RoleRoute[superadmin, admin_sm] → InvitationsPage
+  ├── /franchises         → RoleRoute[ADMIN_ROLES] → FranchisesPage
+  ├── /franchises/:id     → RoleRoute[ADMIN_ROLES] → FranchiseDetailPage
+  ├── /companies          → RoleRoute[ADMIN_ROLES] → CompaniesPage
+  ├── /users              → RoleRoute[ADMIN_ROLES] → InvitationsPage
   ├── /system-admins      → RoleRoute[superadmin] → SystemAdminsPage
   ├── /feed               → FeedPage
+  ├── /calendar           → EventsPage (IMPLEMENTED — custom Month/Week/List views)
   ├── /profile            → ProfilePage
-  └── /contracts, /repository, /processes, /accounting, /inventory, /tracking, /catalog, /sb-applications, /calendar → StubPage
+  └── /contracts, /repository, /processes, /accounting, /inventory, /tracking, /catalog, /sb-applications → StubPage
 * (catch-all)             → Navigate to /
 ```
 
+ADMIN_ROLES = `['superadmin', 'system_admin', 'system_admin_readonly', 'admin_sm']`
+
+### Hooks
+- `useAuthVerify.js` — validates token with server on mount; 401 → clearAuth + redirect
+- `usePermissions.js` — exposes `canWrite(module)`, `isReadonly` (system_admin_readonly), `role`
+
 ### Component Patterns
 - **Layout**: AuthenticatedLayout (header + sidebar + outlet), ProtectedRoute (auth guard), RoleRoute (role guard)
-- **Sidebar**: Dynamic nav via `buildNavItems(role, permissions)` — filters sections by role and module permissions
+- **Sidebar**: Dynamic nav via `buildNavItems(role, permissions)` in `navConfig.jsx` — filters by role and module permissions
 - **Modal pattern**: `useState(null)` for entity (null=closed, undefined=create, object=edit) + `isModalOpen` boolean
 - **Error handling**: try/catch with `error?.response?.data?.message ?? t('common.unexpected_error')`
+- **Forms**: Controlled React state (no form library). Backend FormRequests handle validation.
 - **PropTypes** at bottom of files for type checking
+- **No TypeScript**: all files are `.jsx`
 
 ### i18n
 - Two locales: en, es (single `common` namespace)
@@ -206,8 +223,9 @@ src/
 | sm_redis | redis:7 | 6379 | Cache, session, queue |
 | sm_backend | Custom PHP 8.4-FPM | 9000 (internal) | Laravel API |
 | sm_nginx | nginx:1.27-alpine | 80 | Reverse proxy + SPA serving |
-| sm_queue | Same as backend | — | Queue worker |
-| sm_docuseal | docuseal/docuseal | 3000 | E-signing |
+| sm_queue | Same as backend | — | Queue worker (sm_queue, default, news) |
+| sm_scheduler | Same as backend | — | schedule:run every 60s |
+| sm_docuseal | docuseal/docuseal | 3000 | E-signing (separate sm_docuseal DB) |
 | sm_frontend_dev | node:22-alpine | 5173 | Vite dev (dev profile) |
 | sm_adminer | adminer | 8080 | DB admin (dev profile) |
 
@@ -248,8 +266,9 @@ src/
 | SUB_FRANCHISE_ADMIN | Sub-franchise | Sub-franchise admin scope |
 
 ### Frontend Role Guards
-- `ADMIN_ROLES = ['superadmin', 'admin_sm']` — used in RoleRoute
-- Sidebar nav filtered by role + module permissions
+- `ADMIN_ROLES = ['superadmin', 'system_admin', 'system_admin_readonly', 'admin_sm']` — used in RoleRoute
+- `system-admins` route is `['superadmin']` only
+- Sidebar nav filtered by role + module permissions via `buildNavItems(role, permissions)`
 
 ---
 
@@ -278,13 +297,15 @@ src/
 
 ## Database Schema Highlights
 
-- **37 migrations** covering ~20+ tables
-- Core tables: users, franchises, companies, bb_assignments, user_permissions, posts, post_interactions, contracts, repositories, process_maps, process_categories, processes, sub_processes, sub_sub_processes, events, event_shares, financial_documents, catalog_items, client_trackings, assessment_contacts, assessment_decisions
-- Spatie tables: model_has_roles, model_has_permissions, role_has_permissions
+- **66 migrations** covering ~58 tables (as of May 2026)
+- Core tables: users, franchises, companies, bb_assignments, bb_applications, user_permissions, posts, post_interactions, news_articles, contracts, repositories, repository_documents, process_maps, process_categories, processes, sub_processes, sub_sub_processes, process_documents, events, event_shares, financial_documents, catalog_items, client_trackings, assessment_contacts, assessment_decisions, assessments
+- Spatie tables: roles, permissions, model_has_roles, model_has_permissions, role_has_permissions
 - Sanctum: personal_access_tokens
-- **Soft deletes** on: User, Franchise, Company, Post
-- **Unique constraints**: bb_assignments.company_id, users.email (application-level with whereNull deleted_at)
-- **FK deferred constraints** in separate migration for referential integrity
+- Framework: failed_jobs, cache
+- **Soft deletes** on: User, Franchise, Company, Post, Event, Contract, RepositoryDocument, ProcessDocument, Assessment, FinancialDocument
+- **Unique constraints**: bb_assignments.company_id (1 BB per company), user_permissions (user_id, module), event_shares (event_id, user_id), process_maps (company_id, type)
+- **FK deferred constraints** in separate migration for referential integrity (users↔franchises↔companies circular deps)
+- **UserPermission modules (10)**: feed, contracts, repository, processes, accounting, inventory, tracking, catalog, calendar, applications
 
 ---
 
@@ -302,4 +323,5 @@ See CLAUDE.md § "Security Decisions (Invitation System)" for 15 finalized secur
 ---
 
 ## Unimplemented Features (StubPages)
-Contracts, Repository, Processes, Accounting, Inventory, Tracking, Catalog, SB Applications, Calendar — routes exist, render StubPage placeholder.
+Contracts, Repository, Processes, Accounting, Inventory, Tracking, Catalog, SB Applications — routes exist, render StubPage placeholder.
+Calendar is **implemented** (EventsPage with Month/Week/List views, EventFormModal, SearchResultsPanel).
