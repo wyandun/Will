@@ -53,17 +53,17 @@ class CatalogService
     /**
      * List items filtered by level. Bundles and services come with their children eager-loaded.
      */
-    public function list(string $level): Collection
+    public function list(CatalogLevel $level): Collection
     {
-        $query = CatalogItem::where('level', $level)->orderBy('order_index');
+        $query = CatalogItem::where('level', $level->value)->orderBy('order_index');
 
-        if ($level === CatalogLevel::Bundle->value) {
+        if ($level === CatalogLevel::Bundle) {
             $query->with(['children' => function ($q) {
                 $q->with('children');
             }]);
         }
 
-        if ($level === CatalogLevel::Service->value) {
+        if ($level === CatalogLevel::Service) {
             $query->with('children');
         }
 

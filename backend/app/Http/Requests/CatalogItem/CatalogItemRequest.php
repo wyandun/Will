@@ -73,14 +73,14 @@ abstract class CatalogItemRequest extends FormRequest
             return;
         }
 
-        $level = $this->input('level');
+        $levelEnum = CatalogLevel::tryFrom((string) $this->input('level'));
         $parentId = $this->input('parent_id');
 
-        if ($level === CatalogLevel::Bundle->value && $parentId !== null) {
+        if ($levelEnum === CatalogLevel::Bundle && $parentId !== null) {
             $validator->errors()->add('parent_id', 'Bundles cannot have a parent.');
         }
 
-        if ($level === CatalogLevel::Deliverable->value && $parentId === null) {
+        if ($levelEnum === CatalogLevel::Deliverable && $parentId === null) {
             $validator->errors()->add('parent_id', 'Deliverables must specify a parent service.');
         }
     }

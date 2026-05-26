@@ -46,12 +46,12 @@ class CatalogItemController extends Controller
     {
         $this->authorize('viewAny', CatalogItem::class);
 
-        $request->validate([
+        $validated = $request->validate([
             'level' => ['required', 'string', Rule::enum(CatalogLevel::class)],
         ]);
 
         return CatalogItemResource::collection(
-            $this->catalogService->list($request->query('level'))
+            $this->catalogService->list(CatalogLevel::from($validated['level']))
         );
     }
 
@@ -147,9 +147,12 @@ class CatalogItemController extends Controller
     {
         $this->authorize('view', $catalogItem);
 
-        // Load grandchildren as well so the tree is complete for bundles
-        // (bundle → services → deliverables).
-        $catalogItem->load(['parent', 'children.children']);
+        $relations = match ($catalogItem->level) {
+            CatalogLevel::Bundle => ['parent', 'children.children'],
+            CatalogLevel::Service => ['parent', 'children'],
+            CatalogLevel::Deliverable => ['parent'],
+        };
+        $catalogItem->load($relations);
 
         return response()->json([
             'success' => true,
