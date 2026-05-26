@@ -42,6 +42,7 @@ class CatalogItemController extends Controller
     {
         $this->authorize('viewAny', CatalogItem::class);
 
+        $request->validate(['level' => ['nullable', 'string', 'in:bundle,service,deliverable']]);
         $level = $request->query('level');
 
         if ($level) {
@@ -50,7 +51,7 @@ class CatalogItemController extends Controller
             );
         }
 
-        return $this->tree();
+        return $this->buildTreeResponse();
     }
 
     #[OA\Get(
@@ -68,6 +69,11 @@ class CatalogItemController extends Controller
     {
         $this->authorize('viewAny', CatalogItem::class);
 
+        return $this->buildTreeResponse();
+    }
+
+    private function buildTreeResponse(): JsonResponse
+    {
         $tree = $this->catalogService->tree();
 
         return response()->json([
@@ -77,7 +83,6 @@ class CatalogItemController extends Controller
                 'services' => CatalogItemResource::collection($tree['services']),
                 'counts' => $tree['counts'],
             ],
-            'message' => 'OK.',
         ]);
     }
 

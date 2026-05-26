@@ -3,6 +3,7 @@
 namespace App\Http\Requests\CatalogItem;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateCatalogItemRequest extends FormRequest
 {
@@ -31,9 +32,9 @@ class UpdateCatalogItemRequest extends FormRequest
             'estimated_hours' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:9999.99'],
             'service_type' => ['sometimes', 'nullable', 'in:individual,package,retainer'],
             'deliverable_ids' => ['sometimes', 'nullable', 'array'],
-            'deliverable_ids.*' => ['integer', 'exists:catalog_items,id'],
+            'deliverable_ids.*' => ['integer', Rule::exists('catalog_items', 'id')->where('level', 'deliverable')],
             'service_ids' => ['sometimes', 'nullable', 'array'],
-            'service_ids.*' => ['integer', 'exists:catalog_items,id'],
+            'service_ids.*' => ['integer', Rule::exists('catalog_items', 'id')->where('level', 'service')],
         ];
     }
 }
