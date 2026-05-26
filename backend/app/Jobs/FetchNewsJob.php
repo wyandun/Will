@@ -14,7 +14,9 @@ class FetchNewsJob implements ShouldQueue
 {
     use Queueable;
 
-    public string $queue = 'news';
+    // Queue name is set at dispatch ($job->onQueue('news') in NewsController and
+    // routes/console.php). Re-declaring a typed $queue property here collides with
+    // InteractsWithQueue::$queue (public ?string) on PHP 8.2+ and breaks autoload.
 
     public int $tries = 1;
 
