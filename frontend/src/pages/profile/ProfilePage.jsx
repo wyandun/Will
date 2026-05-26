@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import Cropper from 'react-easy-crop';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { profileApi } from '../../api/profile';
 
@@ -32,6 +33,7 @@ async function getCroppedImg(imageSrc, pixelCrop) {
 // ─── Avatar Crop Modal ────────────────────────────────────────────────────────
 
 function AvatarCropModal({ imageSrc, onConfirm, onCancel, saving }) {
+  const { t } = useTranslation('common');
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
@@ -51,8 +53,8 @@ function AvatarCropModal({ imageSrc, onConfirm, onCancel, saving }) {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-200">
-          <h3 className="text-base font-semibold text-slate-800">Adjust your photo</h3>
-          <p className="text-xs text-slate-500 mt-0.5">Drag to reposition. Use the slider to zoom.</p>
+          <h3 className="text-base font-semibold text-slate-800">{t('profile.crop_title')}</h3>
+          <p className="text-xs text-slate-500 mt-0.5">{t('profile.crop_hint')}</p>
         </div>
 
         {/* Crop area */}
@@ -98,7 +100,7 @@ function AvatarCropModal({ imageSrc, onConfirm, onCancel, saving }) {
             onClick={onCancel}
             className="px-5 py-2 rounded-lg text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 disabled:opacity-60 transition-colors"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             type="button"
@@ -107,7 +109,7 @@ function AvatarCropModal({ imageSrc, onConfirm, onCancel, saving }) {
             className="inline-flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-60 transition-colors"
           >
             {saving && <Spinner />}
-            {saving ? 'Saving...' : 'Crop & Save'}
+            {saving ? t('common.saving') : t('profile.crop_save')}
           </button>
         </div>
       </div>
@@ -225,6 +227,7 @@ const inputClass =
 // ─── Personal Info Tab ────────────────────────────────────────────────────────
 
 function PersonalInfoTab({ profile, onProfileSaved }) {
+  const { t } = useTranslation('common');
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -267,10 +270,10 @@ function PersonalInfoTab({ profile, onProfileSaved }) {
       const updated = await profileApi.updateProfile(form);
       updateUser({ name: updated.name, email: updated.email, avatar_url: updated.avatar_url });
       onProfileSaved(updated);
-      setSuccess('Profile updated successfully.');
+      setSuccess(t('profile.updated_success'));
       successTimer.current = setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError(err?.response?.data?.message ?? 'An error occurred. Please try again.');
+      setError(err?.response?.data?.message ?? t('profile.update_error'));
     } finally {
       setSubmitting(false);
     }
@@ -279,7 +282,7 @@ function PersonalInfoTab({ profile, onProfileSaved }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <Field label="Full Name">
+        <Field label={t('profile.field_name')}>
           <input
             name="name"
             type="text"
@@ -290,7 +293,7 @@ function PersonalInfoTab({ profile, onProfileSaved }) {
           />
         </Field>
 
-        <Field label="Email">
+        <Field label={t('profile.field_email')}>
           <input
             name="email"
             type="email"
@@ -301,7 +304,7 @@ function PersonalInfoTab({ profile, onProfileSaved }) {
           />
         </Field>
 
-        <Field label="Phone">
+        <Field label={t('profile.field_phone')}>
           <input
             name="phone"
             type="text"
@@ -312,7 +315,7 @@ function PersonalInfoTab({ profile, onProfileSaved }) {
           />
         </Field>
 
-        <Field label="Position">
+        <Field label={t('profile.field_position')}>
           <input
             name="job_title"
             type="text"
@@ -323,7 +326,7 @@ function PersonalInfoTab({ profile, onProfileSaved }) {
           />
         </Field>
 
-        <Field label="Date of Birth">
+        <Field label={t('profile.field_birth_date')}>
           <input
             name="birth_date"
             type="date"
@@ -333,14 +336,14 @@ function PersonalInfoTab({ profile, onProfileSaved }) {
           />
         </Field>
 
-        <Field label="Bio" fullWidth>
+        <Field label={t('profile.field_bio')} fullWidth>
           <textarea
             name="bio"
             value={form.bio}
             onChange={handleChange}
             rows={4}
             className={`${inputClass} resize-none`}
-            placeholder="A short description about yourself..."
+            placeholder={t('profile.bio_placeholder')}
           />
         </Field>
       </div>
@@ -355,7 +358,7 @@ function PersonalInfoTab({ profile, onProfileSaved }) {
           className="inline-flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-60 transition-colors"
         >
           {submitting && <Spinner />}
-          {submitting ? 'Saving...' : 'Save Changes'}
+          {submitting ? t('profile.saving') : t('profile.save_changes')}
         </button>
       </div>
     </form>
@@ -377,6 +380,7 @@ PersonalInfoTab.propTypes = {
 // ─── Security Tab ─────────────────────────────────────────────────────────────
 
 function SecurityTab() {
+  const { t } = useTranslation('common');
   const [form, setForm] = useState({
     current_password: '',
     new_password: '',
@@ -399,7 +403,7 @@ function SecurityTab() {
     setSuccess('');
 
     if (form.new_password !== form.new_password_confirmation) {
-      setError('New password and confirmation do not match.');
+      setError(t('profile.password_mismatch'));
       return;
     }
 
@@ -407,10 +411,10 @@ function SecurityTab() {
     try {
       await profileApi.updatePassword(form);
       setForm({ current_password: '', new_password: '', new_password_confirmation: '' });
-      setSuccess('Password updated successfully.');
+      setSuccess(t('profile.password_updated'));
       successTimer.current = setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError(err?.response?.data?.message ?? 'An error occurred. Please try again.');
+      setError(err?.response?.data?.message ?? t('profile.update_error'));
     } finally {
       setSubmitting(false);
     }
@@ -419,7 +423,7 @@ function SecurityTab() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-md">
       <div className="space-y-5">
-        <Field label="Current Password">
+        <Field label={t('profile.field_current_password')}>
           <input
             name="current_password"
             type="password"
@@ -431,7 +435,7 @@ function SecurityTab() {
           />
         </Field>
 
-        <Field label="New Password">
+        <Field label={t('profile.field_new_password')}>
           <input
             name="new_password"
             type="password"
@@ -443,7 +447,7 @@ function SecurityTab() {
           />
         </Field>
 
-        <Field label="Confirm New Password">
+        <Field label={t('profile.field_confirm_password')}>
           <input
             name="new_password_confirmation"
             type="password"
@@ -466,7 +470,7 @@ function SecurityTab() {
           className="inline-flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-60 transition-colors"
         >
           {submitting && <Spinner />}
-          {submitting ? 'Updating...' : 'Update Password'}
+          {submitting ? t('profile.updating') : t('profile.update_password')}
         </button>
       </div>
     </form>
@@ -475,12 +479,8 @@ function SecurityTab() {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-const TABS = [
-  { key: 'info',     label: 'Personal Info' },
-  { key: 'security', label: 'Security' },
-];
-
 export default function ProfilePage() {
+  const { t } = useTranslation('common');
   const storeUser = useAuthStore((s) => s.user);
   const storeRole = useAuthStore((s) => s.role);
   const updateUser = useAuthStore((s) => s.updateUser);
@@ -501,9 +501,9 @@ export default function ProfilePage() {
       const data = await profileApi.getProfile();
       setProfile(data);
     } catch (err) {
-      setLoadError(err?.response?.data?.message ?? 'Failed to load profile.');
+      setLoadError(err?.response?.data?.message ?? t('profile.update_error'));
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadProfile();
@@ -530,8 +530,7 @@ export default function ProfilePage() {
       updateUser({ avatar_url: updated.avatar_url });
       closeCropModal();
     } catch (err) {
-      setAvatarError(err?.response?.data?.message ?? 'Avatar upload failed.');
-      // Keep modal open so the user can retry or cancel
+      setAvatarError(err?.response?.data?.message ?? t('profile.update_error'));
     } finally {
       setUploading(false);
     }
@@ -559,8 +558,8 @@ export default function ProfilePage() {
     <div className="space-y-6">
       {/* Page title */}
       <div>
-        <h1 className="text-2xl font-semibold text-slate-800">Profile</h1>
-        <p className="mt-0.5 text-sm text-slate-500">Manage your personal information and account security.</p>
+        <h1 className="text-2xl font-semibold text-slate-800">{t('profile.page_title')}</h1>
+        <p className="mt-0.5 text-sm text-slate-500">{t('profile.page_subtitle')}</p>
       </div>
 
       {/* Load error */}
@@ -572,7 +571,7 @@ export default function ProfilePage() {
           <div>
             <p className="text-sm font-medium text-red-700">{loadError}</p>
             <button onClick={loadProfile} className="mt-1 text-xs text-red-600 underline hover:text-red-800">
-              Try again
+              {t('common.try_again')}
             </button>
           </div>
         </div>
@@ -614,7 +613,10 @@ export default function ProfilePage() {
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {/* Tab bar */}
         <div className="flex border-b border-slate-200">
-          {TABS.map(tab => (
+          {[
+            { key: 'info',     labelKey: 'profile.tab_info' },
+            { key: 'security', labelKey: 'profile.tab_security' },
+          ].map(tab => (
             <button
               key={tab.key}
               type="button"
@@ -626,7 +628,7 @@ export default function ProfilePage() {
                   : 'text-slate-500 hover:text-slate-700',
               ].join(' ')}
             >
-              {tab.label}
+              {t(tab.labelKey)}
             </button>
           ))}
         </div>

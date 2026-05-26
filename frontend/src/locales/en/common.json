@@ -15,7 +15,8 @@
     "tracking": "Tracking",
     "service_catalog": "Service Catalog",
     "calendar": "Calendar",
-    "profile": "My Profile"
+    "profile": "My Profile",
+    "open_menu": "Open menu"
   },
   "auth": {
     "sign_in": "Sign in",
@@ -522,5 +523,32 @@
     "view_all": "View all events",
     "no_events": "No upcoming events",
     "page_of": "{{current}} / {{total}}"
+  },
+  "profile": {
+    "page_title": "Profile",
+    "page_subtitle": "Manage your personal information and account security.",
+    "tab_info": "Personal Info",
+    "tab_security": "Security",
+    "field_name": "Full Name",
+    "field_email": "Email",
+    "field_phone": "Phone",
+    "field_position": "Position",
+    "field_birth_date": "Date of Birth",
+    "field_bio": "Bio",
+    "bio_placeholder": "A short description about yourself…",
+    "save_changes": "Save Changes",
+    "saving": "Saving…",
+    "updated_success": "Profile updated successfully.",
+    "update_error": "An error occurred. Please try again.",
+    "field_current_password": "Current Password",
+    "field_new_password": "New Password",
+    "field_confirm_password": "Confirm New Password",
+    "update_password": "Update Password",
+    "updating": "Updating…",
+    "password_updated": "Password updated successfully.",
+    "password_mismatch": "New password and confirmation do not match.",
+    "crop_title": "Adjust your photo",
+    "crop_hint": "Drag to reposition. Use the slider to zoom.",
+    "crop_save": "Crop & Save"
   }
 }

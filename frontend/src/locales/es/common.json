@@ -15,7 +15,8 @@
     "tracking": "Seguimiento",
     "service_catalog": "Catálogo de Servicios",
     "calendar": "Calendario",
-    "profile": "Mi Perfil"
+    "profile": "Mi Perfil",
+    "open_menu": "Abrir menú"
   },
   "auth": {
     "sign_in": "Ingresar",
@@ -522,5 +523,32 @@
     "view_all": "Ver todos los eventos",
     "no_events": "No hay eventos próximos",
     "page_of": "{{current}} / {{total}}"
+  },
+  "profile": {
+    "page_title": "Perfil",
+    "page_subtitle": "Gestiona tu información personal y la seguridad de tu cuenta.",
+    "tab_info": "Información Personal",
+    "tab_security": "Seguridad",
+    "field_name": "Nombre completo",
+    "field_email": "Correo electrónico",
+    "field_phone": "Teléfono",
+    "field_position": "Cargo",
+    "field_birth_date": "Fecha de nacimiento",
+    "field_bio": "Biografía",
+    "bio_placeholder": "Una breve descripción sobre ti…",
+    "save_changes": "Guardar cambios",
+    "saving": "Guardando…",
+    "updated_success": "Perfil actualizado correctamente.",
+    "update_error": "Ocurrió un error. Por favor intenta nuevamente.",
+    "field_current_password": "Contraseña actual",
+    "field_new_password": "Nueva contraseña",
+    "field_confirm_password": "Confirmar nueva contraseña",
+    "update_password": "Actualizar contraseña",
+    "updating": "Actualizando…",
+    "password_updated": "Contraseña actualizada correctamente.",
+    "password_mismatch": "La nueva contraseña y la confirmación no coinciden.",
+    "crop_title": "Ajusta tu foto",
+    "crop_hint": "Arrastra para reposicionar. Usa el control para acercar.",
+    "crop_save": "Recortar y guardar"
   }
 }
