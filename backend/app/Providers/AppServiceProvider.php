@@ -4,12 +4,14 @@ namespace App\Providers;
 
 use App\Jobs\MarkInvitationEmailSent;
 use App\Models\BbAssignment;
+use App\Models\CatalogItem;
 use App\Models\Company;
 use App\Models\Event as EventModel;
 use App\Models\Franchise;
 use App\Models\User;
 use App\Notifications\UserInvitationNotification;
 use App\Policies\BbAssignmentPolicy;
+use App\Policies\CatalogItemPolicy;
 use App\Policies\CompanyPolicy;
 use App\Policies\EventPolicy;
 use App\Policies\FranchisePolicy;
@@ -43,6 +45,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Company::class, CompanyPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(EventModel::class, EventPolicy::class);
+        Gate::policy(CatalogItem::class, CatalogItemPolicy::class);
 
         // When the mail channel successfully hands off a UserInvitationNotification,
         // dispatch a job to stamp email_sent_at on the user. Using a job (rather than

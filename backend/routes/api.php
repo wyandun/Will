@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BbAssignmentController;
+use App\Http\Controllers\Api\CatalogItemController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\EventController;
@@ -104,6 +105,11 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::apiResource('system-admins', SystemAdminController::class)->only(['index', 'store', 'update', 'destroy']);
 
     Route::apiResource('events', EventController::class)->middleware('module.permission:calendar');
+
+    // Catalog (superadmin only). The /tree route MUST be registered BEFORE
+    // apiResource so the {catalogItem} wildcard does not capture "tree".
+    Route::get('catalog-items/tree', [CatalogItemController::class, 'tree']);
+    Route::apiResource('catalog-items', CatalogItemController::class);
 
     // Lightweight user search for "Add Guests" in calendar events.
     Route::get('users/search', UserSearchController::class);

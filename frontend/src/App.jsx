@@ -14,6 +14,7 @@ import SystemAdminsPage from './pages/system_admins/SystemAdminsPage';
 import InvitationsPage from './pages/users/InvitationsPage';
 import AcceptInvitationPage from './pages/invitations/AcceptInvitationPage';
 import EventsPage from './pages/calendar/EventsPage';
+import CatalogPage from './pages/catalog/CatalogPage';
 import { useAuthStore } from './store/authStore';
 
 /**
@@ -131,8 +132,8 @@ export default function App() {
           <Route
             path="/catalog"
             element={
-              <RoleRoute roles={ADMIN_ROLES}>
-                <StubPage title={t('nav.service_catalog')} />
+              <RoleRoute roles={['superadmin']}>
+                <CatalogPage />
               </RoleRoute>
             }
           />
