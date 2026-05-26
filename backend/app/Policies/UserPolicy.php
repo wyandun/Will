@@ -28,21 +28,135 @@ class UserPolicy
     }
 
     /**
-     * superadmin and admin_sm can send / manage invitations.
+     * superadmin, system_admin, system_admin_readonly (read), and admin_sm can access invitations.
      */
     public function inviteUsers(User $user): bool
+    {
+        return $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY, Role::ADMIN_SM]);
+    }
+
+    // ── Franchise admin management (superadmin only) ──────────────────────────
+
+    public function updateFranchiseAdmin(User $user, User $admin): bool
+    {
+        if (! $admin->hasRole(Role::ADMIN_SM)) {
+            return false;
+        }
+
+        return $user->hasRole(Role::SUPERADMIN);
+    }
+
+    public function deleteFranchiseAdmin(User $user, User $admin): bool
+    {
+        if (! $admin->hasRole(Role::ADMIN_SM)) {
+            return false;
+        }
+
+        return $user->hasRole(Role::SUPERADMIN);
+    }
+
+    public function restoreFranchiseAdmin(User $user): bool
+    {
+        return $user->hasRole(Role::SUPERADMIN);
+    }
+
+    public function updateFranchiseAdminPermissions(User $user, User $admin): bool
+    {
+        if (! $admin->hasRole(Role::ADMIN_SM)) {
+            return false;
+        }
+
+        return $user->hasRole(Role::SUPERADMIN);
+    }
+
+    /**
+     * Separated from updateFranchiseAdminPermissions to decouple read and write
+     * authorization. Both currently check the same roles (superadmin + target is
+     * admin_sm), but keeping them distinct ensures a future write-specific restriction
+     * won't accidentally break the GET /permissions endpoint.
+     */
+    public function viewFranchiseAdminPermissions(User $user, User $admin): bool
+    {
+        if (! $admin->hasRole(Role::ADMIN_SM)) {
+            return false;
+        }
+
+        return $user->hasRole(Role::SUPERADMIN);
+    }
+
+    // ── Franchise client management (superadmin + admin_sm) ─────────────────────
+
+    public function updateFranchiseClient(User $user, User $client): bool
+    {
+        if (! $client->hasAnyRole([Role::SB_OWNER, Role::BB_EMPLOYEE])) {
+            return false;
+        }
+
+        if ($user->hasRole(Role::SUPERADMIN)) {
+            return true;
+        }
+
+        return $user->hasRole(Role::ADMIN_SM)
+            && $user->sm_franchise_id === $client->sm_franchise_id;
+    }
+
+    public function deleteFranchiseClient(User $user, User $client): bool
+    {
+        if (! $client->hasAnyRole([Role::SB_OWNER, Role::BB_EMPLOYEE])) {
+            return false;
+        }
+
+        if ($user->hasRole(Role::SUPERADMIN)) {
+            return true;
+        }
+
+        return $user->hasRole(Role::ADMIN_SM)
+            && $user->sm_franchise_id === $client->sm_franchise_id;
+    }
+
+    public function restoreFranchiseClient(User $user): bool
     {
         return $user->hasAnyRole([Role::SUPERADMIN, Role::ADMIN_SM]);
     }
 
+    public function viewFranchiseClientPermissions(User $user, User $client): bool
+    {
+        if (! $client->hasAnyRole([Role::SB_OWNER, Role::BB_EMPLOYEE])) {
+            return false;
+        }
+
+        if ($user->hasRole(Role::SUPERADMIN)) {
+            return true;
+        }
+
+        return $user->hasRole(Role::ADMIN_SM)
+            && $user->sm_franchise_id === $client->sm_franchise_id;
+    }
+
+    public function updateFranchiseClientPermissions(User $user, User $client): bool
+    {
+        if (! $client->hasAnyRole([Role::SB_OWNER, Role::BB_EMPLOYEE])) {
+            return false;
+        }
+
+        if ($user->hasRole(Role::SUPERADMIN)) {
+            return true;
+        }
+
+        return $user->hasRole(Role::ADMIN_SM)
+            && $user->sm_franchise_id === $client->sm_franchise_id;
+    }
+
+    // ── Invitations ─────────────────────────────────────────────────────────────
+
     /**
      * Actor can manage (resend / revoke) a specific pending invitation.
-     * Superadmin can act on any invitation; admin_sm only on invitations
+     * Superadmin/system_admin can act on any invitation; admin_sm only on invitations
      * belonging to their own franchise.
      */
     public function manageInvitation(User $authUser, User $target): bool
     {
-        if ($authUser->hasRole(Role::SUPERADMIN)) {
+        if ($authUser->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN])) {
             return true;
         }
 

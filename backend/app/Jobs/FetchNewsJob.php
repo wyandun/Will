@@ -14,6 +14,8 @@ class FetchNewsJob implements ShouldQueue
 {
     use Queueable;
 
+    public string $queue = 'news';
+
     public int $tries = 1;
 
     public int $timeout = 300;

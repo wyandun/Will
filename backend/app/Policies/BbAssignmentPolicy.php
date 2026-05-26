@@ -10,12 +10,12 @@ use Illuminate\Auth\Access\Response;
 class BbAssignmentPolicy
 {
     /**
-     * Assign a BB to a company: superadmin always allowed;
+     * Assign a BB to a company: superadmin/system_admin always allowed;
      * admin_sm only within their own franchise scope (enforced in the service).
      */
     public function create(User $user): Response
     {
-        if ($user->hasRole(Role::SUPERADMIN)) {
+        if ($user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN])) {
             return Response::allow();
         }
 
@@ -31,12 +31,12 @@ class BbAssignmentPolicy
     }
 
     /**
-     * Remove a BB assignment: superadmin always allowed;
+     * Remove a BB assignment: superadmin/system_admin always allowed;
      * admin_sm only if the related company belongs to their franchise.
      */
     public function delete(User $user, BbAssignment $bbAssignment): bool
     {
-        if ($user->hasRole(Role::SUPERADMIN)) {
+        if ($user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN])) {
             return true;
         }
 

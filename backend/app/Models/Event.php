@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -46,6 +47,8 @@ class Event extends Model
         'color',
         'visibility',
         'type',
+        'rrule',
+        'reminder_minutes',
     ];
 
     /**
@@ -72,6 +75,18 @@ class Event extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * Guests invited to this event (event_attendees pivot).
+     *
+     * @return BelongsToMany<User, $this>
+     */
+    public function attendees(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'event_attendees')
+            ->withPivot('rsvp_status')
+            ->withTimestamps();
     }
 
     // ---------------------------------------------------------------------------

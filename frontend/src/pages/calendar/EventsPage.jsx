@@ -212,8 +212,9 @@ export default function EventsPage() {
     }
   }
 
+  const canCreate = role === 'superadmin' || role === 'system_admin' || role === 'admin_sm';
   const canManage = (event) =>
-    user?.id === event.created_by?.id || role === 'superadmin';
+    user?.id === event.created_by?.id || role === 'superadmin' || role === 'system_admin';
 
   const periodLabel = formatPeriodLabel(view, currentDate, i18n.language);
 
@@ -366,7 +367,7 @@ export default function EventsPage() {
                   month={currentDate.getMonth()}
                   events={events}
                   onEdit={openEdit}
-                  onCreateWithDate={openCreateWithDate}
+                  onCreateWithDate={canCreate ? openCreateWithDate : undefined}
                 />
               )}
             </>
@@ -384,7 +385,7 @@ export default function EventsPage() {
                   currentDate={currentDate}
                   events={events}
                   onEdit={openEdit}
-                  onCreateWithDate={openCreateWithDate}
+                  onCreateWithDate={canCreate ? openCreateWithDate : undefined}
                 />
               )}
             </>
@@ -393,7 +394,7 @@ export default function EventsPage() {
 
         {/* Right sidebar — upcoming events */}
         <aside className="w-72 flex-shrink-0 flex flex-col gap-4 sticky top-20 self-start">
-          <UpcomingEventsSidebar hideFooter paginated refreshKey={sidebarKey} onEventClick={openEdit} onCreateClick={openCreate} />
+          <UpcomingEventsSidebar hideFooter paginated refreshKey={sidebarKey} onEventClick={openEdit} onCreateClick={canCreate ? openCreate : undefined} />
         </aside>
       </div>
 

@@ -10,20 +10,26 @@ use Illuminate\Auth\Access\Response;
 class CompanyPolicy
 {
     /**
-     * List companies: superadmin sees all, admin_sm sees theirs.
+     * List companies: superadmin/system_admin/system_admin_readonly see all,
+     * admin_sm sees theirs.
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasRole(Role::SUPERADMIN) || $user->hasRole(Role::ADMIN_SM);
+        return $user->hasAnyRole([
+            Role::SUPERADMIN,
+            Role::SYSTEM_ADMIN,
+            Role::SYSTEM_ADMIN_READONLY,
+            Role::ADMIN_SM,
+        ]);
     }
 
     /**
-     * View a single company: superadmin always allowed;
+     * View a single company: superadmin/system_admin/system_admin_readonly always allowed;
      * admin_sm only if the company belongs to their franchise.
      */
     public function view(User $user, Company $company): bool
     {
-        if ($user->hasRole(Role::SUPERADMIN)) {
+        if ($user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY])) {
             return true;
         }
 
@@ -32,11 +38,11 @@ class CompanyPolicy
     }
 
     /**
-     * Create a company: superadmin always; admin_sm only if assigned to a franchise.
+     * Create a company: superadmin/system_admin always; admin_sm only if assigned to a franchise.
      */
     public function create(User $user): Response
     {
-        if ($user->hasRole(Role::SUPERADMIN)) {
+        if ($user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN])) {
             return Response::allow();
         }
 
@@ -52,11 +58,11 @@ class CompanyPolicy
     }
 
     /**
-     * Update a company: superadmin or admin_sm (only their franchise's companies).
+     * Update a company: superadmin/system_admin or admin_sm (only their franchise's companies).
      */
     public function update(User $user, Company $company): bool
     {
-        if ($user->hasRole(Role::SUPERADMIN)) {
+        if ($user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN])) {
             return true;
         }
 
@@ -65,11 +71,11 @@ class CompanyPolicy
     }
 
     /**
-     * Delete a company: superadmin or admin_sm (only their franchise's companies).
+     * Delete a company: superadmin/system_admin or admin_sm (only their franchise's companies).
      */
     public function delete(User $user, Company $company): bool
     {
-        if ($user->hasRole(Role::SUPERADMIN)) {
+        if ($user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN])) {
             return true;
         }
 

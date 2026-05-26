@@ -2,6 +2,7 @@ import PropTypes from 'prop-types';
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { invitationsApi } from '../../api/invitations';
+import { useAuthStore } from '../../store/authStore';
 import InviteUserModal from './InviteUserModal';
 import { SYSTEM_INVITABLE_ROLES } from '../../constants/roles';
 
@@ -81,6 +82,8 @@ ExpiryBadge.propTypes = {
 
 export default function InvitationsPage() {
   const { t } = useTranslation('common');
+  const role = useAuthStore((s) => s.role);
+  const canWrite = role === 'superadmin' || role === 'system_admin' || role === 'admin_sm';
 
   const [invitations, setInvitations] = useState([]);
   const [loading, setLoading]         = useState(true);
@@ -166,15 +169,17 @@ export default function InvitationsPage() {
           <h1 className="text-xl font-semibold text-slate-900">{t('invitation.page_title')}</h1>
           <p className="mt-1 text-sm text-slate-500">{t('invitation.page_subtitle')}</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-700 transition-colors"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
-          {t('invitation.invite_btn')}
-        </button>
+        {canWrite && (
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-700 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            {t('invitation.invite_btn')}
+          </button>
+        )}
       </div>
 
       {/* Feedback banners */}
@@ -227,7 +232,7 @@ export default function InvitationsPage() {
                   t('invitation.col_role'),
                   t('invitation.col_invited_by'),
                   t('invitation.col_expires'),
-                  t('invitation.col_actions'),
+                  ...(canWrite ? [t('invitation.col_actions')] : []),
                 ].map((h) => (
                   <th
                     key={h}
@@ -257,24 +262,26 @@ export default function InvitationsPage() {
                     <td className="px-5 py-4">
                       <ExpiryBadge expiresAt={user.invitation_expires_at} />
                     </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => handleResend(user)}
-                          disabled={isActing}
-                          className="text-sm font-medium text-blue-600 hover:text-blue-800 disabled:opacity-40 transition-colors"
-                        >
-                          {t('invitation.action_resend')}
-                        </button>
-                        <button
-                          onClick={() => handleRevoke(user)}
-                          disabled={isActing}
-                          className="text-sm font-medium text-red-500 hover:text-red-700 disabled:opacity-40 transition-colors"
-                        >
-                          {t('invitation.action_revoke')}
-                        </button>
-                      </div>
-                    </td>
+                    {canWrite && (
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => handleResend(user)}
+                            disabled={isActing}
+                            className="text-sm font-medium text-blue-600 hover:text-blue-800 disabled:opacity-40 transition-colors"
+                          >
+                            {t('invitation.action_resend')}
+                          </button>
+                          <button
+                            onClick={() => handleRevoke(user)}
+                            disabled={isActing}
+                            className="text-sm font-medium text-red-500 hover:text-red-700 disabled:opacity-40 transition-colors"
+                          >
+                            {t('invitation.action_revoke')}
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 );
               })}
