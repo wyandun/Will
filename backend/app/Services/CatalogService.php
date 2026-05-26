@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\CatalogLevel;
 use App\Models\CatalogItem;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -56,13 +57,13 @@ class CatalogService
     {
         $query = CatalogItem::where('level', $level)->orderBy('order_index');
 
-        if ($level === CatalogItem::LEVEL_BUNDLE) {
+        if ($level === CatalogLevel::Bundle->value) {
             $query->with(['children' => function ($q) {
                 $q->with('children');
             }]);
         }
 
-        if ($level === CatalogItem::LEVEL_SERVICE) {
+        if ($level === CatalogLevel::Service->value) {
             $query->with('children');
         }
 
@@ -140,7 +141,7 @@ class CatalogService
     public function delete(CatalogItem $item, bool $cascadeChildren = false): void
     {
         DB::transaction(function () use ($item, $cascadeChildren) {
-            if ($cascadeChildren && $item->level === CatalogItem::LEVEL_SERVICE) {
+            if ($cascadeChildren && $item->level === CatalogLevel::Service) {
                 $item->children()->delete();
             } else {
                 $item->children()->update(['parent_id' => null]);
@@ -164,13 +165,13 @@ class CatalogService
      */
     private function reassignChildren(CatalogItem $parent, ?array $deliverableIds, ?array $serviceIds): void
     {
-        if ($deliverableIds !== null && $parent->level === CatalogItem::LEVEL_SERVICE) {
+        if ($deliverableIds !== null && $parent->level === CatalogLevel::Service) {
             CatalogItem::deliverables()
                 ->whereIn('id', $deliverableIds)
                 ->update(['parent_id' => $parent->id]);
         }
 
-        if ($serviceIds !== null && $parent->level === CatalogItem::LEVEL_BUNDLE) {
+        if ($serviceIds !== null && $parent->level === CatalogLevel::Bundle) {
             CatalogItem::services()
                 ->whereIn('id', $serviceIds)
                 ->update(['parent_id' => $parent->id]);

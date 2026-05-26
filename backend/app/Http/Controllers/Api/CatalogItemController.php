@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\CatalogLevel;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CatalogItem\StoreCatalogItemRequest;
 use App\Http\Requests\CatalogItem\UpdateCatalogItemRequest;
@@ -11,6 +12,8 @@ use App\Services\CatalogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
+use Illuminate\Validation\Rule;
 use OpenApi\Attributes as OA;
 
 class CatalogItemController extends Controller
@@ -20,38 +23,36 @@ class CatalogItemController extends Controller
     #[OA\Get(
         path: '/catalog-items',
         tags: ['Catalog'],
-        summary: 'Listar catálogo (filtrable por level) o devolver árbol completo',
-        description: 'Sin filtro retorna el árbol completo (bundles → services → deliverables). Con ?level retorna una lista plana.',
+        summary: 'Listar items del catálogo filtrados por level',
+        description: 'Devuelve una colección plana filtrada por level. Para obtener el árbol completo usar GET /catalog-items/tree.',
         security: [['sanctum' => []]],
         parameters: [
             new OA\Parameter(
                 name: 'level',
                 in: 'query',
-                required: false,
+                required: true,
                 description: 'Nivel jerárquico a listar',
                 schema: new OA\Schema(type: 'string', enum: ['bundle', 'service', 'deliverable'])
             ),
         ],
         responses: [
-            new OA\Response(response: 200, description: 'Catálogo'),
+            new OA\Response(response: 200, description: 'Colección de items'),
             new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
             new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
+            new OA\Response(response: 422, description: 'Validación', content: new OA\JsonContent(ref: '#/components/schemas/ValidationError')),
         ]
     )]
-    public function index(Request $request): AnonymousResourceCollection|JsonResponse
+    public function index(Request $request): AnonymousResourceCollection
     {
         $this->authorize('viewAny', CatalogItem::class);
 
-        $request->validate(['level' => ['nullable', 'string', 'in:bundle,service,deliverable']]);
-        $level = $request->query('level');
+        $request->validate([
+            'level' => ['required', 'string', Rule::enum(CatalogLevel::class)],
+        ]);
 
-        if ($level) {
-            return CatalogItemResource::collection(
-                $this->catalogService->list($level)
-            );
-        }
-
-        return $this->buildTreeResponse();
+        return CatalogItemResource::collection(
+            $this->catalogService->list($request->query('level'))
+        );
     }
 
     #[OA\Get(
@@ -69,11 +70,6 @@ class CatalogItemController extends Controller
     {
         $this->authorize('viewAny', CatalogItem::class);
 
-        return $this->buildTreeResponse();
-    }
-
-    private function buildTreeResponse(): JsonResponse
-    {
         $tree = $this->catalogService->tree();
 
         return response()->json([
@@ -151,12 +147,13 @@ class CatalogItemController extends Controller
     {
         $this->authorize('view', $catalogItem);
 
-        $catalogItem->load(['parent', 'children']);
+        // Load grandchildren as well so the tree is complete for bundles
+        // (bundle → services → deliverables).
+        $catalogItem->load(['parent', 'children.children']);
 
         return response()->json([
             'success' => true,
             'data' => new CatalogItemResource($catalogItem),
-            'message' => 'OK.',
         ]);
     }
 
@@ -212,7 +209,7 @@ class CatalogItemController extends Controller
         path: '/catalog-items/{id}',
         tags: ['Catalog'],
         summary: 'Eliminar un item del catálogo',
-        description: 'Con ?cascade_children=true los hijos se eliminan junto con el item. Sin el parámetro quedan huérfanos.',
+        description: 'Con ?cascade_children=true los hijos se eliminan junto con el item (solo aplica a services). Sin el parámetro quedan huérfanos.',
         security: [['sanctum' => []]],
         parameters: [
             new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
@@ -225,24 +222,29 @@ class CatalogItemController extends Controller
             ),
         ],
         responses: [
-            new OA\Response(response: 200, description: 'Eliminado'),
+            new OA\Response(response: 204, description: 'Eliminado (sin contenido)'),
             new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
             new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
             new OA\Response(response: 404, ref: '#/components/responses/NotFound'),
+            new OA\Response(response: 422, description: 'Validación', content: new OA\JsonContent(ref: '#/components/schemas/ValidationError')),
         ]
     )]
-    public function destroy(Request $request, CatalogItem $catalogItem): JsonResponse
+    public function destroy(Request $request, CatalogItem $catalogItem): Response|JsonResponse
     {
         $this->authorize('delete', $catalogItem);
 
-        $cascade = filter_var($request->query('cascade_children', false), FILTER_VALIDATE_BOOLEAN);
+        $request->validate(['cascade_children' => ['nullable', 'boolean']]);
+        $cascade = $request->boolean('cascade_children');
+
+        if ($cascade && $catalogItem->level !== CatalogLevel::Service) {
+            return response()->json([
+                'success' => false,
+                'message' => 'cascade_children only applies to service-level items.',
+            ], 422);
+        }
 
         $this->catalogService->delete($catalogItem, $cascade);
 
-        return response()->json([
-            'success' => true,
-            'data' => null,
-            'message' => 'catalog.deleted_success',
-        ]);
+        return response()->noContent();
     }
 }

@@ -2,39 +2,40 @@
 
 namespace App\Http\Requests\CatalogItem;
 
-use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
-class UpdateCatalogItemRequest extends FormRequest
+class UpdateCatalogItemRequest extends CatalogItemRequest
 {
-    /**
-     * Authorization is handled by CatalogItemPolicy — always pass here.
-     */
-    public function authorize(): bool
-    {
-        return true;
-    }
-
     /**
      * @return array<string, array<int, mixed>>
      */
     public function rules(): array
     {
-        return [
-            'level' => ['sometimes', 'in:bundle,service,deliverable'],
-            'name_es' => ['sometimes', 'required', 'string', 'max:255'],
-            'name_en' => ['sometimes', 'required', 'string', 'max:255'],
-            'description_es' => ['sometimes', 'nullable', 'string'],
-            'description_en' => ['sometimes', 'nullable', 'string'],
-            'parent_id' => ['sometimes', 'nullable', 'integer', 'exists:catalog_items,id'],
-            'is_monthly' => ['sometimes', 'boolean'],
-            'order_index' => ['sometimes', 'integer', 'min:0'],
-            'estimated_hours' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:9999.99'],
-            'service_type' => ['sometimes', 'nullable', 'in:individual,package,retainer'],
-            'deliverable_ids' => ['sometimes', 'nullable', 'array'],
-            'deliverable_ids.*' => ['integer', Rule::exists('catalog_items', 'id')->where('level', 'deliverable')],
-            'service_ids' => ['sometimes', 'nullable', 'array'],
-            'service_ids.*' => ['integer', Rule::exists('catalog_items', 'id')->where('level', 'service')],
-        ];
+        $rules = $this->sharedRules();
+
+        // On update every field is optional; name_* must stay non-empty when present.
+        array_unshift($rules['level'], 'sometimes');
+        array_unshift($rules['name_es'], 'sometimes', 'required');
+        array_unshift($rules['name_en'], 'sometimes', 'required');
+        array_unshift($rules['description_es'], 'sometimes');
+        array_unshift($rules['description_en'], 'sometimes');
+        array_unshift($rules['parent_id'], 'sometimes');
+        array_unshift($rules['is_monthly'], 'sometimes');
+        array_unshift($rules['order_index'], 'sometimes');
+        array_unshift($rules['estimated_hours'], 'sometimes');
+        array_unshift($rules['service_type'], 'sometimes');
+        array_unshift($rules['deliverable_ids'], 'sometimes');
+        array_unshift($rules['service_ids'], 'sometimes');
+
+        return $rules;
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $v) {
+            // Only enforce parent × level coherence when at least one of the two
+            // fields is present in the payload.
+            $this->validateParentLevelCoherence($v, strict: false);
+        });
     }
 }

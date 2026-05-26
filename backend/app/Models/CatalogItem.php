@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\CatalogLevel;
+use App\Enums\CatalogServiceType;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
@@ -12,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
- * @property string $level
+ * @property CatalogLevel $level
  * @property int|null $parent_id
  * @property string $name_es
  * @property string $name_en
@@ -21,18 +23,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool $is_monthly
  * @property int $order_index
  * @property float|null $estimated_hours
- * @property string|null $service_type
+ * @property CatalogServiceType|null $service_type
  * @property-read float $total_hours
  */
 class CatalogItem extends Model
 {
     use HasFactory;
-
-    public const LEVEL_BUNDLE = 'bundle';
-
-    public const LEVEL_SERVICE = 'service';
-
-    public const LEVEL_DELIVERABLE = 'deliverable';
 
     /**
      * The attributes that are mass assignable.
@@ -58,6 +54,8 @@ class CatalogItem extends Model
     protected function casts(): array
     {
         return [
+            'level' => CatalogLevel::class,
+            'service_type' => CatalogServiceType::class,
             'is_monthly' => 'boolean',
             'estimated_hours' => 'float',
             'order_index' => 'integer',
@@ -90,17 +88,17 @@ class CatalogItem extends Model
 
     public function scopeBundles(Builder $query): Builder
     {
-        return $query->where('level', self::LEVEL_BUNDLE);
+        return $query->where('level', CatalogLevel::Bundle->value);
     }
 
     public function scopeServices(Builder $query): Builder
     {
-        return $query->where('level', self::LEVEL_SERVICE);
+        return $query->where('level', CatalogLevel::Service->value);
     }
 
     public function scopeDeliverables(Builder $query): Builder
     {
-        return $query->where('level', self::LEVEL_DELIVERABLE);
+        return $query->where('level', CatalogLevel::Deliverable->value);
     }
 
     // ---------------------------------------------------------------------------
@@ -120,31 +118,37 @@ class CatalogItem extends Model
     protected function totalHours(): Attribute
     {
         return Attribute::make(
-            get: function (): float {
-                if ($this->level === self::LEVEL_DELIVERABLE) {
-                    return (float) ($this->estimated_hours ?? 0);
-                }
-
-                if ($this->level === self::LEVEL_SERVICE) {
-                    /** @var Collection<int, self> $children */
-                    $children = $this->relationLoaded('children')
-                        ? $this->children
-                        : $this->children()->where('level', self::LEVEL_DELIVERABLE)->get();
-
-                    return (float) $children->sum('estimated_hours');
-                }
-
-                if ($this->level === self::LEVEL_BUNDLE) {
-                    /** @var Collection<int, self> $services */
-                    $services = $this->relationLoaded('children')
-                        ? $this->children
-                        : $this->children()->with('children')->get();
-
-                    return (float) $services->sum(fn ($service) => $service->total_hours);
-                }
-
-                return 0.0;
+            get: fn (): float => match ($this->level) {
+                CatalogLevel::Deliverable => (float) ($this->estimated_hours ?? 0),
+                CatalogLevel::Service => $this->sumServiceHours(),
+                CatalogLevel::Bundle => $this->sumBundleHours(),
             }
         );
+    }
+
+    /**
+     * Sum of estimated_hours across this service's deliverable children.
+     */
+    private function sumServiceHours(): float
+    {
+        /** @var Collection<int, self> $children */
+        $children = $this->relationLoaded('children')
+            ? $this->children
+            : $this->children()->where('level', CatalogLevel::Deliverable->value)->get();
+
+        return (float) $children->sum('estimated_hours');
+    }
+
+    /**
+     * Sum of total_hours across this bundle's service children.
+     */
+    private function sumBundleHours(): float
+    {
+        /** @var Collection<int, self> $services */
+        $services = $this->relationLoaded('children')
+            ? $this->children
+            : $this->children()->with('children')->get();
+
+        return (float) $services->sum(fn ($service) => $service->total_hours);
     }
 }
