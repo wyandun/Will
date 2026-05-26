@@ -38,6 +38,10 @@ function getAvatarColor(name) {
   return colors[Math.abs(hash) % colors.length];
 }
 
+function formatLastSeen(dateStr) {
+  return timeAgo(dateStr);
+}
+
 // ─── Badge colors ─────────────────────────────────────────────────────────────
 
 const AREA_COLORS = {
