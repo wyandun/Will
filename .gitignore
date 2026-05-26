@@ -51,6 +51,9 @@ docs/Linear/
 docs/Home_Issues_Analysis.md
 docs/guia_base_de_datos_2026-04-18.md
 
+# MCP config — contains API keys, never commit
+.mcp.json
+
 # MCP server (local-only tooling, not part of the project)
 mcp-servers/
 # Pero necesito TODOS los archivos para desarrollo local
