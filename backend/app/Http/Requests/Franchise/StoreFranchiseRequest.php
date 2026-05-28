@@ -45,13 +45,13 @@ class StoreFranchiseRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.required'     => 'franchises.form.name_required',
-            'name.unique'       => 'franchises.form.name_unique',
-            'country.required'  => 'franchises.form.country_required',
+            'name.required' => 'franchises.form.name_required',
+            'name.unique' => 'franchises.form.name_unique',
+            'country.required' => 'franchises.form.country_required',
             'timezone.required' => 'franchises.form.timezone_required',
             'timezone.timezone' => 'franchises.form.timezone_invalid',
-            'phone.required'    => 'franchises.form.phone_required',
-            'address.required'  => 'franchises.form.address_required',
+            'phone.required' => 'franchises.form.phone_required',
+            'address.required' => 'franchises.form.address_required',
         ];
     }
 }

@@ -7,6 +7,7 @@ use App\Models\Company;
 use App\Models\User;
 use App\Models\UserPermission;
 use App\Notifications\UserInvitationNotification;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -39,7 +40,7 @@ class InvitationService
      * franchise. Users without a franchise context get a 403 (defensive: a
      * WHERE sm_franchise_id IS NULL would silently match cross-tenant rows).
      */
-    public function listPending(User $authUser): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    public function listPending(User $authUser): LengthAwarePaginator
     {
         $query = User::pendingInvitation()
             ->with(['roles', 'invitedBy:id,name'])

@@ -25,10 +25,10 @@ class LoginRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'email.required'    => 'auth.errors.email_required',
-            'email.email'       => 'auth.errors.email_invalid',
+            'email.required' => 'auth.errors.email_required',
+            'email.email' => 'auth.errors.email_invalid',
             'password.required' => 'auth.errors.password_required',
-            'password.min'      => 'auth.errors.password_min',
+            'password.min' => 'auth.errors.password_min',
         ];
     }
 }

@@ -70,9 +70,9 @@ class StoreBbAssignmentRequest extends FormRequest
     {
         return [
             'bb_user_id.required' => 'bb_assignments.form.bb_user_required',
-            'bb_user_id.exists'   => 'bb_assignments.form.bb_user_invalid',
+            'bb_user_id.exists' => 'bb_assignments.form.bb_user_invalid',
             'company_id.required' => 'bb_assignments.form.company_required',
-            'company_id.exists'   => 'bb_assignments.form.company_invalid',
+            'company_id.exists' => 'bb_assignments.form.company_invalid',
         ];
     }
 }
