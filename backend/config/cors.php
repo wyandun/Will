@@ -11,7 +11,8 @@ return [
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
     'allowed_methods' => ['*'],
     'allowed_origins' => $allowedOrigins,
-    'allowed_origins_patterns' => [],
+    // Automatically allow any Railway.app subdomain (staging / preview deployments).
+    'allowed_origins_patterns' => ['#^https://[a-zA-Z0-9-]+\.up\.railway\.app$#'],
     'allowed_headers' => ['*'],
     'exposed_headers' => [],
     'max_age' => 0,
