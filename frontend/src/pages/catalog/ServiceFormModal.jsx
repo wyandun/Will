@@ -6,7 +6,6 @@ const SERVICE_TYPES = ['individual', 'package', 'retainer'];
 
 const EMPTY_FORM = {
   name_es: '',
-  name_en: '',
   service_type: 'individual',
   description_es: '',
   deliverable_ids: [],
@@ -41,7 +40,6 @@ export default function ServiceFormModal({ service, services, onClose, onSave })
         : [];
       setForm({
         name_es: service.name_es ?? '',
-        name_en: service.name_en ?? '',
         service_type: service.service_type ?? 'individual',
         description_es: service.description_es ?? '',
         deliverable_ids: currentDeliverableIds,
@@ -75,8 +73,7 @@ export default function ServiceFormModal({ service, services, onClose, onSave })
 
   function validate() {
     const next = {};
-    if (!form.name_es.trim()) next.name_es = t('catalog.errors.name_es_required');
-    if (!form.name_en.trim()) next.name_en = t('catalog.errors.name_en_required');
+    if (!form.name_es.trim()) next.name_es = t('catalog.errors.name_required');
     if (!SERVICE_TYPES.includes(form.service_type)) {
       next.service_type = t('catalog.errors.type_required');
     }
@@ -96,7 +93,7 @@ export default function ServiceFormModal({ service, services, onClose, onSave })
     const payload = {
       level: 'service',
       name_es: form.name_es.trim(),
-      name_en: form.name_en.trim(),
+      name_en: form.name_es.trim(),
       service_type: form.service_type,
       description_es: form.description_es.trim(),
       deliverable_ids: form.deliverable_ids,
@@ -150,37 +147,20 @@ export default function ServiceFormModal({ service, services, onClose, onSave })
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="srv-name-es" className="block text-sm font-medium text-slate-700 mb-1">
-                  {t('catalog.form.name_es')} <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="srv-name-es"
-                  name="name_es"
-                  type="text"
-                  value={form.name_es}
-                  onChange={handleChange}
-                  disabled={isSubmitting}
-                  className={`w-full rounded-lg border px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 transition ${errors.name_es ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
-                />
-                {errors.name_es && <p className="mt-1 text-xs text-red-600">{errors.name_es}</p>}
-              </div>
-              <div>
-                <label htmlFor="srv-name-en" className="block text-sm font-medium text-slate-700 mb-1">
-                  {t('catalog.form.name_en')} <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="srv-name-en"
-                  name="name_en"
-                  type="text"
-                  value={form.name_en}
-                  onChange={handleChange}
-                  disabled={isSubmitting}
-                  className={`w-full rounded-lg border px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 transition ${errors.name_en ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
-                />
-                {errors.name_en && <p className="mt-1 text-xs text-red-600">{errors.name_en}</p>}
-              </div>
+            <div>
+              <label htmlFor="srv-name-es" className="block text-sm font-medium text-slate-700 mb-1">
+                {t('catalog.form.name')} <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="srv-name-es"
+                name="name_es"
+                type="text"
+                value={form.name_es}
+                onChange={handleChange}
+                disabled={isSubmitting}
+                className={`w-full rounded-lg border px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 transition ${errors.name_es ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
+              />
+              {errors.name_es && <p className="mt-1 text-xs text-red-600">{errors.name_es}</p>}
             </div>
 
             {/* Service type toggle */}

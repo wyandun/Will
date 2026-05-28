@@ -671,6 +671,7 @@
       "retainer": "Retainer"
     },
     "form": {
+      "name": "Nombre",
       "name_es": "Nombre ES",
       "name_en": "Nombre EN",
       "phase": "Fase",
@@ -710,6 +711,7 @@
       "delete_confirm": "¿Eliminar el paquete \"{{name}}\"? Esta acción no se puede deshacer."
     },
     "errors": {
+      "name_required": "El nombre es obligatorio.",
       "name_es_required": "El nombre en español es obligatorio.",
       "name_en_required": "El nombre en inglés es obligatorio.",
       "service_required": "Debes seleccionar un servicio.",

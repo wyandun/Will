@@ -671,6 +671,7 @@
       "retainer": "Retainer"
     },
     "form": {
+      "name": "Name",
       "name_es": "Name ES",
       "name_en": "Name EN",
       "phase": "Phase",
@@ -710,6 +711,7 @@
       "delete_confirm": "Delete package \"{{name}}\"? This action cannot be undone."
     },
     "errors": {
+      "name_required": "Name is required.",
       "name_es_required": "Spanish name is required.",
       "name_en_required": "English name is required.",
       "service_required": "You must select a service.",

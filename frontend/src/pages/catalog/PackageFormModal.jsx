@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 
 const EMPTY_FORM = {
   name_es: '',
-  name_en: '',
   description_es: '',
   service_ids: [],
 };
@@ -30,7 +29,6 @@ export default function PackageFormModal({ bundle, services, onClose, onSave }) 
         : [];
       setForm({
         name_es: bundle.name_es ?? '',
-        name_en: bundle.name_en ?? '',
         description_es: bundle.description_es ?? '',
         service_ids: currentServiceIds,
       });
@@ -63,8 +61,7 @@ export default function PackageFormModal({ bundle, services, onClose, onSave }) 
 
   function validate() {
     const next = {};
-    if (!form.name_es.trim()) next.name_es = t('catalog.errors.name_es_required');
-    if (!form.name_en.trim()) next.name_en = t('catalog.errors.name_en_required');
+    if (!form.name_es.trim()) next.name_es = t('catalog.errors.name_required');
     return next;
   }
 
@@ -81,7 +78,7 @@ export default function PackageFormModal({ bundle, services, onClose, onSave }) 
     const payload = {
       level: 'bundle',
       name_es: form.name_es.trim(),
-      name_en: form.name_en.trim(),
+      name_en: form.name_es.trim(),
       description_es: form.description_es.trim(),
       service_ids: form.service_ids,
     };
@@ -134,37 +131,20 @@ export default function PackageFormModal({ bundle, services, onClose, onSave }) 
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="bun-name-es" className="block text-sm font-medium text-slate-700 mb-1">
-                  {t('catalog.form.name_es')} <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="bun-name-es"
-                  name="name_es"
-                  type="text"
-                  value={form.name_es}
-                  onChange={handleChange}
-                  disabled={isSubmitting}
-                  className={`w-full rounded-lg border px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 transition ${errors.name_es ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
-                />
-                {errors.name_es && <p className="mt-1 text-xs text-red-600">{errors.name_es}</p>}
-              </div>
-              <div>
-                <label htmlFor="bun-name-en" className="block text-sm font-medium text-slate-700 mb-1">
-                  {t('catalog.form.name_en')} <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="bun-name-en"
-                  name="name_en"
-                  type="text"
-                  value={form.name_en}
-                  onChange={handleChange}
-                  disabled={isSubmitting}
-                  className={`w-full rounded-lg border px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 transition ${errors.name_en ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
-                />
-                {errors.name_en && <p className="mt-1 text-xs text-red-600">{errors.name_en}</p>}
-              </div>
+            <div>
+              <label htmlFor="bun-name-es" className="block text-sm font-medium text-slate-700 mb-1">
+                {t('catalog.form.name')} <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="bun-name-es"
+                name="name_es"
+                type="text"
+                value={form.name_es}
+                onChange={handleChange}
+                disabled={isSubmitting}
+                className={`w-full rounded-lg border px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 transition ${errors.name_es ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
+              />
+              {errors.name_es && <p className="mt-1 text-xs text-red-600">{errors.name_es}</p>}
             </div>
 
             <div>
