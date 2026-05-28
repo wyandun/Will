@@ -469,7 +469,7 @@ function PostDetailModal({ post, onClose, onToast, onPostUpdated }) {
 
 // ─── PostCard ─────────────────────────────────────────────────────────────────
 
-function PostCard({ post, currentUser, role, canWriteFeed, onEdit, onDelete, onToast, onOpen, onPostUpdated }) {
+function PostCard({ post, currentUser, canWriteFeed, onEdit, onDelete, onToast, onOpen, onPostUpdated }) {
   const { t } = useTranslation('common');
   const [menuOpen, setMenuOpen] = useState(false);
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
@@ -733,7 +733,7 @@ function UserAvatar({ user }) {
 
 // ─── ComposeBar ───────────────────────────────────────────────────────────────
 
-function ComposeBar({ currentUser, role, canWriteFeed, onOpenCreate, onOpenNews }) {
+function ComposeBar({ currentUser, canWriteFeed, onOpenCreate, onOpenNews }) {
   const { t } = useTranslation('common');
 
   if (!canWriteFeed) return null;
@@ -1035,7 +1035,6 @@ export default function FeedPage() {
         {/* Compose bar */}
         <ComposeBar
           currentUser={authUser}
-          role={role}
           canWriteFeed={canWriteFeed}
           onOpenCreate={() => setModalPost(null)}
           onOpenNews={() => setNewsModalOpen(true)}
@@ -1080,7 +1079,6 @@ export default function FeedPage() {
                   key={post.id}
                   post={post}
                   currentUser={authUser}
-                  role={role}
                   canWriteFeed={canWriteFeed}
                   onEdit={(p) => setModalPost(p)}
                   onDelete={handleDeletePost}
@@ -1204,7 +1202,6 @@ PostCard.propTypes = {
     name: PropTypes.string,
     avatar_url: PropTypes.string,
   }),
-  role: PropTypes.string,
   canWriteFeed: PropTypes.bool,
   onEdit: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
@@ -1230,7 +1227,6 @@ ComposeBar.propTypes = {
     name: PropTypes.string,
     avatar_url: PropTypes.string,
   }),
-  role: PropTypes.string,
   canWriteFeed: PropTypes.bool,
   onOpenCreate: PropTypes.func.isRequired,
   onOpenNews: PropTypes.func.isRequired,
