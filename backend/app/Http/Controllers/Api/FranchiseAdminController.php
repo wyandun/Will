@@ -4,19 +4,21 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\Role;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\FranchiseAdmin\DestroyFranchiseAdminRequest;
+use App\Http\Requests\FranchiseAdmin\RestoreFranchiseAdminRequest;
 use App\Http\Requests\FranchiseAdmin\UpdateFranchiseAdminPasswordRequest;
 use App\Http\Requests\FranchiseAdmin\UpdateFranchiseAdminPermissionsRequest;
 use App\Http\Requests\FranchiseAdmin\UpdateFranchiseAdminRequest;
 use App\Http\Resources\FranchiseAdminResource;
 use App\Models\Franchise;
 use App\Models\User;
-use App\Models\UserPermission;
+use App\Services\FranchiseAdminService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 
 class FranchiseAdminController extends Controller
 {
+    public function __construct(private FranchiseAdminService $franchiseAdminService) {}
+
     /**
      * Update a franchise admin's profile fields.
      *
@@ -32,15 +34,11 @@ class FranchiseAdminController extends Controller
         $this->authorize('updateFranchiseAdmin', $user);
         $this->ensureBelongsToFranchise($user, $franchise);
 
-        $validated = $request->validated();
-
-        $user->update($validated);
+        $user = $this->franchiseAdminService->update($user, $request->validated());
 
         return response()->json([
             'success' => true,
-            // fresh() re-fetches from DB to ensure response reflects any DB-level
-            // defaults or mutators, guaranteeing consistency with persisted state.
-            'data' => new FranchiseAdminResource($user->fresh()->load('userPermissions')),
+            'data' => new FranchiseAdminResource($user),
             'message' => 'franchise_admin.updated_success',
         ]);
     }
@@ -62,12 +60,7 @@ class FranchiseAdminController extends Controller
         $this->authorize('updateFranchiseAdmin', $user);
         $this->ensureBelongsToFranchise($user, $franchise);
 
-        DB::transaction(function () use ($user, $request) {
-            $user->password = Hash::make($request->validated('password'));
-            $user->save();
-
-            $user->tokens()->delete();
-        });
+        $this->franchiseAdminService->resetPassword($user, $request->validated('password'));
 
         return response()->json([
             'success' => true,
@@ -87,15 +80,12 @@ class FranchiseAdminController extends Controller
      * for DELETE routes. "Deactivate" is the domain term (user-facing), while "destroy" is
      * the framework convention. The soft delete behavior is an implementation detail.
      */
-    public function destroy(Franchise $franchise, User $user): JsonResponse
+    public function destroy(DestroyFranchiseAdminRequest $request, Franchise $franchise, User $user): JsonResponse
     {
         $this->authorize('deleteFranchiseAdmin', $user);
         $this->ensureBelongsToFranchise($user, $franchise);
 
-        DB::transaction(function () use ($user) {
-            $user->tokens()->delete();
-            $user->delete();
-        });
+        $this->franchiseAdminService->deactivate($user);
 
         return response()->json([
             'success' => true,
@@ -121,30 +111,15 @@ class FranchiseAdminController extends Controller
      * queries. Passing User::class is the standard Laravel convention for policies that
      * don't require a model instance (same pattern as 'inviteUsers' policy).
      */
-    public function restore(Franchise $franchise, int $userId): JsonResponse
+    public function restore(RestoreFranchiseAdminRequest $request, Franchise $franchise, int $userId): JsonResponse
     {
         $this->authorize('restoreFranchiseAdmin', User::class);
 
-        $user = User::withTrashed()
-            ->where('id', $userId)
-            ->where('sm_franchise_id', $franchise->id)
-            ->firstOrFail();
-
-        // Spatie roles live in the model_has_roles pivot table, unaffected by soft deletes.
-        // hasRole() works correctly on trashed models.
-        abort_unless($user->hasRole(Role::ADMIN_SM), 403);
-        // No lockForUpdate needed: restore() is a single idempotent UPDATE
-        // (deleted_at=NULL) with no dependent writes; the trashed() guard is
-        // UX-only, and destroy() already wraps its token-revoke + soft-delete in
-        // its own transaction. All 4 concurrent destroy/restore interleavings
-        // converge to a consistent state — see audit decision in commit history.
-        abort_unless($user->trashed(), 422, 'franchise_admin.not_deactivated');
-
-        $user->restore();
+        $user = $this->franchiseAdminService->restore($franchise, $userId);
 
         return response()->json([
             'success' => true,
-            'data' => new FranchiseAdminResource($user->load('userPermissions')),
+            'data' => new FranchiseAdminResource($user),
             'message' => 'franchise_admin.restored_success',
         ]);
     }
@@ -167,19 +142,9 @@ class FranchiseAdminController extends Controller
         $this->authorize('viewFranchiseAdminPermissions', $user);
         $this->ensureBelongsToFranchise($user, $franchise);
 
-        // Inline permissions shape (module/can_read/can_write) is intentionally
-        // duplicated across 4 sites (this method, FranchiseClientController::permissions,
-        // and the `permissions` block in both *Resource classes). The 3-field
-        // projection has been stable since the user_permissions migration; a
-        // dedicated UserPermissionResource would add indirection without reducing
-        // maintenance surface (a new field is still a grep-and-add in 4 places).
         return response()->json([
             'success' => true,
-            'data' => $user->userPermissions->map(fn ($p) => [
-                'module' => $p->module,
-                'can_read' => $p->can_read,
-                'can_write' => $p->can_write,
-            ]),
+            'data' => $this->franchiseAdminService->getPermissions($user),
         ]);
     }
 
@@ -195,7 +160,7 @@ class FranchiseAdminController extends Controller
         $this->authorize('updateFranchiseAdminPermissions', $user);
         $this->ensureBelongsToFranchise($user, $franchise);
 
-        UserPermission::updateForUser($user->id, $request->validated('permissions'));
+        $this->franchiseAdminService->updatePermissions($user, $request->validated());
 
         return response()->json([
             'success' => true,

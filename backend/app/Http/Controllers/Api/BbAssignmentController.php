@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\BbAssignment\DestroyBbAssignmentRequest;
 use App\Http\Requests\BbAssignment\StoreBbAssignmentRequest;
 use App\Models\BbAssignment;
 use App\Services\BbAssignmentService;
@@ -107,7 +108,7 @@ class BbAssignmentController extends Controller
             new OA\Response(response: 404, ref: '#/components/responses/NotFound'),
         ]
     )]
-    public function destroy(BbAssignment $bbAssignment): JsonResponse
+    public function destroy(DestroyBbAssignmentRequest $request, BbAssignment $bbAssignment): JsonResponse
     {
         $this->authorize('delete', $bbAssignment);
 

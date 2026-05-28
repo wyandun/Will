@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Event\DestroyEventRequest;
 use App\Http\Requests\Event\ListEventsRequest;
 use App\Http\Requests\Event\StoreEventRequest;
 use App\Http\Requests\Event\UpdateEventRequest;
@@ -73,7 +74,7 @@ class EventController extends Controller
         ]);
     }
 
-    public function destroy(Event $event): JsonResponse
+    public function destroy(DestroyEventRequest $request, Event $event): JsonResponse
     {
         $this->authorize('delete', $event);
 

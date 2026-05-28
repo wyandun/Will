@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Feed\DeleteCommentRequest;
+use App\Http\Requests\Feed\DestroyPostRequest;
 use App\Http\Requests\Feed\ListCommentsRequest;
+use App\Http\Requests\Feed\ListPostsRequest;
 use App\Http\Requests\Feed\ReactPostRequest;
 use App\Http\Requests\Feed\StoreCommentRequest;
 use App\Http\Requests\Feed\StorePostRequest;
@@ -94,7 +97,7 @@ class FeedController extends Controller
             new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
         ]
     )]
-    public function posts(Request $request): JsonResponse
+    public function posts(ListPostsRequest $request): JsonResponse
     {
         $search = $request->query('search');
         $page = max(1, (int) $request->query('page', 1));
@@ -305,7 +308,7 @@ class FeedController extends Controller
             new OA\Response(response: 404, description: 'Post no encontrado'),
         ]
     )]
-    public function destroy(Request $request, int $id): JsonResponse
+    public function destroy(DestroyPostRequest $request, int $id): JsonResponse
     {
         $this->feedService->deletePost($id, $request->user());
 
@@ -506,7 +509,7 @@ class FeedController extends Controller
             new OA\Response(response: 404, description: 'Comentario no encontrado'),
         ]
     )]
-    public function deleteComment(Request $request, int $commentId): Response
+    public function deleteComment(DeleteCommentRequest $request, int $commentId): Response
     {
         $this->feedService->deleteComment($commentId, $request->user());
 

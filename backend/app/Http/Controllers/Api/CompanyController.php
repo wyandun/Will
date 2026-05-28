@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Company\DestroyCompanyRequest;
 use App\Http\Requests\Company\StoreCompanyRequest;
 use App\Http\Requests\Company\UpdateCompanyRequest;
 use App\Http\Resources\CompanyResource;
@@ -260,7 +261,7 @@ class CompanyController extends Controller
             new OA\Response(response: 404, ref: '#/components/responses/NotFound'),
         ]
     )]
-    public function destroy(Company $company): JsonResponse
+    public function destroy(DestroyCompanyRequest $request, Company $company): JsonResponse
     {
         $this->authorize('delete', $company);
 
