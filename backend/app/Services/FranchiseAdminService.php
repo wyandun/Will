@@ -6,6 +6,7 @@ use App\Enums\Role;
 use App\Models\Franchise;
 use App\Models\User;
 use App\Models\UserPermission;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -76,9 +77,9 @@ class FranchiseAdminService
      * Return the franchise admin's module permissions as a flat collection
      * of { module, can_read, can_write } rows.
      *
-     * @return \Illuminate\Support\Collection<int, array{module: string, can_read: bool, can_write: bool}>
+     * @return Collection<int, array{module: string, can_read: bool, can_write: bool}>
      */
-    public function getPermissions(User $admin): \Illuminate\Support\Collection
+    public function getPermissions(User $admin): Collection
     {
         return $admin->userPermissions->map(fn ($p) => [
             'module' => (string) $p->module,
