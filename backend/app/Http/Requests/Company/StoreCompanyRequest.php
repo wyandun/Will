@@ -62,15 +62,15 @@ class StoreCompanyRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.required'            => 'companies.form.name_required',
-            'name.max'                 => 'companies.form.name_max',
+            'name.required' => 'companies.form.name_required',
+            'name.max' => 'companies.form.name_max',
             'sm_franchise_id.required' => 'companies.form.sm_franchise_required',
-            'sm_franchise_id.exists'   => 'companies.form.sm_franchise_invalid',
-            'phone.max'                => 'companies.form.phone_max',
-            'state.max'                => 'companies.form.state_max',
-            'country.max'              => 'companies.form.country_max',
-            'email.email'              => 'companies.form.email_invalid',
-            'website.url'              => 'companies.form.website_url',
+            'sm_franchise_id.exists' => 'companies.form.sm_franchise_invalid',
+            'phone.max' => 'companies.form.phone_max',
+            'state.max' => 'companies.form.state_max',
+            'country.max' => 'companies.form.country_max',
+            'email.email' => 'companies.form.email_invalid',
+            'website.url' => 'companies.form.website_url',
         ];
     }
 }

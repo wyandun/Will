@@ -62,13 +62,13 @@ class UpdateCompanyRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.max'               => 'companies.form.name_max',
+            'name.max' => 'companies.form.name_max',
             'sm_franchise_id.exists' => 'companies.form.sm_franchise_invalid',
-            'phone.max'              => 'companies.form.phone_max',
-            'state.max'              => 'companies.form.state_max',
-            'country.max'            => 'companies.form.country_max',
-            'email.email'            => 'companies.form.email_invalid',
-            'website.url'            => 'companies.form.website_url',
+            'phone.max' => 'companies.form.phone_max',
+            'state.max' => 'companies.form.state_max',
+            'country.max' => 'companies.form.country_max',
+            'email.email' => 'companies.form.email_invalid',
+            'website.url' => 'companies.form.website_url',
         ];
     }
 }

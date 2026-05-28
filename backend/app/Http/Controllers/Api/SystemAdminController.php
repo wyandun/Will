@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\SystemAdmin\DestroySystemAdminRequest;
 use App\Http\Requests\SystemAdmin\StoreSystemAdminRequest;
 use App\Http\Requests\SystemAdmin\UpdateSystemAdminRequest;
 use App\Models\User;
@@ -212,7 +213,7 @@ class SystemAdminController extends Controller
             new OA\Response(response: 404, ref: '#/components/responses/NotFound'),
         ]
     )]
-    public function destroy(\App\Http\Requests\SystemAdmin\DestroySystemAdminRequest $request, User $systemAdmin): JsonResponse
+    public function destroy(DestroySystemAdminRequest $request, User $systemAdmin): JsonResponse
     {
         $this->authorize('deleteSystemAdmin', $systemAdmin);
 
