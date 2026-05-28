@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { feedApi } from '../../api/feed';
 import { useAuthStore } from '../../store/authStore';
+import { usePermissions } from '../../hooks/usePermissions';
 import NewsModal from './NewsModal';
 import PostFormModal from './PostFormModal';
 import { timeAgo } from '../../utils/time';
@@ -468,7 +469,7 @@ function PostDetailModal({ post, onClose, onToast, onPostUpdated }) {
 
 // ─── PostCard ─────────────────────────────────────────────────────────────────
 
-function PostCard({ post, currentUser, role, onEdit, onDelete, onToast, onOpen, onPostUpdated }) {
+function PostCard({ post, currentUser, role, canWriteFeed, onEdit, onDelete, onToast, onOpen, onPostUpdated }) {
   const { t } = useTranslation('common');
   const [menuOpen, setMenuOpen] = useState(false);
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
@@ -486,10 +487,7 @@ function PostCard({ post, currentUser, role, onEdit, onDelete, onToast, onOpen, 
 
   const canManage =
     currentUser &&
-    (currentUser.id === post.author_id ||
-      role === 'superadmin' ||
-      role === 'system_admin' ||
-      role === 'admin_sm');
+    (currentUser.id === post.author_id || canWriteFeed);
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -735,12 +733,10 @@ function UserAvatar({ user }) {
 
 // ─── ComposeBar ───────────────────────────────────────────────────────────────
 
-function ComposeBar({ currentUser, role, onOpenCreate, onOpenNews }) {
+function ComposeBar({ currentUser, role, canWriteFeed, onOpenCreate, onOpenNews }) {
   const { t } = useTranslation('common');
 
-  const canCompose = role === 'superadmin' || role === 'system_admin' || role === 'admin_sm';
-
-  if (!canCompose) return null;
+  if (!canWriteFeed) return null;
 
   const initial = (currentUser.name ?? '?')[0].toUpperCase();
 
@@ -947,6 +943,8 @@ export default function FeedPage() {
   const { t } = useTranslation('common');
   const authUser = useAuthStore((s) => s.user);
   const role = useAuthStore((s) => s.role);
+  const { canWrite } = usePermissions();
+  const canWriteFeed = canWrite('feed');
 
   const [posts, setPosts] = useState([]);
   const [meta, setMeta] = useState(null);
@@ -1038,6 +1036,7 @@ export default function FeedPage() {
         <ComposeBar
           currentUser={authUser}
           role={role}
+          canWriteFeed={canWriteFeed}
           onOpenCreate={() => setModalPost(null)}
           onOpenNews={() => setNewsModalOpen(true)}
         />
@@ -1082,6 +1081,7 @@ export default function FeedPage() {
                   post={post}
                   currentUser={authUser}
                   role={role}
+                  canWriteFeed={canWriteFeed}
                   onEdit={(p) => setModalPost(p)}
                   onDelete={handleDeletePost}
                   onToast={setToast}
@@ -1205,6 +1205,7 @@ PostCard.propTypes = {
     avatar_url: PropTypes.string,
   }),
   role: PropTypes.string,
+  canWriteFeed: PropTypes.bool,
   onEdit: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
   onToast: PropTypes.func.isRequired,
@@ -1230,6 +1231,7 @@ ComposeBar.propTypes = {
     avatar_url: PropTypes.string,
   }),
   role: PropTypes.string,
+  canWriteFeed: PropTypes.bool,
   onOpenCreate: PropTypes.func.isRequired,
   onOpenNews: PropTypes.func.isRequired,
 };
