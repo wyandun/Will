@@ -89,11 +89,16 @@ class FranchiseClientController extends Controller
      * soft-deleted records by default (SoftDeletes global scope). Since this method targets
      * a soft-deleted user, the service queries with withTrashed() manually.
      */
-    public function restore(RestoreFranchiseClientRequest $request, Franchise $franchise, int $userId): JsonResponse
+    public function restore(RestoreFranchiseClientRequest $request, Franchise $franchise, int $user): JsonResponse
     {
+        // $user receives the raw {user} route segment as an int — NOT a model instance.
+        // Route model binding is intentionally bypassed here because the global SoftDeletes
+        // scope would 404 on trashed records. The service re-queries with withTrashed()
+        // and enforces both the role guard (abort_unless SB_OWNER|BB_EMPLOYEE) and the
+        // trashed guard (abort_unless trashed(), 422). Authorization is handled by the policy above.
         $this->authorize('restoreFranchiseClient', User::class);
 
-        $user = $this->franchiseClientService->restore($franchise, $userId);
+        $user = $this->franchiseClientService->restore($franchise, $user);
 
         return response()->json([
             'success' => true,
