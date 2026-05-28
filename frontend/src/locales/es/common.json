@@ -29,7 +29,13 @@
     "show_password": "Mostrar contraseña",
     "sign_in_heading": "Ingresa a tu portal",
     "sign_in_subheading": "Ingresa tus credenciales para continuar",
-    "tagline": "Potenciamos el crecimiento de negocios latinos en EE.UU."
+    "tagline": "Potenciamos el crecimiento de negocios latinos en EE.UU.",
+    "errors": {
+      "email_required": "El correo es obligatorio.",
+      "email_invalid": "Ingresa un correo electrónico válido.",
+      "password_required": "La contraseña es obligatoria.",
+      "password_min": "La contraseña debe tener al menos 8 caracteres."
+    }
   },
   "features": {
     "process_maps_title": "Mapas de Proceso",
@@ -230,10 +236,15 @@
       "address_placeholder": "ej. 123 Main St, Miami, FL",
       "name_required": "El nombre es obligatorio.",
       "name_max": "El nombre no puede superar los 255 caracteres.",
+      "name_unique": "Ya existe una franquicia con este nombre.",
       "type_invalid": "El tipo debe ser 'sm' o 'sub'.",
       "parent_invalid": "La empresa padre no existe.",
       "owner_invalid": "El usuario propietario no existe.",
       "phone_max": "El teléfono no puede superar los 30 caracteres.",
+      "phone_required": "El número de teléfono es obligatorio.",
+      "address_required": "La dirección es obligatoria.",
+      "country_required": "El país es obligatorio.",
+      "timezone_required": "La zona horaria es obligatoria.",
       "email": "Correo electrónico",
       "email_placeholder": "ej. contacto@franquicia.com",
       "email_invalid": "Por favor ingresa un correo electrónico válido.",
@@ -290,8 +301,27 @@
       "address_placeholder": "ej. 123 Main St",
       "notes_placeholder": "Notas adicionales sobre esta empresa…",
       "name_required": "El nombre es obligatorio.",
+      "name_max": "El nombre no puede superar los 255 caracteres.",
       "franchise_required": "La franquicia es obligatoria.",
-      "email_invalid": "Por favor ingresa un correo electrónico válido."
+      "sm_franchise_required": "La franquicia SM es obligatoria.",
+      "sm_franchise_invalid": "La franquicia SM seleccionada no existe.",
+      "phone_max": "El teléfono no puede superar los 30 caracteres.",
+      "state_max": "El estado no puede superar los 50 caracteres.",
+      "country_max": "El país no puede superar los 50 caracteres.",
+      "email_invalid": "Ingresa un correo electrónico válido.",
+      "website_url": "El sitio web no tiene un formato de URL válido.",
+      "no_franchise": "Tu cuenta no tiene una franquicia asignada. Contacta al superadmin.",
+      "franchise_scope_create": "Solo puedes crear empresas dentro de tu franquicia.",
+      "franchise_scope_update": "Solo puedes asignar empresas dentro de tu franquicia."
+    }
+  },
+  "bb_assignments": {
+    "form": {
+      "bb_user_required": "El usuario BB es obligatorio.",
+      "bb_user_invalid": "El usuario seleccionado no existe o no tiene el rol BB.",
+      "company_required": "La empresa es obligatoria.",
+      "company_invalid": "La empresa seleccionada no existe.",
+      "franchise_scope": "Solo puedes asignar un BB a empresas dentro de tu franquicia."
     }
   },
   "system_admin": {
@@ -347,8 +377,13 @@
       "email_required": "El correo es obligatorio.",
       "email_invalid": "Ingresa un correo electrónico válido.",
       "role": "Rol a asignar",
-      "role_required": "El rol es obligatorio."
+      "role_required": "El rol es obligatorio.",
+      "sm_franchise_required": "La franquicia es requerida al invitar un administrador.",
+      "sm_franchise_invalid": "La franquicia seleccionada no existe."
     },
+    "email_already_active": "Este correo ya tiene una cuenta activa.",
+    "invalid_sb_owner": "El SB Owner seleccionado no es válido o no pertenece a esta franquicia.",
+    "sb_owner_missing_company": "El SB Owner seleccionado no tiene una empresa asociada.",
     "activate_heading": "Activar tu cuenta",
     "activate_subheading": "Elige una contraseña segura para completar tu registro.",
     "invited_as": "Invitado como",
@@ -581,11 +616,15 @@
       "name_required": "El nombre es obligatorio.",
       "email": "Correo Electrónico",
       "email_placeholder": "ej. juan@ejemplo.com",
+      "email_required": "El correo es obligatorio.",
       "email_invalid": "Ingresa un correo electrónico válido.",
+      "email_unique": "Este correo ya está registrado.",
       "password": "Contraseña",
       "password_placeholder": "Mínimo 12 caracteres",
       "password_optional": "Dejar en blanco para no cambiar",
-      "password_min": "La contraseña debe tener al menos 12 caracteres."
+      "password_required": "La contraseña es obligatoria.",
+      "password_min": "La contraseña debe tener al menos 12 caracteres.",
+      "role_invalid": "Por favor selecciona un rol válido."
     }
   },
   "news": {

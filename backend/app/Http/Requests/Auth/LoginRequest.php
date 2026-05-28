@@ -25,10 +25,10 @@ class LoginRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'email.required' => 'El correo electrónico es obligatorio.',
-            'email.email' => 'El formato del correo electrónico no es válido.',
-            'password.required' => 'La contraseña es obligatoria.',
-            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
+            'email.required'    => 'auth.errors.email_required',
+            'email.email'       => 'auth.errors.email_invalid',
+            'password.required' => 'auth.errors.password_required',
+            'password.min'      => 'auth.errors.password_min',
         ];
     }
 }

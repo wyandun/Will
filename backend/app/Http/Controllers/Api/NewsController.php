@@ -2,35 +2,32 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Enums\NewsArticleStatus;
 use App\Exceptions\InvalidStatusTransitionException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\News\FetchNewsRequest;
+use App\Http\Requests\News\ListNewsRequest;
+use App\Http\Requests\News\PublishNewsRequest;
+use App\Http\Requests\News\RejectNewsRequest;
 use App\Http\Resources\NewsArticleResource;
-use App\Jobs\FetchNewsJob;
 use App\Models\NewsArticle;
-use App\Models\Post;
-use App\Support\NewsCacheKeys;
+use App\Services\NewsService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class NewsController extends Controller
 {
+    public function __construct(private NewsService $newsService) {}
+
     /**
      * List articles ready for superadmin review.
      * Returns pending_review articles (AI-selected, not yet published/rejected).
      */
-    public function index(Request $request): JsonResponse
+    public function index(ListNewsRequest $request): JsonResponse
     {
         $this->authorize('viewAny', NewsArticle::class);
 
-        $articles = NewsArticle::query()
-            ->where('status', NewsArticleStatus::PendingReview)
-            ->where('ai_selected', true)
-            ->orderByDesc('fetched_at')
-            ->paginate(20);
+        $articles = $this->newsService->listForReview(20);
+        $meta = $this->newsService->reviewQueueMeta();
 
         return response()->json([
             'success' => true,
@@ -41,65 +38,55 @@ class NewsController extends Controller
                     'last_page' => $articles->lastPage(),
                     'total' => $articles->total(),
                 ],
-                'last_fetch_at' => Cache::get(NewsCacheKeys::LAST_FETCH_AT),
-                'last_fetch_result' => Cache::get(NewsCacheKeys::FETCH_RESULT),
-                'fetch_in_progress' => Cache::has(NewsCacheKeys::FETCH_LOCK),
+                'last_fetch_at' => $meta['last_fetch_at'],
+                'last_fetch_result' => $meta['last_fetch_result'],
+                'fetch_in_progress' => $meta['fetch_in_progress'],
             ],
         ]);
     }
 
     /**
      * Dispatch FetchNewsJob to queue.
-     * Cache::add() is the atomic gate — only one request can acquire the lock.
-     * If another request already holds it, we return early without dispatching.
+     * Cache::add() inside the service is the atomic gate — only one request can
+     * acquire the lock. If another request already holds it, we return early
+     * without dispatching.
      */
-    public function fetch(Request $request): JsonResponse
+    public function fetch(FetchNewsRequest $request): JsonResponse
     {
         $this->authorize('fetchAny', NewsArticle::class);
 
-        $lockTtl = (int) config('services.news.fetch_lock_ttl_minutes', 10);
-
-        // Atomic lock acquisition — prevents race conditions from simultaneous requests.
-        // If add() returns false the lock was already held; do not dispatch a second job.
-        if (! Cache::add(NewsCacheKeys::FETCH_LOCK, true, now()->addMinutes($lockTtl))) {
-            return response()->json([
-                'success' => true,
-                'data' => ['queued' => false, 'last_fetch_at' => Cache::get(NewsCacheKeys::LAST_FETCH_AT)],
-                'message' => 'News fetch already in progress.',
-            ]);
-        }
-
-        // Lock acquired — dispatch the job. The job will call finalize() which releases
-        // the lock on success. On failure, FetchNewsJob::failed() releases it instead.
         try {
-            FetchNewsJob::dispatch()->onQueue('news');
+            $result = $this->newsService->queueFetch();
         } catch (\Throwable $e) {
-            Cache::forget(NewsCacheKeys::FETCH_LOCK);
-            Log::error('NewsController::fetch failed to dispatch job', ['error' => $e->getMessage()]);
-
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to queue news fetch. Please try again.',
             ], 500);
         }
 
+        // When the lock was already held we return the short shape (queued/last_fetch_at);
+        // on a successful dispatch we also include last_fetch_result, matching the
+        // original controller's two distinct response shapes.
+        $data = [
+            'queued' => $result['queued'],
+            'last_fetch_at' => $result['last_fetch_at'],
+        ];
+
+        if ($result['queued']) {
+            $data['last_fetch_result'] = $result['last_fetch_result'] ?? null;
+        }
+
         return response()->json([
             'success' => true,
-            'data' => [
-                'queued' => true,
-                'last_fetch_at' => Cache::get(NewsCacheKeys::LAST_FETCH_AT),
-                'last_fetch_result' => Cache::get(NewsCacheKeys::FETCH_RESULT),
-            ],
-            'message' => 'News fetch queued. Articles will appear shortly.',
+            'data' => $data,
+            'message' => $result['message'],
         ]);
     }
 
     /**
      * Publish an article: create a Feed post with type=news and mark article as published.
-     * Wrapped in a DB transaction so both writes succeed or neither persists.
-     * lockForUpdate() inside the transaction prevents double-publish under concurrent requests.
      */
-    public function publish(Request $request, NewsArticle $newsArticle): JsonResponse
+    public function publish(PublishNewsRequest $request, NewsArticle $newsArticle): JsonResponse
     {
         $this->authorize('publish', $newsArticle);
 
@@ -112,35 +99,7 @@ class NewsController extends Controller
         }
 
         try {
-            DB::transaction(function () use ($request, $newsArticle) {
-                // Re-read with a row-level lock so concurrent requests cannot
-                // both pass the status guard and create two Posts.
-                $locked = NewsArticle::lockForUpdate()->findOrFail($newsArticle->id);
-
-                if (! $locked->status->canBePublished()) {
-                    throw new InvalidStatusTransitionException($locked->status, 'published');
-                }
-
-                // Post type and visibility are plain strings — valid values:
-                // type: announcement | news | training | alert
-                // visibility: global | franchise | company
-                $postData = [
-                    'author_id' => $request->user()->id,
-                    'title' => $locked->title,
-                    'body' => $locked->toPostBody(),
-                    'type' => 'news',
-                    'visibility' => 'global',
-                    'is_pinned' => false,
-                    'published_at' => now(),
-                ];
-
-                if ($locked->image_url) {
-                    $postData['image_url'] = $locked->image_url;
-                }
-
-                $post = Post::create($postData);
-                $locked->update(['status' => NewsArticleStatus::Published, 'post_id' => $post->id]);
-            });
+            $this->newsService->publish($newsArticle, $request->user());
 
             $newsArticle->refresh();
         } catch (InvalidStatusTransitionException $e) {
@@ -172,22 +131,13 @@ class NewsController extends Controller
 
     /**
      * Reject an article — removes it from the review queue.
-     * Cannot reject an article that is already published or already rejected.
      */
-    public function reject(Request $request, NewsArticle $newsArticle): JsonResponse
+    public function reject(RejectNewsRequest $request, NewsArticle $newsArticle): JsonResponse
     {
         $this->authorize('reject', $newsArticle);
 
         try {
-            DB::transaction(function () use ($newsArticle) {
-                $locked = NewsArticle::lockForUpdate()->findOrFail($newsArticle->id);
-
-                if (! $locked->status->canBeRejected()) {
-                    throw new InvalidStatusTransitionException($locked->status, 'rejected');
-                }
-
-                $locked->update(['status' => NewsArticleStatus::Rejected]);
-            });
+            $this->newsService->reject($newsArticle);
         } catch (InvalidStatusTransitionException $e) {
             return response()->json([
                 'success' => false,

@@ -44,10 +44,7 @@ class UpdateCompanyRequest extends FormRequest
 
             // Guard: admin_sm must have a franchise assigned before scoping can work.
             if ($user->hasRole(Role::ADMIN_SM) && ! $user->sm_franchise_id) {
-                $validator->errors()->add(
-                    'sm_franchise_id',
-                    'Tu cuenta no tiene una franquicia asignada. Contacta al superadmin.'
-                );
+                $validator->errors()->add('sm_franchise_id', 'companies.form.no_franchise');
 
                 return;
             }
@@ -57,10 +54,7 @@ class UpdateCompanyRequest extends FormRequest
                 && $this->has('sm_franchise_id')
                 && (int) $this->input('sm_franchise_id') !== (int) $user->sm_franchise_id
             ) {
-                $validator->errors()->add(
-                    'sm_franchise_id',
-                    'Solo puedes asignar empresas dentro de tu franquicia.'
-                );
+                $validator->errors()->add('sm_franchise_id', 'companies.form.franchise_scope_update');
             }
         });
     }
@@ -68,13 +62,13 @@ class UpdateCompanyRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.max' => 'El nombre no puede superar los 255 caracteres.',
-            'sm_franchise_id.exists' => 'La franquicia SM seleccionada no existe.',
-            'phone.max' => 'El teléfono no puede superar los 30 caracteres.',
-            'state.max' => 'El estado no puede superar los 50 caracteres.',
-            'country.max' => 'El país no puede superar los 50 caracteres.',
-            'email.email' => 'El correo electrónico no tiene un formato válido.',
-            'website.url' => 'El sitio web no tiene un formato de URL válido.',
+            'name.max'               => 'companies.form.name_max',
+            'sm_franchise_id.exists' => 'companies.form.sm_franchise_invalid',
+            'phone.max'              => 'companies.form.phone_max',
+            'state.max'              => 'companies.form.state_max',
+            'country.max'            => 'companies.form.country_max',
+            'email.email'            => 'companies.form.email_invalid',
+            'website.url'            => 'companies.form.website_url',
         ];
     }
 }

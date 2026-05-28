@@ -61,10 +61,7 @@ class StoreBbAssignmentRequest extends FormRequest
             $company = Company::find($this->input('company_id'));
 
             if ($company && (int) $user->sm_franchise_id !== (int) $company->sm_franchise_id) {
-                $validator->errors()->add(
-                    'company_id',
-                    'Solo puedes asignar un BB a empresas dentro de tu franquicia.'
-                );
+                $validator->errors()->add('company_id', 'bb_assignments.form.franchise_scope');
             }
         });
     }
@@ -72,10 +69,10 @@ class StoreBbAssignmentRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'bb_user_id.required' => 'El usuario BB es obligatorio.',
-            'bb_user_id.exists' => 'El usuario seleccionado no existe o no tiene el rol BB.',
-            'company_id.required' => 'La empresa es obligatoria.',
-            'company_id.exists' => 'La empresa seleccionada no existe.',
+            'bb_user_id.required' => 'bb_assignments.form.bb_user_required',
+            'bb_user_id.exists'   => 'bb_assignments.form.bb_user_invalid',
+            'company_id.required' => 'bb_assignments.form.company_required',
+            'company_id.exists'   => 'bb_assignments.form.company_invalid',
         ];
     }
 }
