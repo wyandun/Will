@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 
 const EMPTY_FORM = {
   name_es: '',
-  name_en: '',
   parent_id: '',
   estimated_hours: '',
   description_es: '',
@@ -29,7 +28,6 @@ export default function DeliverableFormModal({ deliverable, services, onClose, o
     if (isEditing) {
       setForm({
         name_es: deliverable.name_es ?? '',
-        name_en: deliverable.name_en ?? '',
         parent_id: deliverable.parent_id != null ? String(deliverable.parent_id) : '',
         estimated_hours:
           deliverable.estimated_hours != null ? String(deliverable.estimated_hours) : '',
@@ -53,8 +51,7 @@ export default function DeliverableFormModal({ deliverable, services, onClose, o
 
   function validate() {
     const next = {};
-    if (!form.name_es.trim()) next.name_es = t('catalog.errors.name_es_required');
-    if (!form.name_en.trim()) next.name_en = t('catalog.errors.name_en_required');
+    if (!form.name_es.trim()) next.name_es = t('catalog.errors.name_required');
     if (!form.parent_id) next.parent_id = t('catalog.errors.service_required');
     const hours = Number(form.estimated_hours);
     if (!form.estimated_hours || Number.isNaN(hours) || hours < 0) {
@@ -76,7 +73,7 @@ export default function DeliverableFormModal({ deliverable, services, onClose, o
     const payload = {
       level: 'deliverable',
       name_es: form.name_es.trim(),
-      name_en: form.name_en.trim(),
+      name_en: form.name_es.trim(),
       parent_id: Number(form.parent_id),
       estimated_hours: Number(form.estimated_hours),
       description_es: form.description_es.trim(),
@@ -132,10 +129,10 @@ export default function DeliverableFormModal({ deliverable, services, onClose, o
               </div>
             )}
 
-            {/* Name ES */}
+            {/* Name */}
             <div>
               <label htmlFor="del-name-es" className="block text-sm font-medium text-slate-700 mb-1">
-                {t('catalog.form.name_es')} <span className="text-red-500">*</span>
+                {t('catalog.form.name')} <span className="text-red-500">*</span>
               </label>
               <input
                 id="del-name-es"
@@ -147,23 +144,6 @@ export default function DeliverableFormModal({ deliverable, services, onClose, o
                 className={`w-full rounded-lg border px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 transition ${errors.name_es ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
               />
               {errors.name_es && <p className="mt-1 text-xs text-red-600">{errors.name_es}</p>}
-            </div>
-
-            {/* Name EN */}
-            <div>
-              <label htmlFor="del-name-en" className="block text-sm font-medium text-slate-700 mb-1">
-                {t('catalog.form.name_en')} <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="del-name-en"
-                name="name_en"
-                type="text"
-                value={form.name_en}
-                onChange={handleChange}
-                disabled={isSubmitting}
-                className={`w-full rounded-lg border px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 transition ${errors.name_en ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
-              />
-              {errors.name_en && <p className="mt-1 text-xs text-red-600">{errors.name_en}</p>}
             </div>
 
             {/* Parent service */}
@@ -286,7 +266,6 @@ DeliverableFormModal.propTypes = {
     PropTypes.shape({
       id: PropTypes.number.isRequired,
       name_es: PropTypes.string,
-      name_en: PropTypes.string,
     })
   ).isRequired,
   onClose: PropTypes.func.isRequired,
