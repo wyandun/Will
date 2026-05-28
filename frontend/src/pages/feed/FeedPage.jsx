@@ -942,7 +942,6 @@ function Toast({ message, onDismiss }) {
 export default function FeedPage() {
   const { t } = useTranslation('common');
   const authUser = useAuthStore((s) => s.user);
-  const role = useAuthStore((s) => s.role);
   const { canWrite } = usePermissions();
   const canWriteFeed = canWrite('feed');
 
