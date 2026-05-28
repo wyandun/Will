@@ -34,16 +34,13 @@ class EventPolicy
     }
 
     /**
-     * Superadmin, system_admin, or admin_sm with a franchise assigned can create events.
+     * Any user with write access to the calendar module and a franchise assigned can create events.
+     * Write access itself is enforced by the module.permission:calendar middleware before this policy runs.
      */
     public function create(User $user): Response
     {
         if ($user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN])) {
             return Response::allow();
-        }
-
-        if (! $user->hasRole(Role::ADMIN_SM)) {
-            return Response::deny('policies.unauthorized');
         }
 
         if ($user->sm_franchise_id === null) {

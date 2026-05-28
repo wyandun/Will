@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { eventsApi } from '../../api/events';
 import { useAuthStore } from '../../store/authStore';
+import { usePermissions } from '../../hooks/usePermissions';
 import EventFormModal from './EventFormModal';
 import CalendarListView from './CalendarListView';
 import CalendarMonthView from './CalendarMonthView';
@@ -55,6 +56,7 @@ export default function EventsPage() {
   const { t, i18n } = useTranslation('common');
   const user = useAuthStore((s) => s.user);
   const role = useAuthStore((s) => s.role);
+  const { canWrite } = usePermissions();
 
   const [view, setView] = useState('month');
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -212,7 +214,7 @@ export default function EventsPage() {
     }
   }
 
-  const canCreate = role === 'superadmin' || role === 'system_admin' || role === 'admin_sm';
+  const canCreate = canWrite('calendar');
   const canManage = (event) =>
     user?.id === event.created_by?.id || role === 'superadmin' || role === 'system_admin';
 

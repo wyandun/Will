@@ -113,6 +113,10 @@ class FranchiseClientService
      * Return the franchise client's module permissions as a flat collection
      * of { module, can_read, can_write } rows.
      *
+     * This is a pure data mapper — no authorization logic here by design.
+     * The 'viewFranchiseClientPermissions' policy check and ensureClientBelongsToFranchise()
+     * scope guard both run in the controller before this method is called.
+     *
      * @return Collection<int, array{module: string, can_read: bool, can_write: bool}>
      */
     public function getPermissions(User $client): Collection

@@ -111,11 +111,16 @@ class FranchiseAdminController extends Controller
      * queries. Passing User::class is the standard Laravel convention for policies that
      * don't require a model instance (same pattern as 'inviteUsers' policy).
      */
-    public function restore(RestoreFranchiseAdminRequest $request, Franchise $franchise, int $userId): JsonResponse
+    public function restore(RestoreFranchiseAdminRequest $request, Franchise $franchise, int $user): JsonResponse
     {
+        // $user receives the raw {user} route segment as an int — NOT a model instance.
+        // Route model binding is intentionally bypassed here because the global SoftDeletes
+        // scope would 404 on trashed records. The service re-queries with withTrashed()
+        // and enforces both the role guard (abort_unless ADMIN_SM) and the trashed guard
+        // (abort_unless trashed(), 422). Authorization is handled by the policy above.
         $this->authorize('restoreFranchiseAdmin', User::class);
 
-        $user = $this->franchiseAdminService->restore($franchise, $userId);
+        $user = $this->franchiseAdminService->restore($franchise, $user);
 
         return response()->json([
             'success' => true,

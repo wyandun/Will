@@ -43,6 +43,11 @@ class FranchiseAdminService
 
     /**
      * Deactivate a franchise admin (soft delete) and revoke tokens.
+     *
+     * Both writes (token revocation + soft delete) are wrapped in DB::transaction
+     * to ensure atomicity: if either fails, neither is committed and the admin
+     * retains their active sessions. No cascade is needed for admins (unlike
+     * FranchiseClientService::deactivate which must also deactivate investors).
      */
     public function deactivate(User $admin): void
     {
@@ -55,8 +60,14 @@ class FranchiseAdminService
     /**
      * Restore a soft-deleted franchise admin.
      *
-     * The franchise scope check + role allowlist + trashed guard live here
-     * because route model binding excludes soft-deleted users.
+     * The franchise scope check + role allowlist + trashed guard live here (not in the
+     * controller) because route model binding excludes soft-deleted users — the controller
+     * receives a raw int and delegates immediately. Guards intentionally moved to the
+     * service to keep the controller thin:
+     *   - abort_unless(ADMIN_SM, 403): ensures the target is actually a franchise admin,
+     *     not an unrelated user whose ID was guessed.
+     *   - abort_unless(trashed(), 422): prevents a silent no-op 200 on already-active users
+     *     (Eloquent restore() on a non-trashed model returns false without throwing).
      */
     public function restore(Franchise $franchise, int $userId): User
     {
@@ -76,6 +87,10 @@ class FranchiseAdminService
     /**
      * Return the franchise admin's module permissions as a flat collection
      * of { module, can_read, can_write } rows.
+     *
+     * This is a pure data mapper — no authorization logic here by design.
+     * The 'viewFranchiseAdminPermissions' policy check and ensureBelongsToFranchise()
+     * scope guard both run in the controller before this method is called.
      *
      * @return Collection<int, array{module: string, can_read: bool, can_write: bool}>
      */
