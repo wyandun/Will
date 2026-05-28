@@ -33,6 +33,12 @@ chmod -R 777 \
     "${WORKDIR}/storage" \
     "${WORKDIR}/bootstrap/cache"
 
+# Pre-create the Laravel log file 0666 so the worker (and any artisan command
+# below) can always append to it regardless of which UID touched it first.
+# See start.sh for the full rationale behind this guard.
+touch "${WORKDIR}/storage/logs/laravel.log"
+chmod 666 "${WORKDIR}/storage/logs/laravel.log"
+
 echo "[worker] Clearing framework caches..."
 php "${WORKDIR}/artisan" config:clear  2>/dev/null || true
 php "${WORKDIR}/artisan" route:clear   2>/dev/null || true
