@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Franchise\DestroyFranchiseRequest;
 use App\Http\Requests\Franchise\StoreFranchiseRequest;
+use App\Http\Requests\Franchise\ToggleFranchiseStatusRequest;
 use App\Http\Requests\Franchise\UpdateFranchiseRequest;
 use App\Http\Resources\FranchiseResource;
 use App\Models\Franchise;
@@ -278,7 +280,7 @@ class FranchiseController extends Controller
             new OA\Response(response: 404, ref: '#/components/responses/NotFound'),
         ]
     )]
-    public function toggleStatus(Franchise $franchise): JsonResponse
+    public function toggleStatus(ToggleFranchiseStatusRequest $request, Franchise $franchise): JsonResponse
     {
         $this->authorize('toggleStatus', $franchise);
 
@@ -325,7 +327,7 @@ class FranchiseController extends Controller
             new OA\Response(response: 404, ref: '#/components/responses/NotFound'),
         ]
     )]
-    public function destroy(Franchise $franchise): JsonResponse
+    public function destroy(DestroyFranchiseRequest $request, Franchise $franchise): JsonResponse
     {
         $this->authorize('delete', $franchise);
 

@@ -17,26 +17,30 @@ function IconLogout() {
 function buildNavItems(role, permissions) {
   const adminRoles = ['superadmin', 'admin_sm', 'system_admin', 'system_admin_readonly'];
   const isAdmin = adminRoles.includes(role);
+  // superadmin and system_admin roles always have full module access;
+  // admin_sm must respect its per-module can_read permission like client roles.
+  const alwaysHasModuleAccess = ['superadmin', 'system_admin', 'system_admin_readonly'].includes(role);
   const permMap = {};
   if (Array.isArray(permissions)) permissions.forEach((p) => { permMap[p.module] = p; });
   const canRead = (module) => permMap[module]?.can_read === true;
+  const hasModule = (module) => alwaysHasModuleAccess || canRead(module);
 
   const SHOW = {
-    dashboard:        true,
-    franchises:       isAdmin,
-    companies:        isAdmin,
+    dashboard:         true,
+    franchises:        isAdmin,
+    companies:         isAdmin,
     'sb-applications': isAdmin,
-    users:            isAdmin,
-    system_admins:    role === 'superadmin',
-    feed:             isAdmin || canRead('feed'),
-    contracts:        isAdmin || canRead('contracts'),
-    repository:       isAdmin || canRead('repository'),
-    processes:        isAdmin || canRead('processes'),
-    accounting:       isAdmin || canRead('accounting'),
-    inventory:        isAdmin || canRead('inventory'),
-    tracking:         isAdmin || canRead('tracking'),
-    catalog:          isAdmin || canRead('catalog'),
-    calendar:         isAdmin || canRead('calendar'),
+    users:             isAdmin,
+    system_admins:     role === 'superadmin',
+    feed:              hasModule('feed'),
+    contracts:         hasModule('contracts'),
+    repository:        hasModule('repository'),
+    processes:         hasModule('processes'),
+    accounting:        hasModule('accounting'),
+    inventory:         hasModule('inventory'),
+    tracking:          hasModule('tracking'),
+    catalog:           hasModule('catalog'),
+    calendar:          hasModule('calendar'),
   };
 
   return NAV_SECTIONS.filter((s) => s.key !== 'profile' && SHOW[s.key]);
