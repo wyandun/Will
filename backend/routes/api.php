@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\FranchiseController;
 use App\Http\Controllers\Api\FranchiseMemberController;
 use App\Http\Controllers\Api\InvitationController;
 use App\Http\Controllers\Api\NewsController;
+use App\Http\Controllers\Api\ProcessMapController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\SystemAdminController;
 use App\Http\Controllers\Api\UserSearchController;
@@ -104,6 +105,8 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::apiResource('system-admins', SystemAdminController::class)->only(['index', 'store', 'update', 'destroy']);
 
     Route::apiResource('events', EventController::class)->middleware('module.permission:calendar');
+
+    Route::apiResource('process-maps', ProcessMapController::class)->only(['index', 'store', 'destroy']);
 
     // Lightweight user search for "Add Guests" in calendar events.
     Route::get('users/search', UserSearchController::class);
