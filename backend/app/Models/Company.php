@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $id
  * @property int|null $sm_franchise_id
  * @property string $name
- * @property-read \App\Models\Franchise|null $franchise
+ * @property-read Franchise|null $franchise
  */
 class Company extends Model
 {
