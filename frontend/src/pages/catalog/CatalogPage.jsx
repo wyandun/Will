@@ -158,14 +158,19 @@ function DeliverableRow({ deliverable, lang, onEdit, onDelete }) {
           </span>
         )}
       </div>
-      <div className="flex items-center gap-3 shrink-0">
-        <span className="text-sm text-slate-500">
-          {deliverable.estimated_hours ?? 0}h
-        </span>
+      <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-1 text-slate-400 mr-2">
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span className="text-sm text-slate-500">
+            {parseFloat(deliverable.estimated_hours ?? 0).toFixed(2)}h
+          </span>
+        </div>
         <button
           type="button"
           onClick={() => onEdit(deliverable)}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 opacity-0 group-hover/row:opacity-100 transition-opacity"
           aria-label={t('common.edit')}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
@@ -175,7 +180,7 @@ function DeliverableRow({ deliverable, lang, onEdit, onDelete }) {
         <button
           type="button"
           onClick={() => onDelete(deliverable)}
-          className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+          className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover/row:opacity-100 transition-opacity"
           aria-label={t('common.delete')}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
