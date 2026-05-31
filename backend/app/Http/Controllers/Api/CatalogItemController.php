@@ -242,7 +242,7 @@ class CatalogItemController extends Controller
         if ($cascade && $catalogItem->level !== CatalogLevel::Service) {
             return response()->json([
                 'success' => false,
-                'message' => 'cascade_children only applies to service-level items.',
+                'message' => 'catalog.cascade_children_service_only',
             ], 422);
         }
 
