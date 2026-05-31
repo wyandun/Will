@@ -62,6 +62,28 @@ RoleRoute.propTypes = {
   children: PropTypes.node.isRequired,
 };
 
+// ─── Module permission guard ──────────────────────────────────────────────────
+
+const MODULE_BYPASS_ROLES = ['superadmin', 'system_admin', 'system_admin_readonly'];
+
+/**
+ * Renders children only when the user has can_read for the given module.
+ * Superadmin and system_admin roles bypass the check (they always have access).
+ * Redirects to "/" when the permission is absent or revoked.
+ */
+function ModuleRoute({ module, children }) {
+  const role = useAuthStore((s) => s.role);
+  const permissions = useAuthStore((s) => s.permissions);
+  if (MODULE_BYPASS_ROLES.includes(role)) return children;
+  const perm = Array.isArray(permissions) ? permissions.find((p) => p.module === module) : null;
+  return perm?.can_read === true ? children : <Navigate to="/" replace />;
+}
+
+ModuleRoute.propTypes = {
+  module: PropTypes.string.isRequired,
+  children: PropTypes.node.isRequired,
+};
+
 // ─── App ─────────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -122,13 +144,13 @@ export default function App() {
               </RoleRoute>
             }
           />
-          <Route path="/feed"        element={<FeedPage />} />
-          <Route path="/contracts"   element={<StubPage title={t('nav.contracts')} />} />
-          <Route path="/repository"  element={<StubPage title={t('nav.repository')} />} />
-          <Route path="/processes"   element={<StubPage title={t('nav.process_maps')} />} />
-          <Route path="/accounting"  element={<StubPage title={t('nav.accounting')} />} />
-          <Route path="/inventory"   element={<StubPage title={t('nav.inventory')} />} />
-          <Route path="/tracking"    element={<StubPage title={t('nav.tracking')} />} />
+          <Route path="/feed"       element={<ModuleRoute module="feed"><FeedPage /></ModuleRoute>} />
+          <Route path="/contracts"  element={<ModuleRoute module="contracts"><StubPage title={t('nav.contracts')} /></ModuleRoute>} />
+          <Route path="/repository" element={<ModuleRoute module="repository"><StubPage title={t('nav.repository')} /></ModuleRoute>} />
+          <Route path="/processes"  element={<ModuleRoute module="processes"><StubPage title={t('nav.process_maps')} /></ModuleRoute>} />
+          <Route path="/accounting" element={<ModuleRoute module="accounting"><StubPage title={t('nav.accounting')} /></ModuleRoute>} />
+          <Route path="/inventory"  element={<ModuleRoute module="inventory"><StubPage title={t('nav.inventory')} /></ModuleRoute>} />
+          <Route path="/tracking"   element={<ModuleRoute module="tracking"><StubPage title={t('nav.tracking')} /></ModuleRoute>} />
           <Route
             path="/catalog"
             element={
@@ -145,7 +167,7 @@ export default function App() {
               </RoleRoute>
             }
           />
-          <Route path="/calendar"    element={<EventsPage />} />
+          <Route path="/calendar" element={<ModuleRoute module="calendar"><EventsPage /></ModuleRoute>} />
           <Route path="/profile"     element={<ProfilePage />} />
         </Route>
 

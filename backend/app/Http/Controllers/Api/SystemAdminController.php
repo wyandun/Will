@@ -2,18 +2,19 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Enums\Role;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\SystemAdmin\DestroySystemAdminRequest;
 use App\Http\Requests\SystemAdmin\StoreSystemAdminRequest;
 use App\Http\Requests\SystemAdmin\UpdateSystemAdminRequest;
 use App\Models\User;
-use App\Models\UserPermission;
+use App\Services\SystemAdminService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Hash;
 use OpenApi\Attributes as OA;
 
 class SystemAdminController extends Controller
 {
+    public function __construct(private SystemAdminService $systemAdminService) {}
+
     #[OA\Get(
         path: '/system-admins',
         tags: ['System Admins'],
@@ -60,13 +61,9 @@ class SystemAdminController extends Controller
     {
         $this->authorize('viewAnySystemAdmin', User::class);
 
-        $users = User::role([Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY])
-            ->with('roles')
-            ->get();
-
         return response()->json([
             'success' => true,
-            'data' => $users,
+            'data' => $this->systemAdminService->list(),
         ]);
     }
 
@@ -113,21 +110,11 @@ class SystemAdminController extends Controller
     {
         $this->authorize('createSystemAdmin', User::class);
 
-        $validated = $request->validated();
-        $roleName = $validated['role'];
-
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-        ]);
-
-        $user->assignRole($roleName);
-        UserPermission::syncForRole($user->id, $roleName);
+        $user = $this->systemAdminService->create($request->validated());
 
         return response()->json([
             'success' => true,
-            'data' => $user->load('roles'),
+            'data' => $user,
             'message' => 'system_admin.created_success',
         ], 201);
     }
@@ -185,32 +172,11 @@ class SystemAdminController extends Controller
     {
         $this->authorize('updateSystemAdmin', $systemAdmin);
 
-        // Disallow modifying the superadmin via this endpoint
-        if ($systemAdmin->hasRole(Role::SUPERADMIN)) {
-            abort(403, 'system_admins.error_superadmin');
-        }
-
-        abort_unless(
-            $systemAdmin->hasAnyRole([Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY]),
-            403
-        );
-
-        $validated = $request->validated();
-        $roleName = $validated['role'];
-
-        $systemAdmin->name = $validated['name'];
-        $systemAdmin->email = $validated['email'];
-        if (! empty($validated['password'])) {
-            $systemAdmin->password = Hash::make($validated['password']);
-        }
-        $systemAdmin->save();
-
-        $systemAdmin->syncRoles([$roleName]);
-        UserPermission::syncForRole($systemAdmin->id, $roleName);
+        $user = $this->systemAdminService->update($systemAdmin, $request->validated());
 
         return response()->json([
             'success' => true,
-            'data' => $systemAdmin->load('roles'),
+            'data' => $user,
             'message' => 'system_admin.updated_success',
         ]);
     }
@@ -247,27 +213,11 @@ class SystemAdminController extends Controller
             new OA\Response(response: 404, ref: '#/components/responses/NotFound'),
         ]
     )]
-    public function destroy(User $systemAdmin): JsonResponse
+    public function destroy(DestroySystemAdminRequest $request, User $systemAdmin): JsonResponse
     {
         $this->authorize('deleteSystemAdmin', $systemAdmin);
 
-        if ($systemAdmin->hasRole(Role::SUPERADMIN)) {
-            abort(403, 'system_admins.error_superadmin');
-        }
-
-        abort_unless(
-            $systemAdmin->hasAnyRole([Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY]),
-            403
-        );
-
-        // Prevent deleting oneself
-        if (auth()->id() === $systemAdmin->id) {
-            abort(403, 'system_admins.error_self_delete');
-        }
-
-        // Cleanup permissions and delete
-        UserPermission::where('user_id', $systemAdmin->id)->delete();
-        $systemAdmin->delete();
+        $this->systemAdminService->delete($systemAdmin, (int) auth()->id());
 
         return response()->json([
             'success' => true,

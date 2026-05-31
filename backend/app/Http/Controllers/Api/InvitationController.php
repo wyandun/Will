@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Enums\Role;
 use App\Helpers\StringHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Invitation\AcceptInvitationRequest;
+use App\Http\Requests\Invitation\DestroyInvitationRequest;
+use App\Http\Requests\Invitation\ResendInvitationRequest;
 use App\Http\Requests\Invitation\SendInvitationRequest;
 use App\Http\Resources\InvitationResource;
 use App\Models\User;
@@ -31,23 +32,7 @@ class InvitationController extends Controller
         /** @var User $authUser */
         $authUser = auth()->user();
 
-        $query = User::pendingInvitation()
-            ->with(['roles', 'invitedBy:id,name'])
-            ->orderByDesc('created_at');
-
-        // System-level roles (SUPERADMIN, SYSTEM_ADMIN, SYSTEM_ADMIN_READONLY) intentionally
-        // bypass franchise scoping to see all invitations across all franchises. This is
-        // required for platform-wide monitoring and audit. SYSTEM_ADMIN_READONLY can list
-        // but cannot send/resend/revoke (blocked by inviteUsers policy). Franchise-scoped
-        // roles (ADMIN_SM) are filtered to their own franchise below.
-        if (! $authUser->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY])) {
-            // Guard against null franchise: WHERE sm_franchise_id = NULL would
-            // silently match other null-franchise rows (cross-tenant data leak).
-            abort_if(is_null($authUser->sm_franchise_id), 403, 'invitation.no_franchise_context');
-            $query->where('sm_franchise_id', $authUser->sm_franchise_id);
-        }
-
-        $pending = $query->paginate(config('pagination.invitation_per_page', 25));
+        $pending = $this->service->listPending($authUser);
 
         return InvitationResource::collection($pending)->additional(['success' => true]);
     }
@@ -77,7 +62,7 @@ class InvitationController extends Controller
     /**
      * Resend an existing pending invitation (regenerates the token).
      */
-    public function resend(User $user): JsonResponse
+    public function resend(ResendInvitationRequest $request, User $user): JsonResponse
     {
         $this->authorize('manageInvitation', $user);
 
@@ -99,7 +84,7 @@ class InvitationController extends Controller
     /**
      * Revoke a pending invitation (soft-deletes the placeholder user record).
      */
-    public function destroy(User $user): JsonResponse
+    public function destroy(DestroyInvitationRequest $request, User $user): JsonResponse
     {
         $this->authorize('manageInvitation', $user);
 

@@ -29,7 +29,13 @@
     "show_password": "Show password",
     "sign_in_heading": "Sign in to your portal",
     "sign_in_subheading": "Enter your credentials to continue",
-    "tagline": "Empowering Latino businesses to grow in the USA"
+    "tagline": "Empowering Latino businesses to grow in the USA",
+    "errors": {
+      "email_required": "Email is required.",
+      "email_invalid": "Please enter a valid email address.",
+      "password_required": "Password is required.",
+      "password_min": "Password must be at least 8 characters."
+    }
   },
   "features": {
     "process_maps_title": "Process Maps",
@@ -230,10 +236,15 @@
       "address_placeholder": "e.g. 123 Main St, Miami, FL",
       "name_required": "Name is required.",
       "name_max": "Name must be 255 characters or fewer.",
+      "name_unique": "A franchise with this name already exists.",
       "type_invalid": "Type must be 'sm' or 'sub'.",
       "parent_invalid": "The parent company does not exist.",
       "owner_invalid": "The owner user does not exist.",
       "phone_max": "Phone must be 30 characters or fewer.",
+      "phone_required": "Phone number is required.",
+      "address_required": "Address is required.",
+      "country_required": "Country is required.",
+      "timezone_required": "Time zone is required.",
       "email": "Email",
       "email_placeholder": "e.g. contact@franchise.com",
       "email_invalid": "Please enter a valid email address.",
@@ -290,8 +301,27 @@
       "address_placeholder": "e.g. 123 Main St",
       "notes_placeholder": "Any additional notes about this company…",
       "name_required": "Name is required.",
+      "name_max": "Name must be 255 characters or fewer.",
       "franchise_required": "Franchise is required.",
-      "email_invalid": "Please enter a valid email address."
+      "sm_franchise_required": "SM franchise is required.",
+      "sm_franchise_invalid": "The selected SM franchise does not exist.",
+      "phone_max": "Phone must be 30 characters or fewer.",
+      "state_max": "State must be 50 characters or fewer.",
+      "country_max": "Country must be 50 characters or fewer.",
+      "email_invalid": "Please enter a valid email address.",
+      "website_url": "Please enter a valid URL.",
+      "no_franchise": "Your account has no assigned franchise. Contact the superadmin.",
+      "franchise_scope_create": "You can only create companies within your franchise.",
+      "franchise_scope_update": "You can only assign companies within your franchise."
+    }
+  },
+  "bb_assignments": {
+    "form": {
+      "bb_user_required": "BB user is required.",
+      "bb_user_invalid": "The selected user does not exist or does not have the BB role.",
+      "company_required": "Company is required.",
+      "company_invalid": "The selected company does not exist.",
+      "franchise_scope": "You can only assign a BB to companies within your franchise."
     }
   },
   "system_admin": {
@@ -347,8 +377,13 @@
       "email_required": "Email is required.",
       "email_invalid": "Please enter a valid email address.",
       "role": "Role to assign",
-      "role_required": "Role is required."
+      "role_required": "Role is required.",
+      "sm_franchise_required": "Franchise is required when inviting an admin.",
+      "sm_franchise_invalid": "The selected franchise does not exist."
     },
+    "email_already_active": "This email already has an active account.",
+    "invalid_sb_owner": "The selected SB Owner is not valid or does not belong to this franchise.",
+    "sb_owner_missing_company": "The selected SB Owner does not have an associated company.",
     "activate_heading": "Activate your account",
     "activate_subheading": "Choose a secure password to complete your registration.",
     "invited_as": "Invited as",
@@ -581,11 +616,15 @@
       "name_required": "Name is required.",
       "email": "Email Address",
       "email_placeholder": "e.g. john@example.com",
+      "email_required": "Email is required.",
       "email_invalid": "Please enter a valid email address.",
+      "email_unique": "This email is already registered.",
       "password": "Password",
       "password_placeholder": "Minimum 12 characters",
       "password_optional": "Leave blank to keep unchanged",
-      "password_min": "Password must be at least 12 characters."
+      "password_required": "Password is required.",
+      "password_min": "Password must be at least 12 characters.",
+      "role_invalid": "Please select a valid role."
     }
   },
   "news": {

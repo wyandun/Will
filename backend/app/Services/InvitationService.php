@@ -7,6 +7,7 @@ use App\Models\Company;
 use App\Models\User;
 use App\Models\UserPermission;
 use App\Notifications\UserInvitationNotification;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -30,6 +31,28 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 class InvitationService
 {
     private const EXPIRY_DAYS = 7;
+
+    /**
+     * List pending (not yet accepted) invitations visible to the auth user.
+     *
+     * System-level roles (SUPERADMIN, SYSTEM_ADMIN, SYSTEM_ADMIN_READONLY)
+     * see all pending invitations. Franchise-scoped roles only see their own
+     * franchise. Users without a franchise context get a 403 (defensive: a
+     * WHERE sm_franchise_id IS NULL would silently match cross-tenant rows).
+     */
+    public function listPending(User $authUser): LengthAwarePaginator
+    {
+        $query = User::pendingInvitation()
+            ->with(['roles', 'invitedBy:id,name'])
+            ->orderByDesc('created_at');
+
+        if (! $authUser->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY])) {
+            abort_if(is_null($authUser->sm_franchise_id), 403, 'invitation.no_franchise_context');
+            $query->where('sm_franchise_id', $authUser->sm_franchise_id);
+        }
+
+        return $query->paginate(config('pagination.invitation_per_page', 25));
+    }
 
     /**
      * Send an invitation to the given email address.

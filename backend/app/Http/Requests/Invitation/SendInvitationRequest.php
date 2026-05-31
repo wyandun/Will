@@ -120,8 +120,8 @@ class SendInvitationRequest extends FormRequest
     {
         return [
             'email.unique' => 'invitation.email_already_active',
-            'sm_franchise_id.required' => 'Franchise ID is required when inviting an admin.',
-            'sm_franchise_id.exists' => 'The selected franchise does not exist.',
+            'sm_franchise_id.required' => 'invitation.form.sm_franchise_required',
+            'sm_franchise_id.exists' => 'invitation.form.sm_franchise_invalid',
         ];
     }
 }

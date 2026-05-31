@@ -7,14 +7,15 @@ use App\Http\Requests\Profile\UpdatePasswordRequest;
 use App\Http\Requests\Profile\UpdateProfileRequest;
 use App\Http\Requests\Profile\UploadAvatarRequest;
 use App\Http\Resources\UserProfileResource;
+use App\Services\ProfileService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use OpenApi\Attributes as OA;
 
 class ProfileController extends Controller
 {
+    public function __construct(private ProfileService $profileService) {}
+
     #[OA\Get(
         path: '/profile',
         tags: ['Profile'],
@@ -73,21 +74,9 @@ class ProfileController extends Controller
     )]
     public function update(UpdateProfileRequest $request): UserProfileResource
     {
-        $user = $request->user();
-        $data = $request->validated();
+        $user = $this->profileService->update($request->user(), $request->validated());
 
-        $emailChanged = isset($data['email']) && $data['email'] !== $user->email;
-
-        $user->fill($data);
-
-        if ($emailChanged) {
-            $user->email_verified_at = null;
-            // TODO: send email verification notification once email verification flow is implemented
-        }
-
-        $user->save();
-
-        return new UserProfileResource($user->fresh());
+        return new UserProfileResource($user);
     }
 
     #[OA\Patch(
@@ -114,9 +103,7 @@ class ProfileController extends Controller
     )]
     public function updatePassword(UpdatePasswordRequest $request): JsonResponse
     {
-        $user = $request->user();
-
-        $user->update(['password' => $request->validated('new_password')]);
+        $this->profileService->changePassword($request->user(), $request->validated('new_password'));
 
         return response()->json([
             'success' => true,
@@ -168,28 +155,7 @@ class ProfileController extends Controller
     )]
     public function uploadAvatar(UploadAvatarRequest $request): JsonResponse
     {
-        $user = $request->user();
-        $file = $request->file('avatar');
-        $extension = $file->extension();
-        $filename = $user->id.'_'.bin2hex(random_bytes(8)).'.'.$extension;
-        $path = $file->storeAs('avatars', $filename, 'public');
-
-        $oldPath = $user->avatar_path;
-
-        try {
-            DB::transaction(function () use ($user, $path): void {
-                $user->update(['avatar_path' => $path]);
-            });
-        } catch (\Throwable $e) {
-            Storage::disk('public')->delete($path);
-            throw $e;
-        }
-
-        if ($oldPath && $oldPath !== $path) {
-            Storage::disk('public')->delete($oldPath);
-        }
-
-        $user->refresh();
+        $user = $this->profileService->uploadAvatar($request->user(), $request->file('avatar'));
 
         return response()->json([
             'success' => true,

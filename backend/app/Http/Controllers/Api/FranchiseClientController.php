@@ -4,20 +4,21 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\Role;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\FranchiseClient\DestroyFranchiseClientRequest;
+use App\Http\Requests\FranchiseClient\RestoreFranchiseClientRequest;
 use App\Http\Requests\FranchiseClient\UpdateFranchiseClientPasswordRequest;
 use App\Http\Requests\FranchiseClient\UpdateFranchiseClientPermissionsRequest;
 use App\Http\Requests\FranchiseClient\UpdateFranchiseClientRequest;
 use App\Http\Resources\FranchiseClientResource;
 use App\Models\Franchise;
 use App\Models\User;
-use App\Models\UserPermission;
+use App\Services\FranchiseClientService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Laravel\Sanctum\PersonalAccessToken;
 
 class FranchiseClientController extends Controller
 {
+    public function __construct(private FranchiseClientService $franchiseClientService) {}
+
     /**
      * Update a franchise client's profile fields.
      *
@@ -30,21 +31,17 @@ class FranchiseClientController extends Controller
         $this->authorize('updateFranchiseClient', $user);
         $this->ensureClientBelongsToFranchise($user, $franchise);
 
-        $user->update($request->validated());
+        $user = $this->franchiseClientService->update($user, $request->validated());
 
         return response()->json([
             'success' => true,
-            'data' => new FranchiseClientResource($user->fresh()->load('userPermissions')),
+            'data' => new FranchiseClientResource($user),
             'message' => 'franchise_client.updated_success',
         ]);
     }
 
     /**
      * Reset a franchise client's password and revoke existing tokens.
-     *
-     * Both operations target the same PostgreSQL connection (sm_portal), so
-     * a transaction ensures atomicity: if token revocation fails, the password
-     * change rolls back and the user retains their old credentials + sessions.
      *
      * Note: Intentional duplication with FranchiseAdminController::resetPassword().
      * See that controller for the rationale (5+ abstract hooks required, no net
@@ -55,12 +52,7 @@ class FranchiseClientController extends Controller
         $this->authorize('updateFranchiseClient', $user);
         $this->ensureClientBelongsToFranchise($user, $franchise);
 
-        DB::transaction(function () use ($user, $request) {
-            $user->password = Hash::make($request->validated('password'));
-            $user->save();
-
-            $user->tokens()->delete();
-        });
+        $this->franchiseClientService->resetPassword($user, $request->validated('password'));
 
         return response()->json([
             'success' => true,
@@ -72,39 +64,16 @@ class FranchiseClientController extends Controller
     /**
      * Deactivate a franchise client (soft delete) and revoke tokens.
      *
-     * Both operations target the same PostgreSQL connection (sm_portal), so
-     * a transaction ensures atomicity. If the client is an SB Owner, all
-     * investors (bb_employee) linked to the same company are also deactivated
-     * within the same transaction to maintain data consistency.
+     * If the client is an SB Owner, all investors (bb_employee) linked to the
+     * same company are also deactivated within the same transaction. This
+     * cascade lives entirely in the service.
      */
-    public function destroy(Franchise $franchise, User $user): JsonResponse
+    public function destroy(DestroyFranchiseClientRequest $request, Franchise $franchise, User $user): JsonResponse
     {
         $this->authorize('deleteFranchiseClient', $user);
         $this->ensureClientBelongsToFranchise($user, $franchise);
 
-        DB::transaction(function () use ($user) {
-            $user->tokens()->delete();
-            $user->delete();
-
-            // Cascade: deactivate all investors linked to the same company.
-            // Bulk-query the IDs once, then revoke tokens and soft-delete in two
-            // queries each instead of 2N per-model calls. Safe here because no
-            // UserObserver exists and `tokenable_type` is stored as the full FQCN
-            // (no morph map). If either changes, revert to a per-model loop.
-            if ($user->hasRole(Role::SB_OWNER) && $user->company_id) {
-                $investorIds = User::where('company_id', $user->company_id)
-                    ->role(Role::BB_EMPLOYEE)
-                    ->pluck('id');
-
-                if ($investorIds->isNotEmpty()) {
-                    PersonalAccessToken::where('tokenable_type', User::class)
-                        ->whereIn('tokenable_id', $investorIds)
-                        ->delete();
-
-                    User::whereIn('id', $investorIds)->delete();
-                }
-            }
-        });
+        $this->franchiseClientService->deactivate($user);
 
         return response()->json([
             'success' => true,
@@ -118,67 +87,37 @@ class FranchiseClientController extends Controller
      *
      * Note on $userId (int) vs User model binding: Laravel's route model binding excludes
      * soft-deleted records by default (SoftDeletes global scope). Since this method targets
-     * a soft-deleted user, we receive the raw ID and query with withTrashed() manually.
-     *
-     * Note on ensureClientBelongsToFranchise(): This method cannot use the shared helper
-     * because it requires withTrashed() querying. The franchise scope check is performed
-     * inline via ->where('sm_franchise_id', $franchise->id)->firstOrFail() (equivalent
-     * 404 behavior), and the role check via abort_unless().
+     * a soft-deleted user, the service queries with withTrashed() manually.
      */
-    public function restore(Franchise $franchise, int $userId): JsonResponse
+    public function restore(RestoreFranchiseClientRequest $request, Franchise $franchise, int $user): JsonResponse
     {
+        // $user receives the raw {user} route segment as an int — NOT a model instance.
+        // Route model binding is intentionally bypassed here because the global SoftDeletes
+        // scope would 404 on trashed records. The service re-queries with withTrashed()
+        // and enforces both the role guard (abort_unless SB_OWNER|BB_EMPLOYEE) and the
+        // trashed guard (abort_unless trashed(), 422). Authorization is handled by the policy above.
         $this->authorize('restoreFranchiseClient', User::class);
 
-        $user = User::withTrashed()
-            ->where('id', $userId)
-            ->where('sm_franchise_id', $franchise->id)
-            ->firstOrFail();
-
-        // Defense-in-depth: the policy already allows superadmin + admin_sm, but
-        // this role allowlist ensures the target is actually a franchise client
-        // (not an admin who was mistargeted via /clients/{id}/restore).
-        abort_unless($user->hasAnyRole([Role::SB_OWNER, Role::BB_EMPLOYEE]), 403);
-
-        // No lockForUpdate needed: restore() is a single idempotent UPDATE
-        // (deleted_at=NULL) with no dependent writes; the trashed() guard is
-        // UX-only, and destroy() already wraps its token-revoke + soft-delete in
-        // its own transaction. All 4 concurrent destroy/restore interleavings
-        // converge to a consistent state — see audit decision in commit history.
-        abort_unless($user->trashed(), 422, 'franchise_client.not_deactivated');
-
-        // Investors can be restored independently of their SB Owner — the admin
-        // may be reassigning them to a different owner later. Restoring an owner
-        // does NOT cascade-restore investors (deliberate asymmetry with the
-        // deactivate cascade in destroy()).
-        $user->restore();
+        $user = $this->franchiseClientService->restore($franchise, $user);
 
         return response()->json([
             'success' => true,
-            'data' => new FranchiseClientResource($user->load('userPermissions')),
+            'data' => new FranchiseClientResource($user),
             'message' => 'franchise_client.restored_success',
         ]);
     }
 
     /**
      * Get current module permissions for a franchise client.
-     *
-     * Note: userPermissions is accessed via lazy load on a single model instance
-     * (not inside a collection loop), so this is a simple 1+1 query — not an N+1.
      */
     public function permissions(Franchise $franchise, User $user): JsonResponse
     {
         $this->authorize('viewFranchiseClientPermissions', $user);
         $this->ensureClientBelongsToFranchise($user, $franchise);
 
-        // See FranchiseAdminController::permissions() for the rationale on keeping
-        // this shape inline across 4 sites instead of extracting a Resource.
         return response()->json([
             'success' => true,
-            'data' => $user->userPermissions->map(fn ($p) => [
-                'module' => $p->module,
-                'can_read' => $p->can_read,
-                'can_write' => $p->can_write,
-            ]),
+            'data' => $this->franchiseClientService->getPermissions($user),
         ]);
     }
 
@@ -194,7 +133,7 @@ class FranchiseClientController extends Controller
         $this->authorize('updateFranchiseClientPermissions', $user);
         $this->ensureClientBelongsToFranchise($user, $franchise);
 
-        UserPermission::updateForUser($user->id, $request->validated('permissions'));
+        $this->franchiseClientService->updatePermissions($user, $request->validated());
 
         return response()->json([
             'success' => true,
