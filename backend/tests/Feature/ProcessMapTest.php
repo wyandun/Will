@@ -39,9 +39,11 @@ class ProcessMapTest extends TestCase
 
     private function createCompany(?Franchise $franchise = null): Company
     {
+        $franchise ??= Franchise::factory()->create();
+
         return Company::create([
             'name' => 'Company '.uniqid(),
-            'sm_franchise_id' => $franchise?->id,
+            'sm_franchise_id' => $franchise->id,
         ]);
     }
 
