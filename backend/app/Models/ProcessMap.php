@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
@@ -57,5 +58,13 @@ class ProcessMap extends Model
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class, 'company_id');
+    }
+
+    /**
+     * The process categories for this map, ordered for display.
+     */
+    public function categories(): HasMany
+    {
+        return $this->hasMany(ProcessCategory::class, 'process_map_id')->orderBy('order_index');
     }
 }

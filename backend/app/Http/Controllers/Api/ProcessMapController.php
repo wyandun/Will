@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreProcessMapRequest;
 use App\Http\Resources\ProcessMapResource;
+use App\Http\Resources\ProcessMapTreeResource;
 use App\Models\ProcessMap;
 use App\Services\ProcessMapService;
 use Illuminate\Http\JsonResponse;
@@ -38,6 +39,21 @@ class ProcessMapController extends Controller
             'data' => new ProcessMapResource($map),
             'message' => 'process_maps.created_success',
         ], 201);
+    }
+
+    public function show(ProcessMap $processMap): JsonResponse
+    {
+        $this->authorize('view', $processMap);
+
+        $processMap->load([
+            'company.franchise',
+            'categories' => fn ($q) => $q->orderBy('order_index'),
+            'categories.processes' => fn ($q) => $q->orderBy('order_index'),
+            'categories.processes.subProcesses' => fn ($q) => $q->orderBy('order_index'),
+            'categories.processes.subProcesses.subSubProcesses' => fn ($q) => $q->orderBy('order_index'),
+        ]);
+
+        return response()->json(['success' => true, 'data' => new ProcessMapTreeResource($processMap)]);
     }
 
     public function destroy(ProcessMap $processMap): JsonResponse

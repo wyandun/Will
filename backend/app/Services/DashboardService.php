@@ -22,7 +22,7 @@ class DashboardService
      */
     private function resolveCompanyScope(User $user): ?array
     {
-        if ($user->hasRole(Role::SUPERADMIN)) {
+        if ($user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY])) {
             return null;
         }
 
@@ -171,7 +171,7 @@ class DashboardService
             ->limit(5);
 
         // Visibility scoping — mirrors FeedService::getPosts
-        if (! $user->hasRole(Role::SUPERADMIN)) {
+        if (! $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY])) {
             $franchiseId = $user->sm_franchise_id;
             $query->where(function ($q) use ($franchiseId) {
                 $q->where('posts.visibility', 'global')

@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\ProcessCategory;
 use App\Models\ProcessMap;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ProcessMapService
@@ -39,7 +41,36 @@ class ProcessMapService
      */
     public function create(array $data): ProcessMap
     {
-        $map = ProcessMap::create($data);
+        $map = DB::transaction(function () use ($data): ProcessMap {
+            $map = ProcessMap::create($data);
+
+            $categories = [
+                [
+                    'type' => ProcessCategory::TYPE_STRATEGIC,
+                    'name_es' => 'Procesos Estratégicos',
+                    'name_en' => 'Strategic Processes',
+                    'order_index' => 1,
+                ],
+                [
+                    'type' => ProcessCategory::TYPE_VALUE_CHAIN,
+                    'name_es' => 'Cadena de Valor',
+                    'name_en' => 'Value Chain',
+                    'order_index' => 2,
+                ],
+                [
+                    'type' => ProcessCategory::TYPE_SUPPORT,
+                    'name_es' => 'Procesos de Apoyo',
+                    'name_en' => 'Support Processes',
+                    'order_index' => 3,
+                ],
+            ];
+
+            foreach ($categories as $cat) {
+                $map->categories()->create($cat);
+            }
+
+            return $map;
+        });
 
         Log::info('Process map created', [
             'process_map_id' => $map->id,

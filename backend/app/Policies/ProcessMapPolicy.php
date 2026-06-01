@@ -24,6 +24,28 @@ class ProcessMapPolicy
     }
 
     /**
+     * View a single process map (and its full tree).
+     *
+     * - superadmin / system_admin / system_admin_readonly → always allowed
+     * - admin_sm → only for maps whose company belongs to their franchise
+     * - others   → denied
+     */
+    public function view(User $user, ProcessMap $map): bool
+    {
+        if ($user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY])) {
+            return true;
+        }
+
+        if (! $user->hasRole(Role::ADMIN_SM)) {
+            return false;
+        }
+
+        $company = $map->company ?? Company::find($map->company_id);
+
+        return $company && (int) $company->sm_franchise_id === (int) $user->sm_franchise_id;
+    }
+
+    /**
      * Create a process map.
      *
      * - superadmin / system_admin → always allowed
