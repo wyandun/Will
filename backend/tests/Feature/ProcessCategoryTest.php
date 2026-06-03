@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\Franchise;
 use App\Models\ProcessCategory;
-use App\Models\ProcessMap;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\InteractsWithProcessMaps;
 use Tests\TestCase;

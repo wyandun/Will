@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use Database\Factories\SubSubProcessFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SubSubProcess extends Model
 {
-    /** @use HasFactory<\Database\Factories\SubSubProcessFactory> */
+    /** @use HasFactory<SubSubProcessFactory> */
     use HasFactory;
 
     protected $table = 'sub_sub_processes';
