@@ -183,4 +183,53 @@ class ProcessMapTest extends TestCase
         $response->assertJsonPath('success', true);
         $this->assertDatabaseMissing('process_maps', ['id' => $map->id]);
     }
+
+    public function test_store_validates_required_fields(): void
+    {
+        $superadmin = $this->createSuperadmin();
+
+        $response = $this->actingAs($superadmin)->postJson('/api/v1/process-maps', []);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['company_id', 'type', 'name_es', 'name_en']);
+    }
+
+    public function test_store_rejects_nonexistent_company(): void
+    {
+        $superadmin = $this->createSuperadmin();
+
+        $response = $this->actingAs($superadmin)->postJson('/api/v1/process-maps', [
+            'company_id' => 999999,
+            'type' => 'custom',
+            'name_es' => 'X',
+            'name_en' => 'X',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('company_id');
+    }
+
+    public function test_store_persists_optional_description_and_defaults_active(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $company = $this->createCompany();
+
+        $response = $this->actingAs($superadmin)->postJson('/api/v1/process-maps', [
+            'company_id' => $company->id,
+            'type' => 'custom',
+            'name_es' => 'Mapa',
+            'name_en' => 'Map',
+            'description' => 'Una nota',
+        ]);
+
+        $response->assertStatus(201);
+        $response->assertJsonPath('data.description', 'Una nota');
+
+        // is_active is not part of the create payload; it falls back to the
+        // column default (true) at the DB level.
+        $this->assertDatabaseHas('process_maps', [
+            'id' => (int) $response->json('data.id'),
+            'is_active' => true,
+        ]);
+    }
 }

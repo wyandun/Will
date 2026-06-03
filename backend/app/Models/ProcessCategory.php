@@ -2,12 +2,16 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProcessCategory extends Model
 {
+    /** @use HasFactory<\Database\Factories\ProcessCategoryFactory> */
+    use HasFactory;
+
     public const TYPE_STRATEGIC = 'strategic';
 
     public const TYPE_VALUE_CHAIN = 'value_chain';

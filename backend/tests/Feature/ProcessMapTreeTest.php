@@ -216,4 +216,61 @@ class ProcessMapTreeTest extends TestCase
             'name_en' => 'Strategic Direction',
         ]);
     }
+
+    public function test_show_orders_categories_by_order_index(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = Franchise::factory()->create();
+        $company = $this->createCompany($franchise);
+        $map = $this->createMapWithCategories($company);
+
+        $response = $this->actingAs($superadmin)->getJson('/api/v1/process-maps/'.$map->id);
+
+        $response->assertStatus(200);
+        $orders = array_column($response->json('data.categories'), 'order_index');
+        $sorted = $orders;
+        sort($sorted);
+        $this->assertSame($sorted, $orders);
+        $this->assertSame(ProcessCategory::TYPE_STRATEGIC, $response->json('data.categories.0.type'));
+    }
+
+    public function test_show_returns_full_depth_tree(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = Franchise::factory()->create();
+        $company = $this->createCompany($franchise);
+        $map = $this->createMapWithCategories($company);
+
+        $category = $map->categories()->where('type', ProcessCategory::TYPE_VALUE_CHAIN)->first();
+        $process = Process::create([
+            'category_id' => $category->id,
+            'code' => 'AR',
+            'name_es' => 'Proceso',
+            'name_en' => 'Process',
+            'order_index' => 1,
+        ]);
+        $subProcess = SubProcess::create([
+            'process_id' => $process->id,
+            'code' => 'AR-P01',
+            'name_es' => 'Sub',
+            'name_en' => 'Sub',
+            'order_index' => 1,
+        ]);
+        $subProcess->subSubProcesses()->create([
+            'code' => 'AR-P01-S01',
+            'name_es' => 'Leaf',
+            'name_en' => 'Leaf',
+            'order_index' => 1,
+        ]);
+
+        $response = $this->actingAs($superadmin)->getJson('/api/v1/process-maps/'.$map->id);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.categories.1.processes.0.code', 'AR');
+        $response->assertJsonPath('data.categories.1.processes.0.sub_processes.0.code', 'AR-P01');
+        $response->assertJsonPath(
+            'data.categories.1.processes.0.sub_processes.0.sub_sub_processes.0.code',
+            'AR-P01-S01'
+        );
+    }
 }
