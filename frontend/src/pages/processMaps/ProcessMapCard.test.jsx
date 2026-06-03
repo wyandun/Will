@@ -13,6 +13,7 @@ import userEvent from '@testing-library/user-event';
 
 // react-router-dom — Link rendered as a plain anchor
 vi.mock('react-router-dom', () => ({
+  // eslint-disable-next-line react/prop-types
   Link: ({ to, children }) => <a href={to}>{children}</a>,
 }));
 

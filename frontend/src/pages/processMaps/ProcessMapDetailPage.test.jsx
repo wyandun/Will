@@ -16,6 +16,7 @@ import { render, screen } from '@testing-library/react';
 vi.mock('react-router-dom', () => ({
   useParams: () => ({ id: '1' }),
   useNavigate: () => vi.fn(),
+  // eslint-disable-next-line react/prop-types
   Link: ({ to, children }) => <a href={to}>{children}</a>,
 }));
 
