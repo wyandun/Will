@@ -9,8 +9,10 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
+ * @property int $id
  * @property int|null $sm_franchise_id
  * @property string $name
+ * @property-read Franchise|null $franchise
  */
 class Company extends Model
 {

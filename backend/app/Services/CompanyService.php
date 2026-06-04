@@ -30,7 +30,7 @@ class CompanyService
             'created_at', 'updated_at',
         ];
 
-        if ($authUser->hasRole(Role::SUPERADMIN)) {
+        if ($authUser->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY])) {
             return Company::select($columns)
                 ->with('franchise:id,name')
                 ->paginate(25);

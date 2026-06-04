@@ -7,12 +7,22 @@ use App\Models\BbAssignment;
 use App\Models\Company;
 use App\Models\Event as EventModel;
 use App\Models\Franchise;
+use App\Models\Process;
+use App\Models\ProcessCategory;
+use App\Models\ProcessMap;
+use App\Models\SubProcess;
+use App\Models\SubSubProcess;
 use App\Models\User;
 use App\Notifications\UserInvitationNotification;
 use App\Policies\BbAssignmentPolicy;
 use App\Policies\CompanyPolicy;
 use App\Policies\EventPolicy;
 use App\Policies\FranchisePolicy;
+use App\Policies\ProcessCategoryPolicy;
+use App\Policies\ProcessMapPolicy;
+use App\Policies\ProcessPolicy;
+use App\Policies\SubProcessPolicy;
+use App\Policies\SubSubProcessPolicy;
 use App\Policies\UserPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -43,6 +53,11 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Company::class, CompanyPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(EventModel::class, EventPolicy::class);
+        Gate::policy(ProcessMap::class, ProcessMapPolicy::class);
+        Gate::policy(ProcessCategory::class, ProcessCategoryPolicy::class);
+        Gate::policy(Process::class, ProcessPolicy::class);
+        Gate::policy(SubProcess::class, SubProcessPolicy::class);
+        Gate::policy(SubSubProcess::class, SubSubProcessPolicy::class);
 
         // When the mail channel successfully hands off a UserInvitationNotification,
         // dispatch a job to stamp email_sent_at on the user. Using a job (rather than
