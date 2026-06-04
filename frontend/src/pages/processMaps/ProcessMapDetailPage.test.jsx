@@ -11,6 +11,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 // react-router-dom — id param + Link/navigate stubs
 vi.mock('react-router-dom', () => ({
@@ -30,8 +31,14 @@ vi.mock('../../hooks/usePermissions', () => ({
 }));
 
 const mockGet = vi.fn();
+const mockCreateSubProcess = vi.fn();
+const mockCreateProcess = vi.fn();
 vi.mock('../../api/processMaps', () => ({
-  processMapsApi: { get: (...a) => mockGet(...a) },
+  processMapsApi: {
+    get: (...a) => mockGet(...a),
+    createSubProcess: (...a) => mockCreateSubProcess(...a),
+    createProcess: (...a) => mockCreateProcess(...a),
+  },
 }));
 
 import ProcessMapDetailPage from './ProcessMapDetailPage';
@@ -75,6 +82,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockCanWrite = true;
   mockGet.mockResolvedValue({ data: tree });
+  mockCreateSubProcess.mockResolvedValue({});
+  mockCreateProcess.mockResolvedValue({});
 });
 
 describe('ProcessMapDetailPage', () => {
@@ -129,5 +138,54 @@ describe('ProcessMapDetailPage', () => {
     await screen.findByText('Strategic');
     expect(screen.queryByTitle('processMaps.detail.edit_division')).not.toBeInTheDocument();
     expect(screen.queryByText('processMaps.detail.add_macro')).not.toBeInTheDocument();
+  });
+
+  it('shows a single name field plus an optional description in the create/edit modal (no separate ES/EN inputs)', async () => {
+    const user = userEvent.setup();
+    render(<ProcessMapDetailPage />);
+    await screen.findByText('DE-P01');
+
+    // Open the "add sub-process" modal (a name field + optional description, no code).
+    await user.click(screen.getByTitle('processMaps.detail.add_process'));
+
+    // Two text inputs: the collapsed single name field + the optional description textarea.
+    expect(screen.getAllByRole('textbox')).toHaveLength(2);
+    expect(screen.getByText('processMaps.detail.field_name')).toBeInTheDocument();
+    expect(screen.getByText('processMaps.detail.field_description')).toBeInTheDocument();
+  });
+
+  it('saves the single name into both name_es and name_en (null description when blank)', async () => {
+    const user = userEvent.setup();
+    render(<ProcessMapDetailPage />);
+    await screen.findByText('DE-P01');
+
+    await user.click(screen.getByTitle('processMaps.detail.add_process'));
+    // First textbox is the name field; description is left empty.
+    await user.type(screen.getAllByRole('textbox')[0], 'Recruiting');
+    await user.click(screen.getByText('processMaps.detail.create'));
+
+    expect(mockCreateSubProcess).toHaveBeenCalledWith(10, {
+      name_es: 'Recruiting',
+      name_en: 'Recruiting',
+      description: null,
+    });
+  });
+
+  it('sends the optional description through when filled', async () => {
+    const user = userEvent.setup();
+    render(<ProcessMapDetailPage />);
+    await screen.findByText('DE-P01');
+
+    await user.click(screen.getByTitle('processMaps.detail.add_process'));
+    const [nameInput, descInput] = screen.getAllByRole('textbox');
+    await user.type(nameInput, 'Recruiting');
+    await user.type(descInput, 'Hire the best');
+    await user.click(screen.getByText('processMaps.detail.create'));
+
+    expect(mockCreateSubProcess).toHaveBeenCalledWith(10, {
+      name_es: 'Recruiting',
+      name_en: 'Recruiting',
+      description: 'Hire the best',
+    });
   });
 });

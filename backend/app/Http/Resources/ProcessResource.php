@@ -20,6 +20,7 @@ class ProcessResource extends JsonResource
             'code' => $this->code,
             'name_es' => $this->name_es,
             'name_en' => $this->name_en,
+            'description' => $this->description,
             'order_index' => $this->order_index,
             'sub_processes_count' => $this->when(
                 $this->relationLoaded('subProcesses'),

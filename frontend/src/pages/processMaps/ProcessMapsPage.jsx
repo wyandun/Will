@@ -191,7 +191,7 @@ export default function ProcessMapsPage() {
     <>
       <div className="space-y-5">
         {/* Page header (dark band, matches the requested mockup style) */}
-        <div className="rounded-xl bg-[#1e3a5f] text-white px-6 py-5 flex items-center justify-between">
+        <div className="rounded-xl bg-gradient-to-r from-[#1e3a5f] via-[#1C3755] to-[#2d5a8f] text-white px-6 py-5 flex items-center justify-between shadow-md">
           <div>
             <h1 className="text-2xl font-semibold">{t('processMaps.title')}</h1>
             <p className="mt-1 text-sm text-slate-200">{subtitle}</p>

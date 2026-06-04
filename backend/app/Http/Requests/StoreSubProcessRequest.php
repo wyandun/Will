@@ -19,6 +19,7 @@ class StoreSubProcessRequest extends FormRequest
         return [
             'name_es' => ['required', 'string', 'max:255'],
             'name_en' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
         ];
     }
 }

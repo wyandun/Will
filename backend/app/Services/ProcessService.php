@@ -27,6 +27,7 @@ class ProcessService
             'code' => $code,
             'name_es' => $data['name_es'],
             'name_en' => $data['name_en'],
+            'description' => $data['description'] ?? null,
             'order_index' => $nextIndex,
         ]);
     }
