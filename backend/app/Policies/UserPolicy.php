@@ -7,6 +7,14 @@ use App\Models\User;
 
 class UserPolicy
 {
+    /**
+     * Management of the System Admins roster is intentionally superadmin-only.
+     * This is a privilege-escalation guardrail: a system_admin must not be able
+     * to enumerate, create, or remove other system_admin / system_admin_readonly
+     * accounts. "Read parity with superadmin" applies to business/tenant data
+     * (franchises, companies, dashboards, process maps), NOT to the meta-admin
+     * roster, which only superadmin manages.
+     */
     public function viewAnySystemAdmin(User $user): bool
     {
         return $user->hasRole(Role::SUPERADMIN);
@@ -35,7 +43,7 @@ class UserPolicy
         return $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY, Role::ADMIN_SM]);
     }
 
-    // ── Franchise admin management (superadmin only) ──────────────────────────
+    // ── Franchise admin management (superadmin + system_admin) ────────────────
 
     public function updateFranchiseAdmin(User $user, User $admin): bool
     {
@@ -43,7 +51,7 @@ class UserPolicy
             return false;
         }
 
-        return $user->hasRole(Role::SUPERADMIN);
+        return $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN]);
     }
 
     public function deleteFranchiseAdmin(User $user, User $admin): bool
@@ -52,12 +60,12 @@ class UserPolicy
             return false;
         }
 
-        return $user->hasRole(Role::SUPERADMIN);
+        return $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN]);
     }
 
     public function restoreFranchiseAdmin(User $user): bool
     {
-        return $user->hasRole(Role::SUPERADMIN);
+        return $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN]);
     }
 
     public function updateFranchiseAdminPermissions(User $user, User $admin): bool
@@ -66,14 +74,13 @@ class UserPolicy
             return false;
         }
 
-        return $user->hasRole(Role::SUPERADMIN);
+        return $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN]);
     }
 
     /**
      * Separated from updateFranchiseAdminPermissions to decouple read and write
-     * authorization. Both currently check the same roles (superadmin + target is
-     * admin_sm), but keeping them distinct ensures a future write-specific restriction
-     * won't accidentally break the GET /permissions endpoint.
+     * authorization. The read path additionally allows system_admin_readonly
+     * (view-only parity with superadmin), while the write path does not.
      */
     public function viewFranchiseAdminPermissions(User $user, User $admin): bool
     {
@@ -81,7 +88,7 @@ class UserPolicy
             return false;
         }
 
-        return $user->hasRole(Role::SUPERADMIN);
+        return $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY]);
     }
 
     // ── Franchise client management (superadmin + admin_sm) ─────────────────────
