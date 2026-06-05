@@ -20,6 +20,7 @@ class StoreProcessRequest extends FormRequest
             'code' => ['required', 'string', 'regex:/^[A-Z]{2,4}$/'],
             'name_es' => ['required', 'string', 'max:255'],
             'name_en' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
         ];
     }
 }

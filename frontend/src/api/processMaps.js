@@ -42,4 +42,35 @@ export const processMapsApi = {
 
   deleteSubSubProcess: (id) =>
     apiClient.delete(`/sub-sub-processes/${id}`).then((res) => res.data),
+
+  // ── Diagram detail (BPMN + documents) ───────────────────────────────────
+  getSubProcess: (id) =>
+    apiClient.get(`/sub-processes/${id}`).then((res) => res.data),
+
+  getSubSubProcess: (id) =>
+    apiClient.get(`/sub-sub-processes/${id}`).then((res) => res.data),
+
+  uploadSubProcessBpmn: (id, lang, bpmnXml) =>
+    apiClient.put(`/sub-processes/${id}/bpmn`, { lang, bpmn_xml: bpmnXml }).then((res) => res.data),
+
+  uploadSubSubProcessBpmn: (id, lang, bpmnXml) =>
+    apiClient.put(`/sub-sub-processes/${id}/bpmn`, { lang, bpmn_xml: bpmnXml }).then((res) => res.data),
+
+  addSubProcessDocument: (id, formData) =>
+    apiClient
+      .post(`/sub-processes/${id}/documents`, formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+      .then((res) => res.data),
+
+  addSubSubProcessDocument: (id, formData) =>
+    apiClient
+      .post(`/sub-sub-processes/${id}/documents`, formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+      .then((res) => res.data),
+
+  updateDocument: (id, formData) =>
+    apiClient
+      .post(`/process-documents/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+      .then((res) => res.data),
+
+  deleteDocument: (id) =>
+    apiClient.delete(`/process-documents/${id}`).then((res) => res.data),
 };

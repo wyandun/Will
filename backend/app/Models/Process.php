@@ -8,12 +8,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property string|null $description
+ */
 class Process extends Model
 {
     /** @use HasFactory<ProcessFactory> */
     use HasFactory;
 
-    protected $fillable = ['category_id', 'code', 'name_es', 'name_en', 'order_index'];
+    protected $fillable = ['category_id', 'code', 'name_es', 'name_en', 'description', 'order_index'];
 
     public function category(): BelongsTo
     {

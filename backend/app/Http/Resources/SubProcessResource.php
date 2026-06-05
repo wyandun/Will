@@ -20,6 +20,7 @@ class SubProcessResource extends JsonResource
             'code' => $this->code,
             'name_es' => $this->name_es,
             'name_en' => $this->name_en,
+            'description' => $this->description,
             'order_index' => $this->order_index,
             'has_bpmn' => ! empty($this->bpmn_xml_es) || ! empty($this->bpmn_xml_en),
             'sub_sub_processes_count' => $this->when(

@@ -19,6 +19,7 @@ class UpdateSubProcessRequest extends FormRequest
         return [
             'name_es' => ['sometimes', 'string', 'max:255'],
             'name_en' => ['sometimes', 'string', 'max:255'],
+            'description' => ['sometimes', 'nullable', 'string'],
         ];
     }
 }

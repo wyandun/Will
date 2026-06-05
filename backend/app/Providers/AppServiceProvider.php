@@ -25,6 +25,7 @@ use App\Policies\SubProcessPolicy;
 use App\Policies\SubSubProcessPolicy;
 use App\Policies\UserPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Support\Facades\Event;
@@ -58,6 +59,14 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Process::class, ProcessPolicy::class);
         Gate::policy(SubProcess::class, SubProcessPolicy::class);
         Gate::policy(SubSubProcess::class, SubSubProcessPolicy::class);
+
+        // Stable polymorphic aliases for process_documents.documentable_type,
+        // matching the migration contract (process | sub_process | sub_sub_process).
+        Relation::morphMap([
+            'process' => Process::class,
+            'sub_process' => SubProcess::class,
+            'sub_sub_process' => SubSubProcess::class,
+        ]);
 
         // When the mail channel successfully hands off a UserInvitationNotification,
         // dispatch a job to stamp email_sent_at on the user. Using a job (rather than

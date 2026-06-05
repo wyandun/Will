@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BbAssignmentController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\FeedController;
 use App\Http\Controllers\Api\FranchiseAdminController;
@@ -117,11 +118,19 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::put('processes/{process}', [ProcessController::class, 'update']);
     Route::delete('processes/{process}', [ProcessController::class, 'destroy']);
     Route::post('processes/{process}/sub-processes', [SubProcessController::class, 'store']);
+    Route::get('sub-processes/{subProcess}', [SubProcessController::class, 'show']);
+    Route::put('sub-processes/{subProcess}/bpmn', [SubProcessController::class, 'uploadBpmn']);
+    Route::post('sub-processes/{subProcess}/documents', [SubProcessController::class, 'storeDocument']);
     Route::put('sub-processes/{subProcess}', [SubProcessController::class, 'update']);
     Route::delete('sub-processes/{subProcess}', [SubProcessController::class, 'destroy']);
     Route::post('sub-processes/{subProcess}/sub-sub-processes', [SubSubProcessController::class, 'store']);
+    Route::get('sub-sub-processes/{subSubProcess}', [SubSubProcessController::class, 'show']);
+    Route::put('sub-sub-processes/{subSubProcess}/bpmn', [SubSubProcessController::class, 'uploadBpmn']);
+    Route::post('sub-sub-processes/{subSubProcess}/documents', [SubSubProcessController::class, 'storeDocument']);
     Route::put('sub-sub-processes/{subSubProcess}', [SubSubProcessController::class, 'update']);
     Route::delete('sub-sub-processes/{subSubProcess}', [SubSubProcessController::class, 'destroy']);
+    Route::post('process-documents/{document}', [DocumentController::class, 'update']);
+    Route::delete('process-documents/{document}', [DocumentController::class, 'destroy']);
 
     // Lightweight user search for "Add Guests" in calendar events.
     Route::get('users/search', UserSearchController::class);

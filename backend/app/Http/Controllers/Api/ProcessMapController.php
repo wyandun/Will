@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\Role;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreProcessMapRequest;
 use App\Http\Resources\ProcessMapResource;
@@ -21,6 +22,19 @@ class ProcessMapController extends Controller
         $this->authorize('viewAny', ProcessMap::class);
 
         $filters = $request->only(['company_id', 'franchise_id', 'per_page']);
+
+        // Tenant isolation: a pure admin_sm only ever sees maps of their own
+        // franchise. We force the franchise filter (overriding any value sent)
+        // so omitting/altering franchise_id cannot leak other franchises' maps.
+        // Elevated roles (superadmin / system_admin / readonly) keep full visibility.
+        $user = $request->user();
+        if (
+            $user !== null
+            && $user->hasRole(Role::ADMIN_SM)
+            && ! $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY])
+        ) {
+            $filters['franchise_id'] = $user->sm_franchise_id;
+        }
 
         return ProcessMapResource::collection($this->service->list($filters));
     }
