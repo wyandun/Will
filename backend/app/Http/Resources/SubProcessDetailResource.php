@@ -3,6 +3,9 @@
 namespace App\Http\Resources;
 
 use App\Models\Document;
+use App\Models\Process;
+use App\Models\ProcessCategory;
+use App\Models\ProcessMap;
 use App\Models\SubProcess;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -20,9 +23,11 @@ class SubProcessDetailResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $process = $this->process;
-        $category = $process?->category;
-        $map = $category?->processMap;
+        // Narrowing with instanceof so PHPStan resolves the concrete types at
+        // each step; matches the pattern used in SubProcessPolicy::resolveMap.
+        $process = $this->process instanceof Process ? $this->process : null;
+        $category = $process?->category instanceof ProcessCategory ? $process->category : null;
+        $map = $category?->processMap instanceof ProcessMap ? $category->processMap : null;
 
         return [
             'id' => $this->id,
@@ -58,10 +63,13 @@ class SubProcessDetailResource extends JsonResource
 
     private function resolveManualUrl(): ?string
     {
-        $manual = $this->manualDocument instanceof Document
-            ? $this->manualDocument
-            : $this->documents->firstWhere('type', 'MP');
+        $manual = $this->documents->firstWhere('id', $this->manual_document_id)
+            ?? $this->documents->firstWhere('type', 'MP');
 
-        return $manual?->file_url ?? $manual?->file_url_en;
+        if (! $manual instanceof Document) {
+            return null;
+        }
+
+        return $manual->file_url ?? $manual->file_url_en;
     }
 }

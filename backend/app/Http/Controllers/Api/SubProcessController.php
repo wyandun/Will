@@ -10,7 +10,10 @@ use App\Http\Requests\UploadBpmnRequest;
 use App\Http\Resources\DocumentResource;
 use App\Http\Resources\SubProcessDetailResource;
 use App\Http\Resources\SubProcessResource;
+use App\Models\Company;
 use App\Models\Process;
+use App\Models\ProcessCategory;
+use App\Models\ProcessMap;
 use App\Models\SubProcess;
 use App\Models\User;
 use App\Services\BpmnService;
@@ -36,7 +39,7 @@ class SubProcessController extends Controller
             'manualDocument', 'process.category.processMap.company',
         ]);
 
-        $franchiseId = $subProcess->process?->category?->processMap?->company?->sm_franchise_id;
+        $franchiseId = $this->resolveFranchiseId($subProcess);
 
         return response()->json([
             'success' => true,
@@ -46,12 +49,9 @@ class SubProcessController extends Controller
     }
 
     /**
-     * Users belonging to the document's franchise — options for the
-     * "Reviewed by" / "Approved by" selects.
-     *
-     * @return Collection<int, array<string, mixed>>
+     * @return Collection<int, array{id: int, name: string}>
      */
-    private function franchiseReviewers(?int $franchiseId)
+    private function franchiseReviewers(?int $franchiseId): Collection
     {
         if ($franchiseId === null) {
             return collect();
@@ -62,6 +62,16 @@ class SubProcessController extends Controller
             ->orderBy('name')
             ->get(['id', 'name'])
             ->map(fn (User $u) => ['id' => $u->id, 'name' => $u->name]);
+    }
+
+    private function resolveFranchiseId(SubProcess $subProcess): ?int
+    {
+        $process = $subProcess->process instanceof Process ? $subProcess->process : null;
+        $category = $process?->category instanceof ProcessCategory ? $process->category : null;
+        $map = $category?->processMap instanceof ProcessMap ? $category->processMap : null;
+        $company = $map?->company instanceof Company ? $map->company : null;
+
+        return $company ? (int) $company->sm_franchise_id : null;
     }
 
     public function uploadBpmn(UploadBpmnRequest $request, SubProcess $subProcess): JsonResponse

@@ -10,6 +10,10 @@ use App\Http\Requests\UploadBpmnRequest;
 use App\Http\Resources\DocumentResource;
 use App\Http\Resources\SubSubProcessDetailResource;
 use App\Http\Resources\SubSubProcessResource;
+use App\Models\Company;
+use App\Models\Process;
+use App\Models\ProcessCategory;
+use App\Models\ProcessMap;
 use App\Models\SubProcess;
 use App\Models\SubSubProcess;
 use App\Models\User;
@@ -36,7 +40,7 @@ class SubSubProcessController extends Controller
             'manualDocument', 'subProcess.process.category.processMap.company',
         ]);
 
-        $franchiseId = $subSubProcess->subProcess?->process?->category?->processMap?->company?->sm_franchise_id;
+        $franchiseId = $this->resolveFranchiseId($subSubProcess);
 
         return response()->json([
             'success' => true,
@@ -46,9 +50,9 @@ class SubSubProcessController extends Controller
     }
 
     /**
-     * @return Collection<int, array<string, mixed>>
+     * @return Collection<int, array{id: int, name: string}>
      */
-    private function franchiseReviewers(?int $franchiseId)
+    private function franchiseReviewers(?int $franchiseId): Collection
     {
         if ($franchiseId === null) {
             return collect();
@@ -59,6 +63,17 @@ class SubSubProcessController extends Controller
             ->orderBy('name')
             ->get(['id', 'name'])
             ->map(fn (User $u) => ['id' => $u->id, 'name' => $u->name]);
+    }
+
+    private function resolveFranchiseId(SubSubProcess $subSubProcess): ?int
+    {
+        $subProcess = $subSubProcess->subProcess instanceof SubProcess ? $subSubProcess->subProcess : null;
+        $process = $subProcess?->process instanceof Process ? $subProcess->process : null;
+        $category = $process?->category instanceof ProcessCategory ? $process->category : null;
+        $map = $category?->processMap instanceof ProcessMap ? $category->processMap : null;
+        $company = $map?->company instanceof Company ? $map->company : null;
+
+        return $company ? (int) $company->sm_franchise_id : null;
     }
 
     public function uploadBpmn(UploadBpmnRequest $request, SubSubProcess $subSubProcess): JsonResponse

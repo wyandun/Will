@@ -3,7 +3,8 @@
 namespace App\Services;
 
 use App\Models\Document;
-use Illuminate\Database\Eloquent\Model;
+use App\Models\SubProcess;
+use App\Models\SubSubProcess;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -18,10 +19,9 @@ use Illuminate\Support\Facades\Storage;
 class DocumentService
 {
     /**
-     * @param  Model  $model  a SubProcess or SubSubProcess (exposes documents() + a `code`)
      * @param  array<string, mixed>  $data
      */
-    public function create(Model $model, array $data): Document
+    public function create(SubProcess|SubSubProcess $model, array $data): Document
     {
         $type = $data['type'];
         $sequence = $model->documents()->withTrashed()->where('type', $type)->count() + 1;
