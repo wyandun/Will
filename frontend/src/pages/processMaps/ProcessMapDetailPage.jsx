@@ -478,12 +478,18 @@ export default function ProcessMapDetailPage() {
                                             {proc.sub_sub_processes_count}
                                           </span>
                                         )}
-                                        <Network
-                                          size={14}
-                                          className={
-                                            proc.has_bpmn ? 'text-[#1C3755]' : 'text-slate-300'
-                                          }
-                                        />
+                                        <button
+                                          onClick={() => navigate(`/processes/${id}/sub/${proc.id}`)}
+                                          title={t('processMaps.open')}
+                                          className="p-1 rounded-lg hover:bg-slate-100 transition"
+                                        >
+                                          <Network
+                                            size={14}
+                                            className={
+                                              proc.has_bpmn ? 'text-[#1C3755]' : 'text-slate-300'
+                                            }
+                                          />
+                                        </button>
                                       </div>
                                       <div className="shrink-0">
                                         <button
@@ -548,12 +554,18 @@ export default function ProcessMapDetailPage() {
                                             <span className="flex-1 text-xs text-slate-600 truncate">
                                               {getName(sub)}
                                             </span>
-                                            <Network
-                                              size={13}
-                                              className={
-                                                sub.has_bpmn ? 'text-[#D5B170]' : 'text-slate-300'
-                                              }
-                                            />
+                                            <button
+                                              onClick={() => navigate(`/processes/${id}/subsub/${sub.id}`)}
+                                              title={t('processMaps.open')}
+                                              className="p-1 rounded-lg hover:bg-slate-100 transition"
+                                            >
+                                              <Network
+                                                size={13}
+                                                className={
+                                                  sub.has_bpmn ? 'text-[#D5B170]' : 'text-slate-300'
+                                                }
+                                              />
+                                            </button>
                                             <div className="shrink-0">
                                               <button
                                                 onClick={(e) => toggleDesc(e, `sub-${sub.id}`)}
