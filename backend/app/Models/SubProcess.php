@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property string|null $description
+ */
 class SubProcess extends Model
 {
     /** @use HasFactory<SubProcessFactory> */
@@ -18,6 +21,7 @@ class SubProcess extends Model
         'code',
         'name_es',
         'name_en',
+        'description',
         'order_index',
         'bpmn_xml_es',
         'bpmn_xml_en',

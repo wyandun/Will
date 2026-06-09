@@ -6,10 +6,9 @@ import { usePermissions } from '../../hooks/usePermissions';
 /**
  * Card representing a single Process Map in the grid view.
  *
- * Hover behaviour:
- *   - Border highlights amber/yellow.
- *   - Trash icon (top-right) appears only on group-hover and only when the
- *     current user has write permission on the `processes` module.
+ * The whole card is a link to the map detail route. Clicking the delete button
+ * (top-right, hover-only, write-gated) does NOT navigate — it stops the event
+ * from reaching the card link.
  */
 export default function ProcessMapCard({ map, onDelete }) {
   const { t, i18n } = useTranslation('common');
@@ -22,16 +21,25 @@ export default function ProcessMapCard({ map, onDelete }) {
     '—';
 
   const description = map.description ?? '';
-  const franchiseName = map.franchise?.name ?? '—';
+  const franchiseName = map.company?.franchise?.name ?? map.franchise?.name ?? '—';
   const companyName = map.company?.name ?? '—';
 
+  const handleDelete = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onDelete(map);
+  };
+
   return (
-    <div className="group relative bg-white rounded-xl border border-slate-200 hover:border-yellow-400 transition-colors p-5 flex flex-col">
+    <Link
+      to={`/processes/${map.id}`}
+      className="group relative block bg-white rounded-xl border border-slate-200 border-t-4 border-t-[#1e3a5f] hover:border-yellow-400 hover:border-t-[#1e3a5f] hover:shadow-lg transition-all duration-200 p-5 flex flex-col"
+    >
       {/* Delete button (hover-only, write-gated) */}
       {canWrite('processes') && (
         <button
           type="button"
-          onClick={() => onDelete(map)}
+          onClick={handleDelete}
           aria-label={t('processMaps.delete_btn')}
           className="absolute top-3 right-3 p-1.5 rounded-lg text-red-500 bg-red-50 hover:bg-red-100 opacity-0 group-hover:opacity-100 transition-opacity"
         >
@@ -43,16 +51,16 @@ export default function ProcessMapCard({ map, onDelete }) {
 
       {/* Header: icon + name + description */}
       <div className="flex items-start gap-3">
-        <div className="shrink-0 w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+        <div className="shrink-0 w-11 h-11 rounded-lg bg-slate-100 group-hover:bg-[#1e3a5f]/10 flex items-center justify-center transition-colors">
           {/* Network icon (Lucide-style, inline SVG) */}
-          <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-[#1e3a5f]" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
             <rect x="9" y="2" width="6" height="6" rx="1" />
             <rect x="3" y="16" width="6" height="6" rx="1" />
             <rect x="15" y="16" width="6" height="6" rx="1" />
             <path strokeLinecap="round" d="M12 8v4M6 16v-2a2 2 0 012-2h8a2 2 0 012 2v2" />
           </svg>
         </div>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 pr-6">
           <h3 className="text-sm font-semibold text-slate-800 truncate">{displayName}</h3>
           {description && (
             <p className="mt-0.5 text-xs text-slate-500 line-clamp-2">{description}</p>
@@ -79,16 +87,13 @@ export default function ProcessMapCard({ map, onDelete }) {
         <span className="truncate">{companyName}</span>
       </div>
 
-      {/* Open link */}
+      {/* Open affordance */}
       <div className="mt-4 pt-3 border-t border-slate-100 flex justify-end">
-        <Link
-          to={`/processes/${map.id}`}
-          className="text-xs font-semibold text-blue-600 hover:text-blue-700"
-        >
+        <span className="text-xs font-semibold text-blue-600 group-hover:text-blue-700 transition-colors">
           {t('processMaps.open')} →
-        </Link>
+        </span>
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -105,6 +110,10 @@ ProcessMapCard.propTypes = {
       id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
       name: PropTypes.string,
       sm_franchise_id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+      franchise: PropTypes.shape({
+        id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+        name: PropTypes.string,
+      }),
     }),
     franchise: PropTypes.shape({
       id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
