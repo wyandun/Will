@@ -33,6 +33,16 @@ chmod -R 777 \
     "${WORKDIR}/storage" \
     "${WORKDIR}/bootstrap/cache"
 
+# Pre-create the Laravel log file with world-writable permissions.
+# Without this, the first process to log (l5-swagger:generate / artisan run as
+# root in this script) creates laravel.log owned by root with mode 0644, and
+# the PHP-FPM workers (running as www-data) then fail to append to it with
+# "Permission denied". That throws an uncaught 500 BEFORE the HandleCors
+# middleware can add the Access-Control-Allow-Origin header — which the browser
+# misreports as a CORS error. Creating the file 0666 up front avoids the race.
+touch "${WORKDIR}/storage/logs/laravel.log"
+chmod 666 "${WORKDIR}/storage/logs/laravel.log"
+
 # ---------------------------------------------------------------------------
 # 2. Create the public/storage symlink so uploaded files are web-accessible.
 #    --relative makes the symlink portable inside the container.
@@ -62,7 +72,12 @@ php "${WORKDIR}/artisan" l5-swagger:generate || echo "[railway-start] WARNING: S
 
 # ---------------------------------------------------------------------------
 # 5. Start PHP-FPM as a background daemon (TCP on 127.0.0.1:9000).
+#    Re-apply permissions FIRST: the artisan commands above (storage:link,
+#    l5-swagger:generate, etc.) run as root and may have created log files
+#    owned by root that www-data cannot append to. This final pass guarantees
+#    every file under storage/logs is writable by the FPM workers.
 # ---------------------------------------------------------------------------
+chmod -R 777 "${WORKDIR}/storage/logs"
 echo "[railway-start] Starting PHP-FPM..."
 php-fpm -D
 
