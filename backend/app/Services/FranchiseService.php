@@ -46,7 +46,7 @@ class FranchiseService
                 },
             ]);
 
-        if ($authUser->hasRole(Role::SUPERADMIN)) {
+        if ($authUser->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY])) {
             return $query->paginate($perPage);
         }
 

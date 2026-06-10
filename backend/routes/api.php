@@ -13,7 +13,12 @@ use App\Http\Controllers\Api\FranchiseController;
 use App\Http\Controllers\Api\FranchiseMemberController;
 use App\Http\Controllers\Api\InvitationController;
 use App\Http\Controllers\Api\NewsController;
+use App\Http\Controllers\Api\ProcessCategoryController;
+use App\Http\Controllers\Api\ProcessController;
+use App\Http\Controllers\Api\ProcessMapController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\SubProcessController;
+use App\Http\Controllers\Api\SubSubProcessController;
 use App\Http\Controllers\Api\SystemAdminController;
 use App\Http\Controllers\Api\UserSearchController;
 use Illuminate\Support\Facades\Route;
@@ -110,6 +115,19 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // apiResource so the {catalogItem} wildcard does not capture "tree".
     Route::get('catalog-items/tree', [CatalogItemController::class, 'tree']);
     Route::apiResource('catalog-items', CatalogItemController::class);
+
+    Route::apiResource('process-maps', ProcessMapController::class)->only(['index', 'store', 'destroy']);
+    Route::get('process-maps/{processMap}', [ProcessMapController::class, 'show']);
+    Route::patch('process-categories/{processCategory}', [ProcessCategoryController::class, 'update']);
+    Route::post('process-categories/{processCategory}/processes', [ProcessController::class, 'store']);
+    Route::put('processes/{process}', [ProcessController::class, 'update']);
+    Route::delete('processes/{process}', [ProcessController::class, 'destroy']);
+    Route::post('processes/{process}/sub-processes', [SubProcessController::class, 'store']);
+    Route::put('sub-processes/{subProcess}', [SubProcessController::class, 'update']);
+    Route::delete('sub-processes/{subProcess}', [SubProcessController::class, 'destroy']);
+    Route::post('sub-processes/{subProcess}/sub-sub-processes', [SubSubProcessController::class, 'store']);
+    Route::put('sub-sub-processes/{subSubProcess}', [SubSubProcessController::class, 'update']);
+    Route::delete('sub-sub-processes/{subSubProcess}', [SubSubProcessController::class, 'destroy']);
 
     // Lightweight user search for "Add Guests" in calendar events.
     Route::get('users/search', UserSearchController::class);
