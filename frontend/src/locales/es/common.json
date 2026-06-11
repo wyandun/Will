@@ -752,6 +752,27 @@
     "crop_hint": "Arrastra para reposicionar. Usa el control para acercar.",
     "crop_save": "Recortar y guardar"
   },
+  "repository": {
+    "title": "Repositorios de Documentos",
+    "new": "+ Nuevo repositorio",
+    "count_one": "repositorio",
+    "count_other": "repositorios",
+    "open": "Abrir →",
+    "docs_count": "{{count}} docs",
+    "modal_title": "Nuevo Repositorio",
+    "modal_hint": "Selecciona una empresa para generar automáticamente su repositorio de documentos.",
+    "company_label": "Empresa",
+    "company_placeholder": "Selecciona una empresa...",
+    "create_btn": "Crear repositorio",
+    "empty_title": "Sin repositorios aún",
+    "empty_subtitle": "Crea tu primer repositorio vinculando una empresa.",
+    "load_error": "Error al cargar los repositorios.",
+    "tab_setup": "Company Setup",
+    "tab_process_docs": "Process Documents",
+    "tab_records": "Records by Process",
+    "delete_confirm": "¿Eliminar el repositorio de \"{{name}}\"? Esta acción no se puede deshacer.",
+    "back": "Volver"
+  },
   "catalog": {
     "title": "Catálogo de Servicios",
     "subtitle": "Gestiona entregables, servicios y paquetes",

@@ -752,6 +752,27 @@
     "crop_hint": "Drag to reposition. Use the slider to zoom.",
     "crop_save": "Crop & Save"
   },
+  "repository": {
+    "title": "Document Repositories",
+    "new": "+ New repository",
+    "count_one": "repository",
+    "count_other": "repositories",
+    "open": "Open →",
+    "docs_count": "{{count}} docs",
+    "modal_title": "New Repository",
+    "modal_hint": "Select a company to automatically generate its document repository.",
+    "company_label": "Company",
+    "company_placeholder": "Select a company...",
+    "create_btn": "Create repository",
+    "empty_title": "No repositories yet",
+    "empty_subtitle": "Create your first repository by linking a company.",
+    "load_error": "Failed to load repositories.",
+    "tab_setup": "Company Setup",
+    "tab_process_docs": "Process Documents",
+    "tab_records": "Records by Process",
+    "delete_confirm": "Delete the repository for \"{{name}}\"? This action cannot be undone.",
+    "back": "Back"
+  },
   "catalog": {
     "title": "Service Catalog",
     "subtitle": "Manage deliverables, services and packages",
