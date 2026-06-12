@@ -704,7 +704,21 @@
       "approved": "Approved",
       "select": "Select…",
       "current_file": "Current file",
-      "code_hint": "Code auto-generated: e.g."
+      "code_hint": "Code auto-generated: e.g.",
+      "link_node": "Link node",
+      "link_mode_hint": "← Click any node in the diagram to select it",
+      "selected_node": "Selected node",
+      "tab_url": "External URL",
+      "tab_document": "Document",
+      "tab_subprocess": "Subprocess",
+      "url_placeholder": "https://...",
+      "select_document": "Select a document…",
+      "search_subprocess": "Search subprocess…",
+      "no_documents_to_link": "No documents available.",
+      "no_subprocesses": "No subprocesses found.",
+      "save_link": "Save link",
+      "remove_link": "Remove link",
+      "link_save_error": "Error saving link. Please try again."
     },
     "walkthrough": {
       "title": "Process walkthrough",
@@ -719,7 +733,11 @@
       "node_start": "Start",
       "node_end": "End",
       "node_decision": "Decision",
-      "node_activity": "Activity"
+      "node_activity": "Activity",
+      "linked_resource": "Linked resource",
+      "open_link": "Open link",
+      "view_document": "View document",
+      "go_to_subprocess": "Go to subprocess"
     }
   },
   "system_admins": {

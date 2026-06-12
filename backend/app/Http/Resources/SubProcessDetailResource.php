@@ -42,6 +42,7 @@ class SubProcessDetailResource extends JsonResource
             'bpmn_xml_en' => $this->bpmn_xml_en,
             'walkthrough_es' => $this->walkthrough_es,
             'walkthrough_en' => $this->walkthrough_en,
+            'node_links' => $this->node_links,
             'manual_document_id' => $this->manual_document_id,
             'manual_url' => $this->resolveManualUrl(),
             'documents' => DocumentResource::collection($this->whenLoaded('documents')),

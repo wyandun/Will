@@ -43,6 +43,13 @@ export const processMapsApi = {
   deleteSubSubProcess: (id) =>
     apiClient.delete(`/sub-sub-processes/${id}`).then((res) => res.data),
 
+  // ── Node links ──────────────────────────────────────────────────────────
+  updateSubProcessNodeLinks: (id, nodeLinks) =>
+    apiClient.put(`/sub-processes/${id}/node-links`, { node_links: nodeLinks }).then((r) => r.data),
+
+  updateSubSubProcessNodeLinks: (id, nodeLinks) =>
+    apiClient.put(`/sub-sub-processes/${id}/node-links`, { node_links: nodeLinks }).then((r) => r.data),
+
   // ── Diagram detail (BPMN + documents) ───────────────────────────────────
   getSubProcess: (id) =>
     apiClient.get(`/sub-processes/${id}`).then((res) => res.data),

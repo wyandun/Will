@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @property string|null $bpmn_xml_en
  * @property array<int, mixed>|null $walkthrough_es
  * @property array<int, mixed>|null $walkthrough_en
+ * @property array<string, array{type: string, value: int|string}>|null $node_links
  * @property int|null $manual_document_id
  */
 class SubProcess extends Model
@@ -33,6 +34,7 @@ class SubProcess extends Model
         'bpmn_xml_en',
         'walkthrough_es',
         'walkthrough_en',
+        'node_links',
         'manual_document_id',
     ];
 
@@ -44,6 +46,7 @@ class SubProcess extends Model
         return [
             'walkthrough_es' => 'array',
             'walkthrough_en' => 'array',
+            'node_links' => 'array',
         ];
     }
 

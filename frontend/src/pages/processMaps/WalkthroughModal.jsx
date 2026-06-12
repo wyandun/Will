@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, ChevronLeft, ChevronRight, CheckCircle, HelpCircle } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, CheckCircle, HelpCircle, ExternalLink } from 'lucide-react';
 
 /**
  * Parse a BPMN XML string into a lightweight graph: nodes (id/name/tag/description),
@@ -63,7 +63,7 @@ function nodeTypeInfo(node, isGateway, t) {
   return { label: t('processMaps.walkthrough.node_activity'), color: 'bg-[#1C3755]/10 text-[#1C3755]', icon: '📋' };
 }
 
-export default function WalkthroughModal({ xml, onClose }) {
+export default function WalkthroughModal({ xml, onClose, nodeLinks, documents, onOpenLink }) {
   const { t } = useTranslation('common');
   const graph = useMemo(() => parseBpmnGraph(xml), [xml]);
 
@@ -122,6 +122,16 @@ export default function WalkthroughModal({ xml, onClose }) {
         </div>
       )}
 
+      {nodeLinks?.[currentId] && onOpenLink && (
+        <LinkedResourcePanel
+          link={nodeLinks[currentId]}
+          documents={documents || []}
+          onOpenLink={onOpenLink}
+          onNavigate={onClose}
+          t={t}
+        />
+      )}
+
       {isGateway && nexts.length > 0 && (
         <div className="space-y-2">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
@@ -175,6 +185,48 @@ export default function WalkthroughModal({ xml, onClose }) {
 WalkthroughModal.propTypes = {
   xml: PropTypes.string,
   onClose: PropTypes.func.isRequired,
+  nodeLinks: PropTypes.object,
+  documents: PropTypes.array,
+  onOpenLink: PropTypes.func,
+};
+
+function LinkedResourcePanel({ link, documents, onOpenLink, onNavigate, t }) {
+  const doc = link.type === 'document'
+    ? documents.find((d) => d.id === Number(link.value))
+    : null;
+
+  const label = link.type === 'url'
+    ? t('processMaps.walkthrough.open_link')
+    : link.type === 'document'
+      ? `${t('processMaps.walkthrough.view_document')}${doc ? ` — ${doc.code}` : ''}`
+      : t('processMaps.walkthrough.go_to_subprocess');
+
+  const handle = () => {
+    onOpenLink(link);
+    if (link.type === 'subprocess') onNavigate();
+  };
+
+  return (
+    <div className="mb-4 rounded-xl border border-[#D5B170]/50 bg-[#D5B170]/10 p-3 flex items-center justify-between gap-3">
+      <span className="text-xs font-bold text-[#6b500e]">
+        🔗 {t('processMaps.walkthrough.linked_resource')}
+      </span>
+      <button
+        onClick={handle}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-[#D5B170] text-[#1C3755] hover:brightness-105 transition shrink-0"
+      >
+        <ExternalLink size={11} /> {label}
+      </button>
+    </div>
+  );
+}
+
+LinkedResourcePanel.propTypes = {
+  link: PropTypes.shape({ type: PropTypes.string, value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]) }).isRequired,
+  documents: PropTypes.array.isRequired,
+  onOpenLink: PropTypes.func.isRequired,
+  onNavigate: PropTypes.func.isRequired,
+  t: PropTypes.func.isRequired,
 };
 
 function Shell({ title, count, onClose, t, children }) {
