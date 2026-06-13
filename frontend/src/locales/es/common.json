@@ -771,7 +771,35 @@
     "tab_process_docs": "Process Documents",
     "tab_records": "Records by Process",
     "delete_confirm": "¿Eliminar el repositorio de \"{{name}}\"? Esta acción no se puede deshacer.",
-    "back": "Volver"
+    "back": "Volver",
+    "doc_delete_confirm": "¿Eliminar \"{{name}}\"? Esta acción no se puede deshacer.",
+    "doc_upload_error": "Error al subir el documento. Por favor intentá de nuevo.",
+    "doc_delete_error": "Error al eliminar el documento. Por favor intentá de nuevo.",
+    "doc_load_error": "Error al cargar los documentos.",
+    "upload_btn": "Subir",
+    "view_btn": "Ver",
+    "upload_modal_title": "Subir documento",
+    "upload_modal_doc_name": "NOMBRE DEL DOCUMENTO",
+    "upload_modal_description": "DESCRIPCIÓN / NOTAS",
+    "upload_modal_description_placeholder": "Notas opcionales sobre este documento",
+    "upload_modal_drop_zone": "Hacé clic o arrastrá tu archivo aquí",
+    "upload_modal_drop_hint": "PDF, Word, Excel o imagen — máx 20 MB",
+    "upload_modal_auto_note": "Se registrará automáticamente: {{name}}, fecha y hora de carga.",
+    "upload_modal_submit": "Subir documento",
+    "categories": {
+      "legal": "Legal",
+      "hr": "Recursos Humanos",
+      "certificates": "Certificados y Permisos",
+      "marketing": "Marketing",
+      "sops": "SOPs y Otros"
+    },
+    "category_desc": {
+      "legal": "Contratos poderes notariales documentos de incorporación",
+      "hr": "Contratos laborales nómina seguridad social",
+      "certificates": "Licencias operativas permisos municipales",
+      "marketing": "Materiales de marca campañas medios",
+      "sops": "Procedimientos operativos estándar otros documentos"
+    }
   },
   "catalog": {
     "title": "Catálogo de Servicios",

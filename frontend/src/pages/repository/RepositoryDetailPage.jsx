@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { repositoriesApi } from '../../api/repositories';
+import SetupDocumentsTab from './SetupDocumentsTab';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -143,17 +144,17 @@ export default function RepositoryDetailPage() {
       </div>
 
       {/* Tab bar */}
-      <div className="flex border-b border-slate-200 mb-6">
+      <div className="flex gap-1 bg-slate-100 rounded-xl p-1 mb-6 w-fit">
         {TABS.map((tab) => (
           <button
             key={tab}
             type="button"
             onClick={() => setActiveTab(tab)}
             className={[
-              'px-4 py-2.5 text-sm font-medium border-b-2 transition-colors',
+              'px-4 py-2 text-sm font-medium rounded-lg transition-colors',
               activeTab === tab
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-slate-500 hover:text-slate-700',
+                ? 'bg-slate-800 text-white shadow-sm'
+                : 'text-slate-500 hover:text-slate-700',
             ].join(' ')}
           >
             {t(`repository.${tab}`)}
@@ -161,8 +162,9 @@ export default function RepositoryDetailPage() {
         ))}
       </div>
 
-      {/* Tab content — all stubs for now */}
-      <ComingSoonTab />
+      {/* Tab content */}
+      {activeTab === 'tab_setup' && <SetupDocumentsTab repositoryId={repository.id} />}
+      {activeTab !== 'tab_setup' && <ComingSoonTab />}
     </div>
   );
 }
