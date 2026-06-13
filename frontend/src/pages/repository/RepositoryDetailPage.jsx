@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { repositoriesApi } from '../../api/repositories';
 import SetupDocumentsTab from './SetupDocumentsTab';
+import ProcessDocumentsTab from './ProcessDocumentsTab';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -164,7 +165,8 @@ export default function RepositoryDetailPage() {
 
       {/* Tab content */}
       {activeTab === 'tab_setup' && <SetupDocumentsTab repositoryId={repository.id} />}
-      {activeTab !== 'tab_setup' && <ComingSoonTab />}
+      {activeTab === 'tab_process_docs' && <ProcessDocumentsTab repositoryId={repository.id} />}
+      {activeTab === 'tab_records' && <ComingSoonTab />}
     </div>
   );
 }

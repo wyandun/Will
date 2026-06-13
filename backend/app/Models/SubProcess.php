@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
  * @property string|null $description
@@ -35,5 +36,17 @@ class SubProcess extends Model
     public function subSubProcesses(): HasMany
     {
         return $this->hasMany(SubSubProcess::class, 'sub_process_id')->orderBy('order_index');
+    }
+
+    /**
+     * Process documents attached directly to this sub-process.
+     *
+     * @return MorphMany<ProcessDocument, $this>
+     */
+    public function documents(): MorphMany
+    {
+        return $this->morphMany(ProcessDocument::class, 'documentable')
+            ->where('is_current', true)
+            ->orderBy('code');
     }
 }

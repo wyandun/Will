@@ -122,6 +122,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::get('repositories/{repository}/documents', [RepositoryDocumentController::class, 'index']);
     Route::post('repositories/{repository}/documents', [RepositoryDocumentController::class, 'store']);
     Route::delete('repositories/{repository}/documents/{document}', [RepositoryDocumentController::class, 'destroy']);
+    Route::get('repositories/{repository}/process-documents', [RepositoryDocumentController::class, 'processDocuments']);
 
     Route::apiResource('process-maps', ProcessMapController::class)->only(['index', 'store', 'destroy']);
     Route::get('process-maps/{processMap}', [ProcessMapController::class, 'show']);

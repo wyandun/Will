@@ -33,4 +33,14 @@ export const repositoryDocumentsApi = {
     apiClient
       .delete(`/repositories/${repositoryId}/documents/${documentId}`)
       .then((res) => res.data),
+
+  /**
+   * Get the process document tree for a repository (Process Documents tab).
+   * Returns categories → processes → subProcesses → documents.
+   * @param {number} repositoryId
+   */
+  processDocuments: (repositoryId) =>
+    apiClient
+      .get(`/repositories/${repositoryId}/process-documents`)
+      .then((res) => res.data.data),
 };

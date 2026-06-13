@@ -786,6 +786,17 @@
     "upload_modal_drop_hint": "PDF, Word, Excel o imagen — máx 20 MB",
     "upload_modal_auto_note": "Se registrará automáticamente: {{name}}, fecha y hora de carga.",
     "upload_modal_submit": "Subir documento",
+    "no_process_map": "No se encontró un mapa de procesos activo para esta empresa.",
+    "process_doc_types": {
+      "MP": "Manual de Proceso",
+      "FOR": "Formato",
+      "MN": "Manual",
+      "IN": "Instructivo",
+      "AN": "Anexo",
+      "PO": "Política",
+      "PR": "Procedimiento",
+      "CR": "Criterio"
+    },
     "categories": {
       "legal": "Legal",
       "hr": "Recursos Humanos",

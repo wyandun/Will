@@ -6,6 +6,7 @@ use Database\Factories\SubSubProcessFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
  * @property string|null $description
@@ -31,5 +32,17 @@ class SubSubProcess extends Model
     public function subProcess(): BelongsTo
     {
         return $this->belongsTo(SubProcess::class, 'sub_process_id');
+    }
+
+    /**
+     * Process documents attached directly to this sub-sub-process.
+     *
+     * @return MorphMany<ProcessDocument, $this>
+     */
+    public function documents(): MorphMany
+    {
+        return $this->morphMany(ProcessDocument::class, 'documentable')
+            ->where('is_current', true)
+            ->orderBy('code');
     }
 }

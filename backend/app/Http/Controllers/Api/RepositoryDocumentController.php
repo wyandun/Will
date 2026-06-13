@@ -7,13 +7,17 @@ use App\Http\Requests\Repository\StoreRepositoryDocumentRequest;
 use App\Http\Resources\RepositoryDocumentResource;
 use App\Models\Repository;
 use App\Models\RepositoryDocument;
+use App\Services\ProcessDocumentTreeService;
 use App\Services\RepositoryDocumentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class RepositoryDocumentController extends Controller
 {
-    public function __construct(private RepositoryDocumentService $service) {}
+    public function __construct(
+        private RepositoryDocumentService $service,
+        private ProcessDocumentTreeService $treeService,
+    ) {}
 
     public function index(Repository $repository): AnonymousResourceCollection
     {
@@ -47,6 +51,22 @@ class RepositoryDocumentController extends Controller
             'data' => new RepositoryDocumentResource($document),
             'message' => 'repository_documents.uploaded_success',
         ], 201);
+    }
+
+    /**
+     * Return the process document tree for the repository's company process map.
+     * Used by the "Process Documents" tab in the repository detail view.
+     */
+    public function processDocuments(Repository $repository): JsonResponse
+    {
+        $this->authorize('view', $repository);
+
+        $tree = $this->treeService->treeForRepository($repository);
+
+        return response()->json([
+            'success' => true,
+            'data' => $tree,
+        ]);
     }
 
     public function destroy(Repository $repository, RepositoryDocument $document): JsonResponse
