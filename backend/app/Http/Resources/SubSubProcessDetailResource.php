@@ -44,6 +44,7 @@ class SubSubProcessDetailResource extends JsonResource
             'bpmn_xml_en' => $this->bpmn_xml_en,
             'walkthrough_es' => $this->walkthrough_es,
             'walkthrough_en' => $this->walkthrough_en,
+            'node_links' => $this->node_links,
             'manual_document_id' => $this->manual_document_id,
             'manual_url' => $this->resolveManualUrl(),
             'documents' => DocumentResource::collection($this->whenLoaded('documents')),
@@ -72,9 +73,11 @@ class SubSubProcessDetailResource extends JsonResource
     private function resolveManualUrl(): ?string
     {
         $manual = $this->documents->firstWhere('id', $this->manual_document_id)
-            ?? $this->documents->firstWhere('type', 'MP');
+            ?? $this->documents->firstWhere('type', 'MN');
 
-        if (! $manual instanceof Document) {
+        // Only a Manual (MN) document drives the "Ver Manual" button; guards
+        // against a stale manual_document_id pointing to a non-manual doc.
+        if (! $manual instanceof Document || $manual->type !== 'MN') {
             return null;
         }
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreDocumentRequest;
 use App\Http\Requests\StoreSubSubProcessRequest;
+use App\Http\Requests\UpdateNodeLinksRequest;
 use App\Http\Requests\UpdateSubSubProcessRequest;
 use App\Http\Requests\UploadBpmnRequest;
 use App\Http\Resources\DocumentResource;
@@ -19,6 +20,7 @@ use App\Models\SubSubProcess;
 use App\Models\User;
 use App\Services\BpmnService;
 use App\Services\DocumentService;
+use App\Services\NodeLinkService;
 use App\Services\SubSubProcessService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Collection;
@@ -29,6 +31,7 @@ class SubSubProcessController extends Controller
         private SubSubProcessService $service,
         private BpmnService $bpmnService,
         private DocumentService $documentService,
+        private NodeLinkService $nodeLinkService,
     ) {}
 
     public function show(SubSubProcess $subSubProcess): JsonResponse
@@ -112,6 +115,16 @@ class SubSubProcessController extends Controller
         $updated = $this->service->update($subSubProcess, $request->validated());
 
         return response()->json(['success' => true, 'data' => new SubSubProcessResource($updated)]);
+    }
+
+    public function updateNodeLinks(UpdateNodeLinksRequest $request, SubSubProcess $subSubProcess): JsonResponse
+    {
+        $this->authorize('update', $subSubProcess);
+
+        $updated = $this->nodeLinkService->update($subSubProcess, $request->validated()['node_links'] ?? []);
+        $updated->load(['documents.creator', 'documents.reviewer', 'documents.approver', 'manualDocument', 'subProcess.process.category.processMap.company']);
+
+        return response()->json(['success' => true, 'data' => new SubSubProcessDetailResource($updated)]);
     }
 
     public function destroy(SubSubProcess $subSubProcess): JsonResponse

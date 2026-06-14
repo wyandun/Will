@@ -108,17 +108,17 @@ class BpmnDiagramTest extends TestCase
             ['Accept' => 'application/json']
         )->assertStatus(201)->assertJsonPath('data.code', 'OPS-P01-FOR-01');
 
-        // The manual (MP) with an uploaded PDF — becomes manual_url.
+        // The manual (MN) with an uploaded PDF — becomes manual_url.
         $manual = $this->actingAs($superadmin)->post(
             '/api/v1/sub-processes/'.$subProcess->id.'/documents',
             [
-                'type' => 'MP', 'title_es' => 'Manual', 'title_en' => 'Manual',
+                'type' => 'MN', 'title_es' => 'Manual', 'title_en' => 'Manual',
                 'file_es' => UploadedFile::fake()->create('manual.pdf', 120, 'application/pdf'),
             ],
             ['Accept' => 'application/json']
         );
         $manual->assertStatus(201)
-            ->assertJsonPath('data.code', 'OPS-P01-MP-01')
+            ->assertJsonPath('data.code', 'OPS-P01-MN-01')
             ->assertJsonPath('data.file_name', 'manual.pdf');
 
         $show = $this->actingAs($superadmin)->getJson('/api/v1/sub-processes/'.$subProcess->id);

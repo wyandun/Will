@@ -704,7 +704,21 @@
       "approved": "Aprobado",
       "select": "Seleccionar…",
       "current_file": "Archivo actual",
-      "code_hint": "Código autogenerado: ej."
+      "code_hint": "Código autogenerado: ej.",
+      "link_node": "Vincular nodo",
+      "link_mode_hint": "← Haz clic en cualquier nodo del diagrama para seleccionarlo",
+      "selected_node": "Nodo seleccionado",
+      "tab_url": "URL Externa",
+      "tab_document": "Documento",
+      "tab_subprocess": "Subproceso",
+      "url_placeholder": "https://...",
+      "select_document": "Selecciona un documento…",
+      "search_subprocess": "Buscar subproceso…",
+      "no_documents_to_link": "No hay documentos disponibles.",
+      "no_subprocesses": "No se encontraron subprocesos.",
+      "save_link": "Guardar vínculo",
+      "remove_link": "Eliminar vínculo",
+      "link_save_error": "Error al guardar el vínculo. Inténtalo de nuevo."
     },
     "walkthrough": {
       "title": "Recorrido del proceso",
@@ -719,7 +733,11 @@
       "node_start": "Inicio",
       "node_end": "Fin",
       "node_decision": "Decisión",
-      "node_activity": "Actividad"
+      "node_activity": "Actividad",
+      "linked_resource": "Recurso vinculado",
+      "open_link": "Abrir enlace",
+      "view_document": "Ver documento",
+      "go_to_subprocess": "Ir al subproceso"
     }
   },
   "system_admins": {

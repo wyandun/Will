@@ -374,7 +374,7 @@ export default function ProcessMapDetailPage() {
                           className="bg-white rounded-xl border border-black/8 overflow-hidden shadow-sm hover:shadow-md transition"
                         >
                           {/* Macroprocess row */}
-                          <div className="group flex items-center gap-2 px-4 py-3 hover:bg-slate-50 transition">
+                          <div className="group flex items-center gap-1.5 px-3 py-3 hover:bg-slate-50 transition">
                             <button
                               onClick={() => toggle(`macro-${macro.id}`)}
                               className="text-slate-400 hover:text-slate-600 transition shrink-0"
@@ -382,7 +382,7 @@ export default function ProcessMapDetailPage() {
                               {macroExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                             </button>
                             <span
-                              className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold text-white shadow-sm"
+                              className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white shadow-sm"
                               style={{ background: colors.bg }}
                             >
                               {macro.code?.substring(0, 3) || '??'}
@@ -395,7 +395,7 @@ export default function ProcessMapDetailPage() {
                                 onClick={(e) => toggleDesc(e, `macro-${macro.id}`)}
                                 aria-label={t('processMaps.detail.view_description')}
                                 title={t('processMaps.detail.view_description')}
-                                className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-[#1C3755] transition"
+                                className="p-0.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-[#1C3755] transition"
                               >
                                 <Eye size={13} />
                               </button>
@@ -415,7 +415,7 @@ export default function ProcessMapDetailPage() {
                                   onClick={() =>
                                     openModal('addProcess', { macroId: macro.id }, {})
                                   }
-                                  className="p-1 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-[#1C3755] transition"
+                                  className="p-0.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-[#1C3755] transition"
                                   title={t('processMaps.detail.add_process')}
                                 >
                                   <Plus size={13} />
@@ -424,7 +424,7 @@ export default function ProcessMapDetailPage() {
                                   onClick={() =>
                                     openModal('editMacro', { id: macro.id }, { name: macro.name_es || macro.name_en, description: macro.description || '' })
                                   }
-                                  className="p-1 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-[#1C3755] transition"
+                                  className="p-0.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-[#1C3755] transition"
                                 >
                                   <Edit2 size={13} />
                                 </button>
@@ -432,7 +432,7 @@ export default function ProcessMapDetailPage() {
                                   onClick={() =>
                                     setDeleteTarget({ type: 'macro', id: macro.id, name: getName(macro) })
                                   }
-                                  className="p-1 rounded-lg hover:bg-red-50 text-slate-500 hover:text-red-600 transition"
+                                  className="p-0.5 rounded-lg hover:bg-red-50 text-slate-500 hover:text-red-600 transition"
                                 >
                                   <Trash2 size={13} />
                                 </button>
@@ -455,7 +455,7 @@ export default function ProcessMapDetailPage() {
                                     key={proc.id}
                                     className="border-b border-black/5 last:border-b-0"
                                   >
-                                    <div className="group flex items-center gap-2 px-4 py-2.5 pl-8 hover:bg-slate-50 transition">
+                                    <div className="group flex items-center gap-1.5 px-2.5 py-2.5 pl-4 hover:bg-slate-50 transition">
                                       <button
                                         onClick={() => toggle(`proc-${proc.id}`)}
                                         className="text-slate-400 hover:text-slate-600 transition shrink-0"
@@ -466,7 +466,7 @@ export default function ProcessMapDetailPage() {
                                           <ChevronRight size={13} />
                                         )}
                                       </button>
-                                      <span className="shrink-0 bg-[#F4F6F9] border border-black/10 rounded-md px-2 py-0.5 text-xs font-mono font-bold text-[#1C3755]">
+                                      <span className="shrink-0 bg-[#F4F6F9] border border-black/10 rounded-md px-1.5 py-0.5 text-xs font-mono font-bold text-[#1C3755]">
                                         {proc.code}
                                       </span>
                                       <span className="flex-1 text-sm text-slate-700 truncate">
@@ -481,7 +481,7 @@ export default function ProcessMapDetailPage() {
                                         <button
                                           onClick={() => navigate(`/processes/${id}/sub/${proc.id}`)}
                                           title={t('processMaps.open')}
-                                          className="p-1 rounded-lg hover:bg-slate-100 transition"
+                                          className="p-0.5 rounded-lg hover:bg-slate-100 transition"
                                         >
                                           <Network
                                             size={14}
@@ -496,7 +496,7 @@ export default function ProcessMapDetailPage() {
                                           onClick={(e) => toggleDesc(e, `proc-${proc.id}`)}
                                           aria-label={t('processMaps.detail.view_description')}
                                           title={t('processMaps.detail.view_description')}
-                                          className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-[#1C3755] transition"
+                                          className="p-0.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-[#1C3755] transition"
                                         >
                                           <Eye size={12} />
                                         </button>
@@ -516,7 +516,7 @@ export default function ProcessMapDetailPage() {
                                             onClick={() =>
                                               openModal('addSubProcess', { processId: proc.id }, {})
                                             }
-                                            className="p-1 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-[#1C3755] transition"
+                                            className="p-0.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-[#1C3755] transition"
                                           >
                                             <Plus size={12} />
                                           </button>
@@ -524,7 +524,7 @@ export default function ProcessMapDetailPage() {
                                             onClick={() =>
                                               openModal('editProcess', { id: proc.id }, { name: proc.name_es || proc.name_en, description: proc.description || '' })
                                             }
-                                            className="p-1 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-[#1C3755] transition"
+                                            className="p-0.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-[#1C3755] transition"
                                           >
                                             <Edit2 size={12} />
                                           </button>
@@ -532,7 +532,7 @@ export default function ProcessMapDetailPage() {
                                             onClick={() =>
                                               setDeleteTarget({ type: 'process', id: proc.id, name: getName(proc) })
                                             }
-                                            className="p-1 rounded-lg hover:bg-red-50 text-slate-500 hover:text-red-600 transition"
+                                            className="p-0.5 rounded-lg hover:bg-red-50 text-slate-500 hover:text-red-600 transition"
                                           >
                                             <Trash2 size={12} />
                                           </button>
@@ -546,9 +546,9 @@ export default function ProcessMapDetailPage() {
                                         {(proc.sub_sub_processes || []).map((sub) => (
                                           <div
                                             key={sub.id}
-                                            className="group flex items-center gap-2 px-4 py-2 pl-16 border-b border-black/5 last:border-b-0 hover:bg-white/80 transition"
+                                            className="group flex items-center gap-1.5 px-2.5 py-2 pl-7 border-b border-black/5 last:border-b-0 hover:bg-white/80 transition"
                                           >
-                                            <span className="shrink-0 bg-white border border-black/10 rounded-md px-2 py-0.5 text-xs font-mono text-slate-600">
+                                            <span className="shrink-0 bg-white border border-black/10 rounded-md px-1.5 py-0.5 text-xs font-mono text-slate-600">
                                               {sub.code}
                                             </span>
                                             <span className="flex-1 text-xs text-slate-600 truncate">
@@ -557,7 +557,7 @@ export default function ProcessMapDetailPage() {
                                             <button
                                               onClick={() => navigate(`/processes/${id}/subsub/${sub.id}`)}
                                               title={t('processMaps.open')}
-                                              className="p-1 rounded-lg hover:bg-slate-100 transition"
+                                              className="p-0.5 rounded-lg hover:bg-slate-100 transition"
                                             >
                                               <Network
                                                 size={13}
@@ -571,7 +571,7 @@ export default function ProcessMapDetailPage() {
                                                 onClick={(e) => toggleDesc(e, `sub-${sub.id}`)}
                                                 aria-label={t('processMaps.detail.view_description')}
                                                 title={t('processMaps.detail.view_description')}
-                                                className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-[#1C3755] transition"
+                                                className="p-0.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-[#1C3755] transition"
                                               >
                                                 <Eye size={11} />
                                               </button>
@@ -591,7 +591,7 @@ export default function ProcessMapDetailPage() {
                                                   onClick={() =>
                                                     openModal('editSubProcess', { id: sub.id }, { name: sub.name_es || sub.name_en, description: sub.description || '' })
                                                   }
-                                                  className="p-1 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-[#1C3755] transition"
+                                                  className="p-0.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-[#1C3755] transition"
                                                 >
                                                   <Edit2 size={11} />
                                                 </button>
@@ -599,7 +599,7 @@ export default function ProcessMapDetailPage() {
                                                   onClick={() =>
                                                     setDeleteTarget({ type: 'subprocess', id: sub.id, name: getName(sub) })
                                                   }
-                                                  className="p-1 rounded-lg hover:bg-red-50 text-slate-500 hover:text-red-600 transition"
+                                                  className="p-0.5 rounded-lg hover:bg-red-50 text-slate-500 hover:text-red-600 transition"
                                                 >
                                                   <Trash2 size={11} />
                                                 </button>
@@ -612,7 +612,7 @@ export default function ProcessMapDetailPage() {
                                             onClick={() =>
                                               openModal('addSubProcess', { processId: proc.id }, {})
                                             }
-                                            className="w-full text-left px-4 py-2 pl-16 text-xs text-slate-400 hover:text-[#1C3755] hover:bg-white/80 transition flex items-center gap-1"
+                                            className="w-full text-left px-2.5 py-2 pl-7 text-xs text-slate-400 hover:text-[#1C3755] hover:bg-white/80 transition flex items-center gap-1"
                                           >
                                             <Plus size={11} /> {t('processMaps.detail.add_subprocess')}
                                           </button>
@@ -624,7 +624,7 @@ export default function ProcessMapDetailPage() {
                                     {procExpanded &&
                                       canEdit &&
                                       (proc.sub_sub_processes || []).length === 0 && (
-                                        <div className="pl-16 py-1">
+                                        <div className="pl-7 py-1">
                                           <button
                                             onClick={() =>
                                               openModal('addSubProcess', { processId: proc.id }, {})

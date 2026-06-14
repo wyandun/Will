@@ -126,12 +126,14 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::post('processes/{process}/sub-processes', [SubProcessController::class, 'store']);
     Route::get('sub-processes/{subProcess}', [SubProcessController::class, 'show']);
     Route::put('sub-processes/{subProcess}/bpmn', [SubProcessController::class, 'uploadBpmn']);
+    Route::put('sub-processes/{subProcess}/node-links', [SubProcessController::class, 'updateNodeLinks']);
     Route::post('sub-processes/{subProcess}/documents', [SubProcessController::class, 'storeDocument']);
     Route::put('sub-processes/{subProcess}', [SubProcessController::class, 'update']);
     Route::delete('sub-processes/{subProcess}', [SubProcessController::class, 'destroy']);
     Route::post('sub-processes/{subProcess}/sub-sub-processes', [SubSubProcessController::class, 'store']);
     Route::get('sub-sub-processes/{subSubProcess}', [SubSubProcessController::class, 'show']);
     Route::put('sub-sub-processes/{subSubProcess}/bpmn', [SubSubProcessController::class, 'uploadBpmn']);
+    Route::put('sub-sub-processes/{subSubProcess}/node-links', [SubSubProcessController::class, 'updateNodeLinks']);
     Route::post('sub-sub-processes/{subSubProcess}/documents', [SubSubProcessController::class, 'storeDocument']);
     Route::put('sub-sub-processes/{subSubProcess}', [SubSubProcessController::class, 'update']);
     Route::delete('sub-sub-processes/{subSubProcess}', [SubSubProcessController::class, 'destroy']);
