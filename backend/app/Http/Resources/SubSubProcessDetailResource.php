@@ -73,9 +73,11 @@ class SubSubProcessDetailResource extends JsonResource
     private function resolveManualUrl(): ?string
     {
         $manual = $this->documents->firstWhere('id', $this->manual_document_id)
-            ?? $this->documents->firstWhere('type', 'MP');
+            ?? $this->documents->firstWhere('type', 'MN');
 
-        if (! $manual instanceof Document) {
+        // Only a Manual (MN) document drives the "Ver Manual" button; guards
+        // against a stale manual_document_id pointing to a non-manual doc.
+        if (! $manual instanceof Document || $manual->type !== 'MN') {
             return null;
         }
 

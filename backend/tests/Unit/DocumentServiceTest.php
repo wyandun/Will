@@ -55,17 +55,17 @@ class DocumentServiceTest extends TestCase
     {
         $subProcess = $this->buildFullTree($this->createCompany());
 
-        $manual = $this->service->create($subProcess, ['type' => 'MP', 'title_es' => 'M', 'title_en' => 'M']);
+        $manual = $this->service->create($subProcess, ['type' => 'MN', 'title_es' => 'M', 'title_en' => 'M']);
 
         $this->assertSame($manual->id, $subProcess->fresh()->manual_document_id);
     }
 
-    public function test_is_manual_flag_sets_manual_document_id_for_non_mp_type(): void
+    public function test_is_manual_flag_sets_manual_document_id_for_non_manual_type(): void
     {
         $subProcess = $this->buildFullTree($this->createCompany());
 
         $doc = $this->service->create($subProcess, [
-            'type' => 'MN', 'title_es' => 'M', 'title_en' => 'M', 'is_manual' => true,
+            'type' => 'CR', 'title_es' => 'M', 'title_en' => 'M', 'is_manual' => true,
         ]);
 
         $this->assertSame($doc->id, $subProcess->fresh()->manual_document_id);

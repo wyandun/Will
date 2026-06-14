@@ -13,8 +13,8 @@ use Illuminate\Support\Facades\Storage;
  *
  * Files (ES / EN) are uploaded to the public disk; metadata includes reviewer /
  * approver (franchise users), valid_from and notes. Codes are auto-generated as
- * {OWNER_CODE}-{TYPE}-NN. A type 'MP' (or is_manual) becomes the owner's
- * manual_document_id shortcut used by the "Ver Manual" button.
+ * {OWNER_CODE}-{TYPE}-NN. A type 'MN' (Manual) — or is_manual — becomes the
+ * owner's manual_document_id shortcut used by the "Ver Manual" button.
  */
 class DocumentService
 {
@@ -48,7 +48,7 @@ class DocumentService
         /** @var Document $document */
         $document = $model->documents()->create($attributes);
 
-        if (($data['is_manual'] ?? false) || $type === 'MP') {
+        if (($data['is_manual'] ?? false) || $type === 'MN') {
             $model->update(['manual_document_id' => $document->id]);
         }
 

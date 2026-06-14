@@ -13,6 +13,7 @@ import NodeLinkPanel from './NodeLinkPanel';
 
 import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
+import './bpmn-overrides.css';
 
 /** Document types + bilingual labels (matches the document-type picker). */
 const DOC_TYPES = [
@@ -72,15 +73,39 @@ function applyOverlays(viewer, links) {
     Object.keys(links || {}).forEach((nodeId) => {
       if (!elementRegistry.get(nodeId)) return;
       overlays.add(nodeId, {
-        position: { top: -10, right: -10 },
+        position: { top: -8, right: 8 },
         html: '<div style="background:#D5B170;color:#1C3755;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:bold;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.3);">🔗</div>',
       });
     });
   } catch { /* noop */ }
 }
 
+/** Tag linked nodes with `sm-has-link` so CSS shows a pointer cursor. */
+function syncLinkMarkers(viewer, links) {
+  try {
+    const canvas = viewer.get('canvas');
+    const registry = viewer.get('elementRegistry');
+    registry.getAll().forEach((el) => {
+      if (canvas.hasMarker(el.id, 'sm-has-link')) canvas.removeMarker(el.id, 'sm-has-link');
+    });
+    Object.keys(links || {}).forEach((nid) => {
+      if (registry.get(nid)) canvas.addMarker(nid, 'sm-has-link');
+    });
+  } catch { /* noop */ }
+}
+
+/** Highlight a single selected node; clears the previous one. */
+function applySelectedMarker(viewer, prevId, nextId) {
+  try {
+    const canvas = viewer.get('canvas');
+    const registry = viewer.get('elementRegistry');
+    if (prevId && registry.get(prevId)) canvas.removeMarker(prevId, 'sm-selected');
+    if (nextId && registry.get(nextId)) canvas.addMarker(nextId, 'sm-selected');
+  } catch { /* noop */ }
+}
+
 /** Interactive BPMN canvas (NavigatedViewer); drop zone when empty. */
-function BpmnPanel({ xml, canEdit, onUpload, saving, nodeLinks, linkMode, onSelectNode, onOpenLink }) {
+function BpmnPanel({ xml, canEdit, onUpload, saving, nodeLinks, linkMode, selectedEl, onSelectNode, onOpenLink }) {
   const { t } = useTranslation('common');
   const containerRef = useRef(null);
   const viewerRef = useRef(null);
@@ -91,6 +116,8 @@ function BpmnPanel({ xml, canEdit, onUpload, saving, nodeLinks, linkMode, onSele
   // Refs keep eventBus handler free of stale closures (registered once per importXML)
   const linkModeRef = useRef(linkMode);
   const nodeLinksRef = useRef(nodeLinks);
+  const selectedElRef = useRef(selectedEl);
+  const hoverIdRef = useRef(null);
   const onSelectNodeRef = useRef(onSelectNode);
   const onOpenLinkRef = useRef(onOpenLink);
   useEffect(() => { linkModeRef.current = linkMode; }, [linkMode]);
@@ -98,10 +125,43 @@ function BpmnPanel({ xml, canEdit, onUpload, saving, nodeLinks, linkMode, onSele
   useEffect(() => { onSelectNodeRef.current = onSelectNode; }, [onSelectNode]);
   useEffect(() => { onOpenLinkRef.current = onOpenLink; }, [onOpenLink]);
 
-  // Re-apply overlays when nodeLinks changes (after a save)
+  // Re-apply overlays + link markers when nodeLinks changes (after a save)
   useEffect(() => {
-    if (viewerRef.current) applyOverlays(viewerRef.current, nodeLinks);
+    if (viewerRef.current) {
+      applyOverlays(viewerRef.current, nodeLinks);
+      syncLinkMarkers(viewerRef.current, nodeLinks);
+    }
   }, [nodeLinks]);
+
+  // Toggle link-mode class on the container so CSS shows the crosshair cursor
+  useEffect(() => {
+    if (containerRef.current) containerRef.current.classList.toggle('sm-linkmode', linkMode);
+    // Clear any lingering hover highlight when leaving link mode
+    if (!linkMode && hoverIdRef.current && viewerRef.current) {
+      try { viewerRef.current.get('canvas').removeMarker(hoverIdRef.current, 'sm-hover'); } catch { /* noop */ }
+      hoverIdRef.current = null;
+    }
+  }, [linkMode]);
+
+  // Highlight the selected node; clear the previously selected one
+  useEffect(() => {
+    if (viewerRef.current) applySelectedMarker(viewerRef.current, selectedElRef.current, selectedEl);
+    selectedElRef.current = selectedEl;
+  }, [selectedEl]);
+
+  // The canvas container changes width when the NodeLinkPanel opens/closes
+  // (grid ↔ w-full). bpmn-js doesn't auto-resize: re-apply overlays/markers
+  // and re-fit the viewport so a just-saved link's badge becomes visible.
+  useEffect(() => {
+    const v = viewerRef.current;
+    if (!v) return undefined;
+    const id = setTimeout(() => {
+      applyOverlays(v, nodeLinksRef.current);
+      syncLinkMarkers(v, nodeLinksRef.current);
+      try { v.get('canvas').zoom('fit-viewport', 'auto'); } catch { /* noop */ }
+    }, 60);
+    return () => clearTimeout(id);
+  }, [selectedEl]);
 
   const render = useCallback(async (data) => {
     if (!containerRef.current || !data) return;
@@ -118,7 +178,11 @@ function BpmnPanel({ xml, canEdit, onUpload, saving, nodeLinks, linkMode, onSele
       viewerRef.current = viewer;
       await viewer.importXML(fixBizagiBpmn(data));
       applyOverlays(viewer, nodeLinksRef.current);
-      viewer.get('eventBus').on('element.click', (event) => {
+      syncLinkMarkers(viewer, nodeLinksRef.current);
+      applySelectedMarker(viewer, null, selectedElRef.current);
+      if (containerRef.current) containerRef.current.classList.toggle('sm-linkmode', linkModeRef.current);
+      const eventBus = viewer.get('eventBus');
+      eventBus.on('element.click', (event) => {
         const el = event.element;
         if (!el || el.type === 'bpmn:Process' || el.labelTarget) return;
         if (linkModeRef.current) {
@@ -127,6 +191,19 @@ function BpmnPanel({ xml, canEdit, onUpload, saving, nodeLinks, linkMode, onSele
           const link = nodeLinksRef.current?.[el.id];
           if (link) onOpenLinkRef.current?.(link);
         }
+      });
+      eventBus.on('element.hover', (event) => {
+        const el = event.element;
+        if (!el || el.type === 'bpmn:Process' || el.labelTarget) return;
+        if (!linkModeRef.current) return;
+        hoverIdRef.current = el.id;
+        try { viewer.get('canvas').addMarker(el.id, 'sm-hover'); } catch { /* noop */ }
+      });
+      eventBus.on('element.out', (event) => {
+        const el = event.element;
+        if (!el) return;
+        try { viewer.get('canvas').removeMarker(el.id, 'sm-hover'); } catch { /* noop */ }
+        if (hoverIdRef.current === el.id) hoverIdRef.current = null;
       });
       const fit = () => { try { viewer.get('canvas').zoom('fit-viewport', 'auto'); } catch { /* noop */ } };
       fit();
@@ -228,6 +305,7 @@ BpmnPanel.propTypes = {
   saving: PropTypes.bool.isRequired,
   nodeLinks: PropTypes.object,
   linkMode: PropTypes.bool,
+  selectedEl: PropTypes.string,
   onSelectNode: PropTypes.func,
   onOpenLink: PropTypes.func,
 };
@@ -254,6 +332,7 @@ export default function ProcessDiagramPage() {
   // Link mode
   const [linkMode, setLinkMode] = useState(false);
   const [selectedEl, setSelectedEl] = useState(null);
+  const [diagramKey, setDiagramKey] = useState(0); // bump to force a fresh diagram render after a link change
   const subprocessCache = useRef(null);
 
   const name = (item) => (isEs ? item?.name_es : item?.name_en) || item?.name_en || item?.name_es || '—';
@@ -335,6 +414,7 @@ export default function ProcessDiagramPage() {
     setData(res.data);
     setSelectedEl(null);
     setLinkMode(false);
+    setDiagramKey((k) => k + 1);
   };
 
   const handleRemoveLink = async (nodeId) => {
@@ -346,6 +426,7 @@ export default function ProcessDiagramPage() {
     setData(res.data);
     setSelectedEl(null);
     setLinkMode(false);
+    setDiagramKey((k) => k + 1);
   };
 
   const submitDoc = async (formData, docId) => {
@@ -434,15 +515,16 @@ export default function ProcessDiagramPage() {
             onDelete={async (docId) => { await processMapsApi.deleteDocument(docId); load(); }}
           />
         ) : (
-          <div className={`flex gap-4 items-start ${selectedEl ? 'grid grid-cols-[1fr_320px]' : ''}`}>
+          <div className={selectedEl ? 'grid grid-cols-[1fr_320px] gap-4 items-start' : 'w-full'}>
             <BpmnPanel
-              key={tab}
+              key={`${tab}-${diagramKey}`}
               xml={activeXml || ''}
               canEdit={canEdit}
               onUpload={handleUpload}
               saving={saving}
               nodeLinks={nodeLinks}
               linkMode={linkMode}
+              selectedEl={selectedEl}
               onSelectNode={handleSelectNode}
               onOpenLink={handleOpenLink}
             />
