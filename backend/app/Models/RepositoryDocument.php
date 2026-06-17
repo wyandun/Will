@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\UploaderRole;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -25,7 +26,7 @@ use Illuminate\Support\Carbon;
  * @property string $file_type
  * @property int $file_size
  * @property int $uploaded_by
- * @property string $uploader_role role discriminator: 'sm' | 'client'
+ * @property UploaderRole $uploader_role role discriminator: 'sm' | 'client'
  * @property int $version
  * @property int|null $parent_id
  * @property bool $is_current
@@ -54,14 +55,10 @@ class RepositoryDocument extends Model
         'title',
         'description',
         'file_path',
-        'file_url',
         'file_type',
         'file_size',
         'uploaded_by',
         'uploader_role',
-        'version',
-        'parent_id',
-        'is_current',
     ];
 
     /**
@@ -72,6 +69,7 @@ class RepositoryDocument extends Model
     protected $casts = [
         'record_date' => 'date',
         'file_size' => 'integer',
+        'uploader_role' => UploaderRole::class,
         'version' => 'integer',
         'parent_id' => 'integer',
         'is_current' => 'boolean',

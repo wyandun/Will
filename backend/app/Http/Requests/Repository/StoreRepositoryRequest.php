@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Repository;
 
+use App\Enums\FranchiseType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -37,7 +38,7 @@ class StoreRepositoryRequest extends FormRequest
                 'nullable',
                 'integer',
                 Rule::exists('franchises', 'id')
-                    ->where('type', 'sub')
+                    ->where('type', FranchiseType::SUB->value)
                     ->where('company_id', $this->input('company_id')),
             ],
         ];

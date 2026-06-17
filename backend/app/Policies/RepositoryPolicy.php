@@ -52,6 +52,11 @@ class RepositoryPolicy
      */
     public function create(User $user, int $companyId): bool
     {
+        // Policy is the single gate: verify company exists even if validation already checked it
+        if (! Company::where('id', $companyId)->exists()) {
+            return false;
+        }
+
         if ($user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN])) {
             return true;
         }

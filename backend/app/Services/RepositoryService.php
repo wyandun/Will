@@ -6,6 +6,7 @@ use App\Models\Company;
 use App\Models\Repository;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\Log;
 
 class RepositoryService
@@ -76,6 +77,15 @@ class RepositoryService
      */
     public function delete(Repository $repository): void
     {
+        if ($repository->documents()->exists()) {
+            throw new HttpResponseException(
+                response()->json([
+                    'success' => false,
+                    'message' => 'Cannot delete a repository that still contains documents.',
+                ], 422)
+            );
+        }
+
         $id = $repository->id;
         $companyId = $repository->company_id;
 
