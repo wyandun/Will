@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -57,7 +58,6 @@ class RepositoryDocument extends Model
         'file_type',
         'file_size',
         'uploaded_by',
-        'uploaded_by_type',
         'version',
         'parent_id',
         'is_current',
@@ -72,8 +72,24 @@ class RepositoryDocument extends Model
         'record_date' => 'date',
         'file_size' => 'integer',
         'version' => 'integer',
+        'parent_id' => 'integer',
         'is_current' => 'boolean',
     ];
+
+    // ---------------------------------------------------------------------------
+    // Scopes
+    // ---------------------------------------------------------------------------
+
+    /**
+     * Scope to only current (latest) versions of documents.
+     *
+     * @param  Builder<RepositoryDocument>  $query
+     * @return Builder<RepositoryDocument>
+     */
+    public function scopeCurrent(Builder $query): Builder
+    {
+        return $query->where('is_current', true);
+    }
 
     // ---------------------------------------------------------------------------
     // Relationships

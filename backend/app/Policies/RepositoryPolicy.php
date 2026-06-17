@@ -31,7 +31,7 @@ class RepositoryPolicy
      */
     public function view(User $user, Repository $repository): bool
     {
-        if ($user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY])) {
+        if ($this->isSupervisorRole($user)) {
             return true;
         }
 
@@ -81,5 +81,10 @@ class RepositoryPolicy
         }
 
         return (int) $company->sm_franchise_id === (int) $user->sm_franchise_id;
+    }
+
+    private function isSupervisorRole(User $user): bool
+    {
+        return $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY]);
     }
 }

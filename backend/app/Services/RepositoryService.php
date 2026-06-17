@@ -61,6 +61,17 @@ class RepositoryService
     }
 
     /**
+     * Hydrate a repository with the relations and counts needed for show().
+     */
+    public function show(Repository $repository): Repository
+    {
+        $repository->load(['company.franchise', 'subFranchise']);
+        $repository->loadCount('documents');
+
+        return $repository;
+    }
+
+    /**
      * Permanently delete a repository and all its documents (cascade via DB).
      */
     public function delete(Repository $repository): void

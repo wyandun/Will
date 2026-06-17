@@ -8,19 +8,22 @@ use App\Http\Resources\RepositoryResource;
 use App\Models\Repository;
 use App\Services\RepositoryService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Request;
 
 class RepositoryController extends Controller
 {
     public function __construct(private RepositoryService $service) {}
 
-    public function index(): AnonymousResourceCollection
+    public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Repository::class);
 
-        $repositories = $this->service->list(auth()->user());
+        $repositories = $this->service->list($request->user());
 
-        return RepositoryResource::collection($repositories);
+        return response()->json([
+            'success' => true,
+            'data' => RepositoryResource::collection($repositories),
+        ]);
     }
 
     public function store(StoreRepositoryRequest $request): JsonResponse
@@ -40,12 +43,9 @@ class RepositoryController extends Controller
     {
         $this->authorize('view', $repository);
 
-        $repository->load(['company.franchise', 'subFranchise']);
-        $repository->loadCount('documents');
-
         return response()->json([
             'success' => true,
-            'data' => new RepositoryResource($repository),
+            'data' => new RepositoryResource($this->service->show($repository)),
         ]);
     }
 

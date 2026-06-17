@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Repository;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreRepositoryRequest extends FormRequest
 {
@@ -21,7 +22,11 @@ class StoreRepositoryRequest extends FormRequest
     {
         return [
             'company_id' => ['required', 'integer', 'exists:companies,id'],
-            'sub_franchise_id' => ['nullable', 'integer', 'exists:franchises,id'],
+            'sub_franchise_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('franchises', 'id')->where('type', 'sub'),
+            ],
         ];
     }
 }
