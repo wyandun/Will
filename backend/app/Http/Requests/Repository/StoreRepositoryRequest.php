@@ -21,11 +21,24 @@ class StoreRepositoryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'company_id' => ['required', 'integer', 'exists:companies,id'],
+            'company_id' => [
+                'required',
+                'integer',
+                'exists:companies,id',
+                Rule::unique('repositories', 'company_id')->where(function ($query) {
+                    if ($this->input('sub_franchise_id') === null) {
+                        return $query->whereNull('sub_franchise_id');
+                    }
+
+                    return $query->where('sub_franchise_id', $this->input('sub_franchise_id'));
+                }),
+            ],
             'sub_franchise_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('franchises', 'id')->where('type', 'sub'),
+                Rule::exists('franchises', 'id')
+                    ->where('type', 'sub')
+                    ->where('company_id', $this->input('company_id')),
             ],
         ];
     }
