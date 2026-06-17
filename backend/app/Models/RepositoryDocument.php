@@ -25,7 +25,7 @@ use Illuminate\Support\Carbon;
  * @property string $file_type
  * @property int $file_size
  * @property int $uploaded_by
- * @property string $uploaded_by_type
+ * @property string $uploaded_by_type role discriminator: 'sm' | 'client' — NOT a morph type column
  * @property int $version
  * @property int|null $parent_id
  * @property bool $is_current
@@ -58,6 +58,7 @@ class RepositoryDocument extends Model
         'file_type',
         'file_size',
         'uploaded_by',
+        'uploaded_by_type', // discriminator: 'sm' | 'client' — set by service, not from user input
         'version',
         'parent_id',
         'is_current',

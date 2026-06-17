@@ -50,13 +50,17 @@ class RepositoryPolicy
      * - superadmin / system_admin → always allowed
      * - admin_sm → only on companies belonging to their franchise
      */
-    public function create(User $user): bool
+    public function create(User $user, Company $company): bool
     {
-        return $user->hasAnyRole([
-            Role::SUPERADMIN,
-            Role::SYSTEM_ADMIN,
-            Role::ADMIN_SM,
-        ]);
+        if ($user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN])) {
+            return true;
+        }
+
+        if (! $user->hasRole(Role::ADMIN_SM)) {
+            return false;
+        }
+
+        return (int) $company->sm_franchise_id === (int) $user->sm_franchise_id;
     }
 
     /**

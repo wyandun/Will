@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Repository\StoreRepositoryRequest;
 use App\Http\Resources\RepositoryResource;
+use App\Models\Company;
 use App\Models\Repository;
 use App\Services\RepositoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class RepositoryController extends Controller
 {
@@ -28,7 +30,8 @@ class RepositoryController extends Controller
 
     public function store(StoreRepositoryRequest $request): JsonResponse
     {
-        $this->authorize('create', Repository::class);
+        $company = Company::findOrFail($request->validated('company_id'));
+        $this->authorize('create', [Repository::class, $company]);
 
         $repository = $this->service->create($request->validated());
 
@@ -49,16 +52,12 @@ class RepositoryController extends Controller
         ]);
     }
 
-    public function destroy(Repository $repository): JsonResponse
+    public function destroy(Repository $repository): Response
     {
         $this->authorize('delete', $repository);
 
         $this->service->delete($repository);
 
-        return response()->json([
-            'success' => true,
-            'data' => null,
-            'message' => 'repositories.deleted_success',
-        ]);
+        return response()->noContent();
     }
 }

@@ -22,7 +22,7 @@ class RepositoryResource extends JsonResource
                 'name' => $this->company->name,
             ]),
             'franchise' => $this->whenLoaded('company', function () {
-                if (! $this->company->relationLoaded('franchise')) {
+                if (! $this->company?->relationLoaded('franchise')) {
                     return null;
                 }
 
