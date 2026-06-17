@@ -21,7 +21,7 @@ class RepositoryService
     public function list(User $user): Collection
     {
         $query = Repository::query()
-            ->with(['company.franchise'])
+            ->with(['company.franchise', 'subFranchise'])
             ->withCount('documents');
 
         if ($user->hasRole('admin_sm') && ! $user->hasAnyRole(['superadmin', 'system_admin', 'system_admin_readonly'])) {

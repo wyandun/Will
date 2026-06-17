@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Repository\StoreRepositoryRequest;
 use App\Http\Resources\RepositoryResource;
-use App\Models\Company;
 use App\Models\Repository;
 use App\Services\RepositoryService;
 use Illuminate\Http\JsonResponse;
@@ -30,8 +29,7 @@ class RepositoryController extends Controller
 
     public function store(StoreRepositoryRequest $request): JsonResponse
     {
-        $company = Company::findOrFail($request->validated('company_id'));
-        $this->authorize('create', [Repository::class, $company]);
+        $this->authorize('create', [Repository::class, $request->validated('company_id')]);
 
         $repository = $this->service->create($request->validated());
 
