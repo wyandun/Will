@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\ProcessCategoryController;
 use App\Http\Controllers\Api\ProcessController;
 use App\Http\Controllers\Api\ProcessMapController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\RepositoryController;
 use App\Http\Controllers\Api\SubProcessController;
 use App\Http\Controllers\Api\SubSubProcessController;
 use App\Http\Controllers\Api\SystemAdminController;
@@ -115,6 +116,8 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // apiResource so the {catalogItem} wildcard does not capture "tree".
     Route::get('catalog-items/tree', [CatalogItemController::class, 'tree']);
     Route::apiResource('catalog-items', CatalogItemController::class);
+
+    Route::apiResource('repositories', RepositoryController::class)->only(['index', 'store', 'show', 'destroy']);
 
     Route::apiResource('process-maps', ProcessMapController::class)->only(['index', 'store', 'destroy']);
     Route::get('process-maps/{processMap}', [ProcessMapController::class, 'show']);

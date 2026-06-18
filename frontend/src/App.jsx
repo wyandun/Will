@@ -17,6 +17,8 @@ import EventsPage from './pages/calendar/EventsPage';
 import CatalogPage from './pages/catalog/CatalogPage';
 import ProcessMapsPage from './pages/processMaps/ProcessMapsPage';
 import ProcessMapDetailPage from './pages/processMaps/ProcessMapDetailPage';
+import RepositoriesPage from './pages/repository/RepositoriesPage';
+import RepositoryDetailPage from './pages/repository/RepositoryDetailPage';
 import { useAuthStore } from './store/authStore';
 
 /**
@@ -148,7 +150,8 @@ export default function App() {
           />
           <Route path="/feed"       element={<ModuleRoute module="feed"><FeedPage /></ModuleRoute>} />
           <Route path="/contracts"  element={<ModuleRoute module="contracts"><StubPage title={t('nav.contracts')} /></ModuleRoute>} />
-          <Route path="/repository" element={<ModuleRoute module="repository"><StubPage title={t('nav.repository')} /></ModuleRoute>} />
+          <Route path="/repository" element={<ModuleRoute module="repository"><RepositoriesPage /></ModuleRoute>} />
+          <Route path="/repository/:id" element={<ModuleRoute module="repository"><RepositoryDetailPage /></ModuleRoute>} />
           <Route path="/processes"  element={<ModuleRoute module="processes"><ProcessMapsPage /></ModuleRoute>} />
           <Route path="/processes/:id" element={<ModuleRoute module="processes"><ProcessMapDetailPage /></ModuleRoute>} />
           <Route path="/accounting" element={<ModuleRoute module="accounting"><StubPage title={t('nav.accounting')} /></ModuleRoute>} />
