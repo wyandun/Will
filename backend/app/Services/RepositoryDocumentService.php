@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\UploaderRole;
 use App\Models\Repository;
 use App\Models\RepositoryDocument;
 use App\Models\User;
@@ -45,7 +46,9 @@ class RepositoryDocumentService
         $path = $file->store($storagePath, 'public');
         $fileUrl = Storage::disk('public')->url((string) $path);
 
-        $uploadedByType = $uploader->hasAnyRole(['superadmin', 'system_admin', 'admin_sm']) ? 'sm' : 'client';
+        $uploaderRole = $uploader->hasAnyRole(['superadmin', 'system_admin', 'admin_sm'])
+            ? UploaderRole::SM
+            : UploaderRole::CLIENT;
 
         $document = RepositoryDocument::create([
             'repository_id' => $repository->id,
@@ -54,14 +57,17 @@ class RepositoryDocumentService
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'file_path' => (string) $path,
-            'file_url' => $fileUrl,
             'file_type' => $file->getMimeType() ?? $file->getClientOriginalExtension(),
             'file_size' => $file->getSize(),
             'uploaded_by' => $uploader->id,
-            'uploaded_by_type' => $uploadedByType,
-            'version' => 1,
-            'is_current' => true,
+            'uploader_role' => $uploaderRole,
         ]);
+
+        // Set non-fillable versioning fields explicitly
+        $document->file_url = $fileUrl;
+        $document->version = 1;
+        $document->is_current = true;
+        $document->save();
 
         $document->load('uploader');
 

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Enums\UploaderRole;
 use App\Models\Company;
 use App\Models\Franchise;
 use App\Models\Repository;
@@ -51,7 +52,7 @@ class RepositoryDocumentTest extends TestCase
 
     private function makeFranchise(array $attributes = []): Franchise
     {
-        return Franchise::create(array_merge(['name' => 'SM Franchise'], $attributes));
+        return Franchise::factory()->sm()->create(array_merge(['name' => 'SM Franchise'], $attributes));
     }
 
     private function makeCompany(Franchise $franchise, array $attributes = []): Company
@@ -71,20 +72,25 @@ class RepositoryDocumentTest extends TestCase
 
     private function makeDocument(Repository $repository, User $uploader, array $attributes = []): RepositoryDocument
     {
-        return RepositoryDocument::create(array_merge([
+        $doc = RepositoryDocument::create(array_merge([
             'repository_id' => $repository->id,
             'section' => 'setup',
             'setup_category' => 'legal',
             'title' => 'Test Document',
             'file_path' => 'repositories/1/setup/legal/test.pdf',
-            'file_url' => 'http://localhost/storage/repositories/1/setup/legal/test.pdf',
             'file_type' => 'application/pdf',
             'file_size' => 1024,
             'uploaded_by' => $uploader->id,
-            'uploaded_by_type' => 'sm',
-            'version' => 1,
-            'is_current' => true,
+            'uploader_role' => UploaderRole::SM,
         ], $attributes));
+
+        // Set non-fillable versioning fields explicitly
+        $doc->file_url = 'http://localhost/storage/repositories/1/setup/legal/test.pdf';
+        $doc->version = 1;
+        $doc->is_current = true;
+        $doc->save();
+
+        return $doc;
     }
 
     // ===========================================================================
@@ -230,7 +236,7 @@ class RepositoryDocumentTest extends TestCase
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.title', 'Articles of Incorporation')
             ->assertJsonPath('data.setup_category', 'legal')
-            ->assertJsonPath('data.uploaded_by_type', 'sm');
+            ->assertJsonPath('data.uploader_role', 'sm');
 
         $this->assertDatabaseHas('repository_documents', [
             'repository_id' => $repository->id,
@@ -377,9 +383,10 @@ class RepositoryDocumentTest extends TestCase
 
         $admin = $this->createSuperadmin();
         $franchise = $this->makeFranchise();
-        $company = $this->makeCompany($franchise);
-        $repo1 = $this->makeRepository($company);
-        $repo2 = $this->makeRepository($company);
+        $company1 = $this->makeCompany($franchise, ['name' => 'Company 1']);
+        $company2 = $this->makeCompany($franchise, ['name' => 'Company 2']);
+        $repo1 = $this->makeRepository($company1);
+        $repo2 = $this->makeRepository($company2);
         $doc = $this->makeDocument($repo2, $admin);
 
         $this->actingAs($admin)
