@@ -33,7 +33,7 @@ class RepositoryDocumentController extends Controller
 
     public function store(StoreRepositoryDocumentRequest $request, Repository $repository): JsonResponse
     {
-        $this->authorize('create', $repository);
+        $this->authorize('update', $repository);
 
         $document = $this->service->store(
             $repository,

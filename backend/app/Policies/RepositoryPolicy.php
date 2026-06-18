@@ -71,6 +71,28 @@ class RepositoryPolicy
     }
 
     /**
+     * Upload documents to / modify a repository.
+     * Same franchise-ownership scope as delete — excludes read-only roles.
+     *
+     * - superadmin / system_admin → always allowed
+     * - admin_sm → only for repositories whose company belongs to their franchise
+     */
+    public function update(User $user, Repository $repository): bool
+    {
+        if ($user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN])) {
+            return true;
+        }
+
+        if (! $user->hasRole(Role::ADMIN_SM)) {
+            return false;
+        }
+
+        $company = $repository->company ?? Company::find($repository->company_id);
+
+        return $company && (int) $company->sm_franchise_id === (int) $user->sm_franchise_id;
+    }
+
+    /**
      * Delete a repository.
      *
      * - superadmin / system_admin → always allowed

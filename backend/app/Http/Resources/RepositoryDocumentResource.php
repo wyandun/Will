@@ -24,7 +24,7 @@ class RepositoryDocumentResource extends JsonResource
             'file_url' => $this->file_url,
             'file_type' => $this->file_type,
             'file_size' => $this->file_size,
-            'uploaded_by_type' => $this->uploaded_by_type,
+            'uploader_role' => $this->uploader_role,
             'uploader' => $this->whenLoaded('uploader', fn () => [
                 'id' => $this->uploader->id,
                 'name' => $this->uploader->name,
