@@ -21,6 +21,10 @@ class RepositoryResource extends JsonResource
                 'id' => $this->company->id,
                 'name' => $this->company->name,
             ]),
+            // franchise is derived from the company (company.franchise), whereas
+            // subFranchise is a direct relation on the repository. The loading is
+            // intentionally asymmetric because it mirrors the data model: a
+            // repository has no own franchise, it inherits it from its company.
             'franchise' => $this->whenLoaded('company', function () {
                 if (! $this->company?->relationLoaded('franchise')) {
                     return null;

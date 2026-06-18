@@ -9,18 +9,20 @@ use App\Models\Repository;
 use App\Models\RepositoryDocument;
 use App\Services\RepositoryDocumentService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
 
 class RepositoryDocumentController extends Controller
 {
     public function __construct(private RepositoryDocumentService $service) {}
 
-    public function index(Repository $repository): AnonymousResourceCollection
+    public function index(Request $request, Repository $repository): AnonymousResourceCollection
     {
         $this->authorize('view', $repository);
 
-        $section = request()->query('section', 'setup');
-        $category = request()->query('category');
+        $section = $request->query('section', 'setup');
+        $category = $request->query('category');
 
         $documents = $this->service->listBySection(
             $repository,
@@ -39,7 +41,7 @@ class RepositoryDocumentController extends Controller
             $repository,
             $request->validated(),
             $request->file('file'),
-            auth()->user()
+            $request->user()
         );
 
         return response()->json([
@@ -49,7 +51,7 @@ class RepositoryDocumentController extends Controller
         ], 201);
     }
 
-    public function destroy(Repository $repository, RepositoryDocument $document): JsonResponse
+    public function destroy(Repository $repository, RepositoryDocument $document): Response
     {
         $this->authorize('delete', $repository);
 
@@ -60,10 +62,6 @@ class RepositoryDocumentController extends Controller
 
         $this->service->delete($document);
 
-        return response()->json([
-            'success' => true,
-            'data' => null,
-            'message' => 'repository_documents.deleted_success',
-        ]);
+        return response()->noContent();
     }
 }

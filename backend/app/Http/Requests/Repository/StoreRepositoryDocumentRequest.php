@@ -2,7 +2,10 @@
 
 namespace App\Http\Requests\Repository;
 
+use App\Enums\DocumentSection;
+use App\Enums\SetupCategory;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreRepositoryDocumentRequest extends FormRequest
 {
@@ -19,8 +22,8 @@ class StoreRepositoryDocumentRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'max:200'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'section' => ['required', 'string', 'in:setup,process,record'],
-            'setup_category' => ['required_if:section,setup', 'nullable', 'string', 'in:legal,hr,certificates,marketing,sops'],
+            'section' => ['required', Rule::enum(DocumentSection::class)],
+            'setup_category' => ['required_if:section,setup', 'nullable', Rule::enum(SetupCategory::class)],
             'file' => ['required', 'file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,gif', 'max:20480'],
         ];
     }

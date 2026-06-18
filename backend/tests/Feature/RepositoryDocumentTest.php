@@ -371,8 +371,7 @@ class RepositoryDocumentTest extends TestCase
         $response = $this->actingAs($admin)
             ->deleteJson("/api/v1/repositories/{$repository->id}/documents/{$doc->id}");
 
-        $response->assertStatus(200)
-            ->assertJsonPath('success', true);
+        $response->assertNoContent();
 
         $this->assertSoftDeleted('repository_documents', ['id' => $doc->id]);
     }
