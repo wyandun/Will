@@ -25,13 +25,12 @@ class RepositoryResource extends JsonResource
             // subFranchise is a direct relation on the repository. The loading is
             // intentionally asymmetric because it mirrors the data model: a
             // repository has no own franchise, it inherits it from its company.
-            'franchise' => $this->whenLoaded('company', function () {
-                if (! $this->company?->relationLoaded('franchise')) {
-                    return null;
-                }
-
-                return $this->franchiseShape($this->company->franchise);
-            }),
+            // When company.franchise is not eager-loaded the key is omitted
+            // (MissingValue) instead of emitting a misleading "franchise": null.
+            'franchise' => $this->when(
+                $this->relationLoaded('company') && $this->company?->relationLoaded('franchise'),
+                fn () => $this->franchiseShape($this->company->franchise)
+            ),
             'sub_franchise' => $this->whenLoaded('subFranchise',
                 fn () => $this->franchiseShape($this->subFranchise)
             ),

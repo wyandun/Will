@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\DocumentSection;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Repository\StoreRepositoryDocumentRequest;
 use App\Http\Resources\RepositoryDocumentResource;
@@ -21,12 +22,17 @@ class RepositoryDocumentController extends Controller
     {
         $this->authorize('view', $repository);
 
-        $section = $request->query('section', 'setup');
+        $section = DocumentSection::tryFrom(
+            (string) $request->query('section', DocumentSection::SETUP->value)
+        );
+
+        abort_if($section === null, 422, 'Invalid section value.');
+
         $category = $request->query('category');
 
         $documents = $this->service->listBySection(
             $repository,
-            (string) $section,
+            $section->value,
             $category !== null ? (string) $category : null
         );
 
