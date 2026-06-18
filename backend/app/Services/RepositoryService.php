@@ -6,6 +6,7 @@ use App\Models\Company;
 use App\Models\Repository;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\Log;
 
 class RepositoryService
@@ -21,7 +22,7 @@ class RepositoryService
     public function list(User $user): Collection
     {
         $query = Repository::query()
-            ->with(['company.franchise'])
+            ->with(['company.franchise', 'subFranchise'])
             ->withCount('documents');
 
         if ($user->hasRole('admin_sm') && ! $user->hasAnyRole(['superadmin', 'system_admin', 'system_admin_readonly'])) {
@@ -61,10 +62,30 @@ class RepositoryService
     }
 
     /**
+     * Hydrate a repository with the relations and counts needed for show().
+     */
+    public function show(Repository $repository): Repository
+    {
+        $repository->load(['company.franchise', 'subFranchise']);
+        $repository->loadCount('documents');
+
+        return $repository;
+    }
+
+    /**
      * Permanently delete a repository and all its documents (cascade via DB).
      */
     public function delete(Repository $repository): void
     {
+        if ($repository->documents()->exists()) {
+            throw new HttpResponseException(
+                response()->json([
+                    'success' => false,
+                    'message' => 'Cannot delete a repository that still contains documents.',
+                ], 422)
+            );
+        }
+
         $id = $repository->id;
         $companyId = $repository->company_id;
 

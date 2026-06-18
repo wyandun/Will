@@ -31,7 +31,7 @@ class RepositoryPolicy
      */
     public function view(User $user, Repository $repository): bool
     {
-        if ($user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY])) {
+        if ($this->isSupervisorRole($user)) {
             return true;
         }
 
@@ -50,13 +50,24 @@ class RepositoryPolicy
      * - superadmin / system_admin → always allowed
      * - admin_sm → only on companies belonging to their franchise
      */
-    public function create(User $user): bool
+    public function create(User $user, int $companyId): bool
     {
-        return $user->hasAnyRole([
-            Role::SUPERADMIN,
-            Role::SYSTEM_ADMIN,
-            Role::ADMIN_SM,
-        ]);
+        // Policy is the single gate: verify company exists even if validation already checked it
+        if (! Company::where('id', $companyId)->exists()) {
+            return false;
+        }
+
+        if ($user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN])) {
+            return true;
+        }
+
+        if (! $user->hasRole(Role::ADMIN_SM)) {
+            return false;
+        }
+
+        $company = Company::find($companyId);
+
+        return $company && (int) $company->sm_franchise_id === (int) $user->sm_franchise_id;
     }
 
     /**
@@ -81,5 +92,10 @@ class RepositoryPolicy
         }
 
         return (int) $company->sm_franchise_id === (int) $user->sm_franchise_id;
+    }
+
+    private function isSupervisorRole(User $user): bool
+    {
+        return $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY]);
     }
 }

@@ -8,24 +8,28 @@ use App\Http\Resources\RepositoryResource;
 use App\Models\Repository;
 use App\Services\RepositoryService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class RepositoryController extends Controller
 {
     public function __construct(private RepositoryService $service) {}
 
-    public function index(): AnonymousResourceCollection
+    public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Repository::class);
 
-        $repositories = $this->service->list(auth()->user());
+        $repositories = $this->service->list($request->user());
 
-        return RepositoryResource::collection($repositories);
+        return response()->json([
+            'success' => true,
+            'data' => RepositoryResource::collection($repositories),
+        ]);
     }
 
     public function store(StoreRepositoryRequest $request): JsonResponse
     {
-        $this->authorize('create', Repository::class);
+        $this->authorize('create', [Repository::class, $request->validated('company_id')]);
 
         $repository = $this->service->create($request->validated());
 
@@ -40,25 +44,18 @@ class RepositoryController extends Controller
     {
         $this->authorize('view', $repository);
 
-        $repository->load(['company.franchise', 'subFranchise']);
-        $repository->loadCount('documents');
-
         return response()->json([
             'success' => true,
-            'data' => new RepositoryResource($repository),
+            'data' => new RepositoryResource($this->service->show($repository)),
         ]);
     }
 
-    public function destroy(Repository $repository): JsonResponse
+    public function destroy(Repository $repository): Response
     {
         $this->authorize('delete', $repository);
 
         $this->service->delete($repository);
 
-        return response()->json([
-            'success' => true,
-            'data' => null,
-            'message' => 'repositories.deleted_success',
-        ]);
+        return response()->noContent();
     }
 }

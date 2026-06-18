@@ -333,8 +333,7 @@ class RepositoryTest extends TestCase
 
         $response = $this->actingAs($superadmin)->deleteJson("/api/v1/repositories/{$repositoryId}");
 
-        $response->assertStatus(200);
-        $response->assertJsonPath('success', true);
+        $response->assertNoContent();
     }
 
     public function test_deleted_repository_is_removed_from_database(): void

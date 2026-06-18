@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\UploaderRole;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -24,7 +26,7 @@ use Illuminate\Support\Carbon;
  * @property string $file_type
  * @property int $file_size
  * @property int $uploaded_by
- * @property string $uploaded_by_type
+ * @property UploaderRole $uploader_role role discriminator: 'sm' | 'client'
  * @property int $version
  * @property int|null $parent_id
  * @property bool $is_current
@@ -53,14 +55,10 @@ class RepositoryDocument extends Model
         'title',
         'description',
         'file_path',
-        'file_url',
         'file_type',
         'file_size',
         'uploaded_by',
-        'uploaded_by_type',
-        'version',
-        'parent_id',
-        'is_current',
+        'uploader_role',
     ];
 
     /**
@@ -71,9 +69,26 @@ class RepositoryDocument extends Model
     protected $casts = [
         'record_date' => 'date',
         'file_size' => 'integer',
+        'uploader_role' => UploaderRole::class,
         'version' => 'integer',
+        'parent_id' => 'integer',
         'is_current' => 'boolean',
     ];
+
+    // ---------------------------------------------------------------------------
+    // Scopes
+    // ---------------------------------------------------------------------------
+
+    /**
+     * Scope to only current (latest) versions of documents.
+     *
+     * @param  Builder<RepositoryDocument>  $query
+     * @return Builder<RepositoryDocument>
+     */
+    public function scopeCurrent(Builder $query): Builder
+    {
+        return $query->where('is_current', true);
+    }
 
     // ---------------------------------------------------------------------------
     // Relationships

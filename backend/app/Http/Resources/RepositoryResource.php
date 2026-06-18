@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Franchise;
 use App\Models\Repository;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -21,24 +22,26 @@ class RepositoryResource extends JsonResource
                 'name' => $this->company->name,
             ]),
             'franchise' => $this->whenLoaded('company', function () {
-                if (
-                    $this->company->relationLoaded('franchise')
-                    && $this->company->franchise !== null
-                ) {
-                    return [
-                        'id' => $this->company->franchise->id,
-                        'name' => $this->company->franchise->name,
-                    ];
+                if (! $this->company?->relationLoaded('franchise')) {
+                    return null;
                 }
 
-                return null;
+                return $this->franchiseShape($this->company->franchise);
             }),
-            'sub_franchise' => $this->whenLoaded('subFranchise', fn () => $this->subFranchise
-                ? ['id' => $this->subFranchise->id, 'name' => $this->subFranchise->name]
-                : null),
-            'documents_count' => $this->documents_count ?? 0,
+            'sub_franchise' => $this->whenLoaded('subFranchise',
+                fn () => $this->franchiseShape($this->subFranchise)
+            ),
+            'documents_count' => $this->whenCounted('documents'),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
+    }
+
+    /**
+     * @return array{id: int, name: string}|null
+     */
+    private function franchiseShape(?Franchise $model): ?array
+    {
+        return $model ? ['id' => $model->id, 'name' => $model->name] : null;
     }
 }
