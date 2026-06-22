@@ -825,5 +825,81 @@
     "crop_title": "Ajusta tu foto",
     "crop_hint": "Arrastra para reposicionar. Usa el control para acercar.",
     "crop_save": "Recortar y guardar"
+  },
+  "catalog": {
+    "title": "Catálogo de Servicios",
+    "subtitle": "Gestiona entregables, servicios y paquetes",
+    "loading": "Cargando catálogo…",
+    "load_error": "Error al cargar el catálogo. Por favor intentá de nuevo.",
+    "delete_error": "Error al eliminar el elemento. Por favor intentá de nuevo.",
+    "new_deliverable": "Nuevo entregable",
+    "new_service": "Nuevo servicio",
+    "new_package": "Nuevo paquete",
+    "monthly": "Mensual",
+    "selected": "seleccionados",
+    "hours_total": "horas totales",
+    "no_services": "No hay servicios disponibles.",
+    "no_deliverables": "No hay entregables disponibles.",
+    "empty_deliverables": "Aún no hay entregables. Crea uno para comenzar.",
+    "empty_services": "Aún no hay servicios. Crea uno para comenzar.",
+    "empty_packages": "Aún no hay paquetes. Crea uno para comenzar.",
+    "tabs": {
+      "deliverables": "Entregables",
+      "services": "Servicios",
+      "packages": "Paquetes"
+    },
+    "service_type": {
+      "individual": "Individual",
+      "package": "Package",
+      "retainer": "Retainer"
+    },
+    "form": {
+      "name": "Nombre",
+      "name_es": "Nombre ES",
+      "name_en": "Nombre EN",
+      "phase": "Fase",
+      "phase_placeholder": "Selecciona un servicio",
+      "estimated_hours": "Horas estimadas",
+      "description": "Descripción",
+      "is_monthly": "Entregable mensual",
+      "is_monthly_hint": "Se repite cada mes mientras esté activo el servicio.",
+      "service_type": "Tipo",
+      "deliverables": "Entregables",
+      "deliverables_hint": "Al guardar, los entregables seleccionados se asignarán a este servicio.",
+      "services": "Servicios"
+    },
+    "deliverable": {
+      "new_title": "Nuevo entregable",
+      "edit_title": "Editar entregable",
+      "delete_confirm": "¿Eliminar el entregable \"{{name}}\"? Esta acción no se puede deshacer."
+    },
+    "service": {
+      "new_title": "Nuevo servicio",
+      "edit_title": "Editar servicio",
+      "delete_confirm": "¿Eliminar el servicio \"{{name}}\"? Esta acción no se puede deshacer."
+    },
+    "uncategorized": "Sin categorizar",
+    "drag_handle": "Arrastrar para mover",
+    "move_error": "No se pudo mover el entregable. Por favor intentá de nuevo.",
+    "delete_service_title": "¿Eliminar \"{{name}}\"?",
+    "delete_service_has_children": "Este servicio tiene {{count}} entregable(s). ¿Qué deseas hacer con ellos?",
+    "delete_service_no_children": "Este servicio no tiene entregables.",
+    "delete_service_orphan": "Dejar sin categorizar",
+    "delete_service_cascade": "Borrar también",
+    "delete_service_simple": "Eliminar",
+    "cancel": "Cancelar",
+    "package": {
+      "new_title": "Nuevo paquete",
+      "edit_title": "Editar paquete",
+      "delete_confirm": "¿Eliminar el paquete \"{{name}}\"? Esta acción no se puede deshacer."
+    },
+    "errors": {
+      "name_required": "El nombre es obligatorio.",
+      "name_es_required": "El nombre en español es obligatorio.",
+      "name_en_required": "El nombre en inglés es obligatorio.",
+      "service_required": "Debes seleccionar un servicio.",
+      "hours_required": "Las horas estimadas son obligatorias y deben ser un número válido.",
+      "type_required": "Selecciona un tipo válido."
+    }
   }
 }
