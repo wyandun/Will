@@ -39,21 +39,7 @@ function getAvatarColor(name) {
 }
 
 function formatLastSeen(dateStr) {
-  if (!dateStr) return null;
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now - date;
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return '1 day ago';
-  if (diffDays < 30) return `${diffDays} days ago`;
-  if (diffDays < 365) {
-    const months = Math.floor(diffDays / 30);
-    return months === 1 ? '1 month ago' : `${months} months ago`;
-  }
-  const years = Math.floor(diffDays / 365);
-  return years === 1 ? '1 year ago' : `${years} years ago`;
+  return timeAgo(dateStr);
 }
 
 // ─── Badge colors ─────────────────────────────────────────────────────────────
