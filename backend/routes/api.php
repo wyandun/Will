@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BbAssignmentController;
 use App\Http\Controllers\Api\CompanyController;
+use App\Http\Controllers\Api\ContractController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\EventController;
@@ -110,6 +111,17 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::apiResource('system-admins', SystemAdminController::class)->only(['index', 'store', 'update', 'destroy']);
 
     Route::apiResource('events', EventController::class)->middleware('module.permission:calendar');
+
+    // Contracts (DocuSeal e-signing). Sub-routes BEFORE apiResource so the
+    // {contract} wildcard cannot capture "send"/"sync"; docuseal/templates is
+    // separate. Whole cluster gated by the contracts module permission.
+    Route::middleware('module.permission:contracts')->group(function () {
+        Route::post('contracts/{contract}/send', [ContractController::class, 'send']);
+        Route::post('contracts/{contract}/sync', [ContractController::class, 'sync']);
+        Route::get('docuseal/templates', [ContractController::class, 'templates']);
+        Route::apiResource('contracts', ContractController::class)
+            ->only(['index', 'store', 'show', 'update', 'destroy']);
+    });
 
     Route::apiResource('process-maps', ProcessMapController::class)->only(['index', 'store', 'destroy']);
     Route::get('process-maps/{processMap}', [ProcessMapController::class, 'show']);

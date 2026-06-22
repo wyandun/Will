@@ -45,4 +45,9 @@ return [
         'fetch_lock_ttl_minutes' => 10,
     ],
 
+    'docuseal' => [
+        'url' => env('DOCUSEAL_URL'),
+        'token' => env('DOCUSEAL_API_KEY'),
+    ],
+
 ];
