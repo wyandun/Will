@@ -18,6 +18,13 @@ WORKDIR="/var/www/html"
 #    On Railway the image filesystem is writable but the directories baked
 #    into the image may have www-data ownership. Railway runs containers as
 #    root or a fixed UID — chmod is safer than chown here.
+#
+#    PERSISTENT VOLUME: storage/app/public must be mounted as a Railway
+#    volume so uploaded files (process documents, avatars, feed attachments)
+#    survive redeploys. Railway mounts volumes owned by root, so the chmod
+#    below is REQUIRED to keep the mounted path writable by PHP-FPM (www-data).
+#    The mkdir is idempotent and harmless whether or not the volume is mounted;
+#    if it is, mkdir/chmod operate on the volume itself. See railway.toml.
 # ---------------------------------------------------------------------------
 mkdir -p \
     "${WORKDIR}/storage/app/public" \
@@ -33,6 +40,7 @@ chmod -R 777 \
     "${WORKDIR}/storage" \
     "${WORKDIR}/bootstrap/cache"
 
+echo "[railway-start] storage/app/public ready (persistent volume mount point)"
 # Pre-create the Laravel log file with world-writable permissions.
 # Without this, the first process to log (l5-swagger:generate / artisan run as
 # root in this script) creates laravel.log owned by root with mode 0644, and
