@@ -19,6 +19,7 @@ import ProcessMapsPage from './pages/processMaps/ProcessMapsPage';
 import ProcessMapDetailPage from './pages/processMaps/ProcessMapDetailPage';
 import RepositoriesPage from './pages/repository/RepositoriesPage';
 import RepositoryDetailPage from './pages/repository/RepositoryDetailPage';
+import ProcessDiagramPage from './pages/processMaps/ProcessDiagramPage';
 import { useAuthStore } from './store/authStore';
 
 /**
@@ -154,6 +155,8 @@ export default function App() {
           <Route path="/repository/:id" element={<ModuleRoute module="repository"><RepositoryDetailPage /></ModuleRoute>} />
           <Route path="/processes"  element={<ModuleRoute module="processes"><ProcessMapsPage /></ModuleRoute>} />
           <Route path="/processes/:id" element={<ModuleRoute module="processes"><ProcessMapDetailPage /></ModuleRoute>} />
+          <Route path="/processes/:mapId/sub/:subId" element={<ModuleRoute module="processes"><ProcessDiagramPage /></ModuleRoute>} />
+          <Route path="/processes/:mapId/subsub/:subSubId" element={<ModuleRoute module="processes"><ProcessDiagramPage /></ModuleRoute>} />
           <Route path="/accounting" element={<ModuleRoute module="accounting"><StubPage title={t('nav.accounting')} /></ModuleRoute>} />
           <Route path="/inventory"  element={<ModuleRoute module="inventory"><StubPage title={t('nav.inventory')} /></ModuleRoute>} />
           <Route path="/tracking"   element={<ModuleRoute module="tracking"><StubPage title={t('nav.tracking')} /></ModuleRoute>} />
