@@ -1,10 +1,27 @@
 # railway.toml — SM Portal backend
 # Railway deployment configuration.
 # Docs: https://docs.railway.com/reference/config-as-code
+#
+# ---------------------------------------------------------------------------
+# PERSISTENT STORAGE (REQUIRED) — manual dashboard step, NOT config-as-code.
+# Railway's container filesystem is ephemeral: anything written at runtime is
+# lost on every redeploy. Uploaded files (process documents, avatars, feed
+# attachments) are written to storage/app/public and served via the public
+# /storage URL, so without a volume they vanish after a deploy and /storage
+# returns 403/404.
+#
+# Railway volumes cannot be declared in railway.toml — attach one in the
+# dashboard:
+#   Service (backend) → Settings → Volumes → New Volume
+#     Mount path: /var/www/html/storage/app/public
+# After attaching, redeploy once. start.sh chmods the mount so PHP-FPM can
+# write to it, and the public/storage symlink is (re)created every boot.
+# See docs/railway-storage-volume.md for the full procedure.
+# ---------------------------------------------------------------------------
 
 [build]
 # Use the Dockerfile in this directory.
-# The "railway" stage runs Caddy + PHP-FPM — suitable for production.
+# The "railway" stage runs Nginx + PHP-FPM — suitable for production.
 dockerfilePath = "Dockerfile"
 dockerBuildTarget = "railway"
 

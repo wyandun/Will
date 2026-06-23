@@ -128,4 +128,60 @@ class ProcessMapFilterTest extends TestCase
         $response->assertJsonPath('data.0.company.id', $company->id);
         $response->assertJsonPath('data.0.company.franchise.id', $franchise->id);
     }
+
+    public function test_admin_sm_without_filter_sees_only_own_franchise_maps(): void
+    {
+        $ownFranchise = Franchise::factory()->create();
+        $otherFranchise = Franchise::factory()->create();
+        $admin = $this->createAdminSm($ownFranchise);
+
+        $ownCompany = $this->createCompany($ownFranchise);
+        $otherCompany = $this->createCompany($otherFranchise);
+        ProcessMap::factory()->count(2)->forCompany($ownCompany)->create();
+        ProcessMap::factory()->count(3)->forCompany($otherCompany)->create();
+
+        // No franchise_id passed — the server must still scope to the admin's franchise.
+        $response = $this->actingAs($admin)->getJson('/api/v1/process-maps');
+
+        $response->assertStatus(200);
+        $this->assertCount(2, $response->json('data'));
+        foreach ($response->json('data') as $map) {
+            $this->assertSame($ownCompany->id, $map['company_id']);
+        }
+    }
+
+    public function test_admin_sm_cannot_list_other_franchise_via_filter(): void
+    {
+        $ownFranchise = Franchise::factory()->create();
+        $otherFranchise = Franchise::factory()->create();
+        $admin = $this->createAdminSm($ownFranchise);
+
+        $ownCompany = $this->createCompany($ownFranchise);
+        $otherCompany = $this->createCompany($otherFranchise);
+        ProcessMap::factory()->forCompany($ownCompany)->create();
+        ProcessMap::factory()->forCompany($otherCompany)->create();
+
+        // Attempt to spoof another franchise — the forced scope overrides it,
+        // so only the admin's own maps come back, never the other franchise's.
+        $response = $this->actingAs($admin)
+            ->getJson('/api/v1/process-maps?franchise_id='.$otherFranchise->id);
+
+        $response->assertStatus(200);
+        $this->assertCount(1, $response->json('data'));
+        foreach ($response->json('data') as $map) {
+            $this->assertSame($ownCompany->id, $map['company_id']);
+        }
+    }
+
+    public function test_superadmin_still_sees_all_franchises(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        ProcessMap::factory()->forCompany($this->createCompany())->create();
+        ProcessMap::factory()->forCompany($this->createCompany())->create();
+
+        $response = $this->actingAs($superadmin)->getJson('/api/v1/process-maps');
+
+        $response->assertStatus(200);
+        $this->assertCount(2, $response->json('data'));
+    }
 }

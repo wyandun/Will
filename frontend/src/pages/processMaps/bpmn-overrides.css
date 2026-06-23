@@ -1,0 +1,72 @@
+/* bpmn-js / diagram-js viewer — cursor + selección por marcadores.
+
+   Por qué estos selectores:
+   - El cursor "move" vive en la capa de captura de eventos hija de cada
+     nodo (.djs-hit-all / .djs-hit-stroke / .djs-hit-click-stroke), que se
+     dibuja ENCIMA de la forma. El puntero está sobre ese hijo, así que hay
+     que estilar el hijo — no .djs-element — para que gane.
+   - El resaltado reutiliza el contorno nativo .djs-outline (lo mismo que la
+     clase .selected del módulo de selección, ausente en NavigatedViewer):
+     lo hacemos visible y dorado vía nuestro marcador sm-selected.
+
+   Las clases sm-* las pone el JS: addMarker(id, 'sm-has-link'|'sm-selected')
+   sobre el grupo .djs-element, y classList.toggle('sm-linkmode') en el
+   contenedor. */
+
+/* --- Cursor: estilar la hit-layer hija --- */
+
+/* Link mode: cualquier nodo invita a seleccionar */
+.sm-linkmode .djs-element .djs-hit-all,
+.sm-linkmode .djs-element .djs-hit-no-move,
+.sm-linkmode .djs-element .djs-hit-stroke,
+.sm-linkmode .djs-element .djs-hit-click-stroke { cursor: crosshair !important; }
+
+/* Fuera de link mode: nodo con link invita a abrir */
+.djs-element.sm-has-link .djs-hit-all,
+.djs-element.sm-has-link .djs-hit-no-move,
+.djs-element.sm-has-link .djs-hit-stroke,
+.djs-element.sm-has-link .djs-hit-click-stroke { cursor: pointer !important; }
+
+/* El crosshair del link mode gana al pointer de sm-has-link */
+.sm-linkmode .djs-element.sm-has-link .djs-hit-all,
+.sm-linkmode .djs-element.sm-has-link .djs-hit-no-move,
+.sm-linkmode .djs-element.sm-has-link .djs-hit-stroke,
+.sm-linkmode .djs-element.sm-has-link .djs-hit-click-stroke { cursor: crosshair !important; }
+
+/* --- Hover en link mode: anticipa la selección ---
+   Estila la geometría principal (.djs-visual > :nth-child(1)), el mismo
+   selector que usa diagram-js para sus estados (.attach-ok, etc.). */
+
+/* Formas: tinte dorado + borde */
+.djs-shape.sm-hover .djs-visual > :nth-child(1) {
+  fill: rgba(213, 177, 112, 0.2) !important;
+  stroke: #D5B170 !important;
+  stroke-width: 2px !important;
+}
+
+/* Conexiones (flechas/flujos): una flecha no tiene "área" que rellenar como
+   un nodo, así que pintamos la capa de detección ancha (.djs-hit-stroke,
+   15px de ancho) en dorado translúcido — como un resaltador a lo largo de
+   la flecha. Es el equivalente al tinte interior de los nodos. */
+.djs-connection.sm-hover .djs-hit-stroke,
+.djs-connection.sm-hover .djs-hit-click-stroke {
+  stroke: #D5B170 !important;
+  stroke-opacity: 0.3 !important;
+}
+/* La línea en sí, dorada, para definición */
+.djs-connection.sm-hover .djs-visual > :nth-child(1) {
+  stroke: #D5B170 !important;
+  stroke-width: 2px !important;
+}
+
+/* --- Resaltado: reutilizar el contorno nativo, en dorado --- */
+.djs-element.sm-selected .djs-outline {
+  visibility: visible !important;
+  stroke: #D5B170 !important;
+  stroke-width: 2.5px !important;
+}
+
+/* Glow sutil sobre la geometría de la forma */
+.djs-element.sm-selected .djs-visual > :nth-child(1) {
+  filter: drop-shadow(0 0 4px rgba(213, 177, 112, 0.75));
+}
