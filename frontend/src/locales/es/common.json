@@ -799,6 +799,24 @@
       "certificates": "Licencias operativas permisos municipales",
       "marketing": "Materiales de marca campañas medios",
       "sops": "Procedimientos operativos estándar otros documentos"
+    },
+    "no_process_map": "No hay mapa de procesos asociado a esta empresa.",
+    "process_docs_load_error": "Error al cargar los documentos de proceso.",
+    "process_section_empty": "Sin documentos en esta sección.",
+    "process_sections": {
+      "strategic": "Procesos Estratégicos",
+      "value_chain": "Cadena de Valor",
+      "support": "Procesos de Soporte"
+    },
+    "doc_types": {
+      "MP": "Manual de Proceso",
+      "FOR": "Formato",
+      "MN": "Manual",
+      "IN": "Instructivo",
+      "AN": "Anexo",
+      "PO": "Política",
+      "PR": "Procedimiento",
+      "CR": "Criterio"
     }
   },
   "catalog": {

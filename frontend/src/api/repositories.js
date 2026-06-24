@@ -34,6 +34,15 @@ export const repositoriesApi = {
     apiClient.delete(`/repositories/${id}`).then((res) => res.data),
 
   /**
+   * Get the process documents tree for a repository.
+   * Returns the ProcessMap categories with their processes, sub-processes and
+   * documents, or null when the company has no associated ProcessMap.
+   * @param {number} id
+   */
+  getProcessDocuments: (id) =>
+    apiClient.get(`/repositories/${id}/process-documents`).then((res) => res.data.data),
+
+  /**
    * List companies available to the current user (for the create-repository dropdown).
    * The /companies endpoint returns a paginated response; we extract the data array.
    */

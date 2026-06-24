@@ -29,6 +29,7 @@ use App\Policies\SubProcessPolicy;
 use App\Policies\SubSubProcessPolicy;
 use App\Policies\UserPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Support\Facades\Event;
@@ -52,6 +53,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Morph map for the process-tree polymorphic documents. Keeps short,
+        // storage-stable aliases in process_documents.documentable_type instead
+        // of fully-qualified class names.
+        Relation::enforceMorphMap([
+            'process' => Process::class,
+            'sub_process' => SubProcess::class,
+            'sub_sub_process' => SubSubProcess::class,
+        ]);
+
         Gate::policy(BbAssignment::class, BbAssignmentPolicy::class);
         Gate::policy(Franchise::class, FranchisePolicy::class);
         Gate::policy(Company::class, CompanyPolicy::class);

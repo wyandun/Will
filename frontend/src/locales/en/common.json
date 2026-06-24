@@ -799,6 +799,24 @@
       "certificates": "Operating licenses municipal permits",
       "marketing": "Brand materials campaigns media",
       "sops": "Standard operating procedures other documents"
+    },
+    "no_process_map": "No process map associated with this company.",
+    "process_docs_load_error": "Failed to load process documents.",
+    "process_section_empty": "No documents in this section.",
+    "process_sections": {
+      "strategic": "Strategic Processes",
+      "value_chain": "Value Chain",
+      "support": "Support Processes"
+    },
+    "doc_types": {
+      "MP": "Process Manual",
+      "FOR": "Form",
+      "MN": "Manual",
+      "IN": "Instruction",
+      "AN": "Annex",
+      "PO": "Policy",
+      "PR": "Procedure",
+      "CR": "Criterion"
     }
   },
   "catalog": {

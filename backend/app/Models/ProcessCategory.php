@@ -3,11 +3,21 @@
 namespace App\Models;
 
 use Database\Factories\ProcessCategoryFactory;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id
+ * @property int $process_map_id
+ * @property string $type
+ * @property string $name_es
+ * @property string $name_en
+ * @property int $order_index
+ * @property-read Collection<int, Process> $processes
+ */
 class ProcessCategory extends Model
 {
     /** @use HasFactory<ProcessCategoryFactory> */
