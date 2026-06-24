@@ -75,7 +75,7 @@ class RepositoryController extends Controller
             'categories' => fn ($q) => $q->orderBy('order_index'),
             'categories.processes' => fn ($q) => $q->orderBy('order_index'),
             'categories.processes.subProcesses' => fn ($q) => $q->orderBy('order_index'),
-            'categories.processes.subProcesses.documents',
+            'categories.processes.subProcesses.currentDocuments',
         ]);
 
         return response()->json([

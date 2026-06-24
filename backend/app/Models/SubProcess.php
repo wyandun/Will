@@ -24,7 +24,8 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @property array<int, mixed>|null $walkthrough_en
  * @property array<string, array{type: string, value: int|string}>|null $node_links
  * @property int|null $manual_document_id
- * @property-read Collection<int, ProcessDocument> $documents
+ * @property-read Collection<int, Document> $documents
+ * @property-read Collection<int, Document> $currentDocuments
  */
 class SubProcess extends Model
 {
@@ -69,11 +70,26 @@ class SubProcess extends Model
     }
 
     /**
+     * All documents (all versions, including soft-deleted). Used by DocumentService
+     * to generate sequential codes and persist new documents.
+     *
      * @return MorphMany<Document, $this>
      */
-    public function bpmnDocuments(): MorphMany
+    public function documents(): MorphMany
     {
         return $this->morphMany(Document::class, 'documentable');
+    }
+
+    /**
+     * Current active documents only. Used by the Repository "Process Documents" tab.
+     *
+     * @return MorphMany<Document, $this>
+     */
+    public function currentDocuments(): MorphMany
+    {
+        return $this->morphMany(Document::class, 'documentable')
+            ->where('is_current', true)
+            ->orderBy('code');
     }
 
     /**
@@ -82,17 +98,5 @@ class SubProcess extends Model
     public function manualDocument(): BelongsTo
     {
         return $this->belongsTo(Document::class, 'manual_document_id');
-    }
-
-    /**
-     * Current (non-deleted) process documents attached to this sub-process.
-     *
-     * @return MorphMany<ProcessDocument, $this>
-     */
-    public function documents(): MorphMany
-    {
-        return $this->morphMany(ProcessDocument::class, 'documentable')
-            ->where('is_current', true)
-            ->orderBy('code');
     }
 }
