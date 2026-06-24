@@ -64,7 +64,7 @@ class RepositoryController extends Controller
 
         $map = ProcessMap::query()
             ->where('company_id', $repository->company_id)
-            ->where('type', 'franquiciadora')
+            ->orderByRaw("CASE WHEN type = 'franquiciadora' THEN 0 ELSE 1 END")
             ->first();
 
         if ($map === null) {
