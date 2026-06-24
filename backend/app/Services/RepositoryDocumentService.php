@@ -58,6 +58,7 @@ class RepositoryDocumentService
             'repository_id' => $repository->id,
             'section' => $data['section'],
             'setup_category' => $category,
+            'process_code' => $data['process_code'] ?? null,
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'file_path' => (string) $path,

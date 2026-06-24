@@ -5,7 +5,12 @@ namespace Tests\Feature;
 use App\Enums\Role;
 use App\Models\Company;
 use App\Models\Franchise;
+use App\Models\Process;
+use App\Models\ProcessCategory;
+use App\Models\ProcessDocument;
+use App\Models\ProcessMap;
 use App\Models\Repository;
+use App\Models\SubProcess;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role as SpatieRole;
@@ -74,6 +79,33 @@ class RepositoryTest extends TestCase
         return Repository::create(array_merge([
             'company_id' => $company->id,
         ], $attributes));
+    }
+
+    /**
+     * Create a full process tree (map → category → process → subprocess) linked
+     * to the given company and return the ProcessMap.
+     *
+     * @return array{map: ProcessMap, category: ProcessCategory, process: Process, subProcess: SubProcess}
+     */
+    private function makeProcessTree(Company $company, string $mapType = 'franquiciadora'): array
+    {
+        $map = ProcessMap::factory()->forCompany($company)->create([
+            'type' => $mapType,
+        ]);
+
+        $category = ProcessCategory::factory()->create([
+            'process_map_id' => $map->id,
+        ]);
+
+        $process = Process::factory()->create([
+            'category_id' => $category->id,
+        ]);
+
+        $subProcess = SubProcess::factory()->create([
+            'process_id' => $process->id,
+        ]);
+
+        return compact('map', 'category', 'process', 'subProcess');
     }
 
     // ===========================================================================
@@ -356,5 +388,158 @@ class RepositoryTest extends TestCase
         $response = $this->actingAs($superadmin)->deleteJson('/api/v1/repositories/999999');
 
         $response->assertStatus(404);
+    }
+
+    // ===========================================================================
+    // GET /api/v1/repositories/{id}/process-documents  (processDocuments)
+    // ===========================================================================
+
+    public function test_unauthenticated_user_gets_401_on_process_documents(): void
+    {
+        $franchise = Franchise::factory()->sm()->create();
+        $company = $this->makeCompany($franchise);
+        $repository = $this->makeRepository($company);
+
+        $this->getJson("/api/v1/repositories/{$repository->id}/process-documents")
+            ->assertStatus(401);
+    }
+
+    public function test_regular_user_gets_403_on_process_documents(): void
+    {
+        $franchise = Franchise::factory()->sm()->create();
+        $company = $this->makeCompany($franchise);
+        $repository = $this->makeRepository($company);
+        $user = $this->createRegularUser();
+
+        $this->actingAs($user)
+            ->getJson("/api/v1/repositories/{$repository->id}/process-documents")
+            ->assertStatus(403);
+    }
+
+    public function test_admin_sm_from_different_franchise_gets_403_on_process_documents(): void
+    {
+        $myFranchise = Franchise::factory()->sm()->create(['name' => 'My Franchise']);
+        $otherFranchise = Franchise::factory()->sm()->create(['name' => 'Other Franchise']);
+        $otherCompany = $this->makeCompany($otherFranchise);
+        $otherRepository = $this->makeRepository($otherCompany);
+        $admin = $this->createAdminSm($myFranchise);
+
+        $this->actingAs($admin)
+            ->getJson("/api/v1/repositories/{$otherRepository->id}/process-documents")
+            ->assertStatus(403);
+    }
+
+    public function test_process_documents_returns_404_for_nonexistent_repository(): void
+    {
+        $superadmin = $this->createSuperadmin();
+
+        $this->actingAs($superadmin)
+            ->getJson('/api/v1/repositories/999999/process-documents')
+            ->assertStatus(404);
+    }
+
+    public function test_process_documents_returns_200_with_null_data_when_no_process_map(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = Franchise::factory()->sm()->create();
+        $company = $this->makeCompany($franchise);
+        $repository = $this->makeRepository($company);
+        // Intentionally no ProcessMap created for this company.
+
+        $response = $this->actingAs($superadmin)
+            ->getJson("/api/v1/repositories/{$repository->id}/process-documents");
+
+        $response->assertStatus(200)
+            ->assertExactJson(['data' => null]);
+    }
+
+    public function test_superadmin_gets_process_tree_structure_when_franquiciadora_map_exists(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = Franchise::factory()->sm()->create();
+        $company = $this->makeCompany($franchise);
+        $repository = $this->makeRepository($company);
+        ['map' => $map] = $this->makeProcessTree($company, 'franquiciadora');
+
+        $response = $this->actingAs($superadmin)
+            ->getJson("/api/v1/repositories/{$repository->id}/process-documents");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.process_map_id', $map->id)
+            ->assertJsonStructure([
+                'data' => [
+                    'process_map_id',
+                    'categories',
+                ],
+            ]);
+
+        // The categories array must contain at least the one we created.
+        $this->assertCount(1, $response->json('data.categories'));
+    }
+
+    public function test_franquiciada_map_is_ignored_and_returns_null_data(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = Franchise::factory()->sm()->create();
+        $company = $this->makeCompany($franchise);
+        $repository = $this->makeRepository($company);
+        // Create only the franquiciada map — processDocuments looks for franquiciadora.
+        $this->makeProcessTree($company, 'franquiciada');
+
+        $response = $this->actingAs($superadmin)
+            ->getJson("/api/v1/repositories/{$repository->id}/process-documents");
+
+        $response->assertStatus(200)
+            ->assertExactJson(['data' => null]);
+    }
+
+    public function test_admin_sm_from_same_franchise_can_access_process_documents(): void
+    {
+        $franchise = Franchise::factory()->sm()->create();
+        $admin = $this->createAdminSm($franchise);
+        $company = $this->makeCompany($franchise);
+        $repository = $this->makeRepository($company);
+        ['map' => $map] = $this->makeProcessTree($company, 'franquiciadora');
+
+        $response = $this->actingAs($admin)
+            ->getJson("/api/v1/repositories/{$repository->id}/process-documents");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.process_map_id', $map->id);
+    }
+
+    public function test_process_documents_nests_subprocess_documents_in_tree(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = Franchise::factory()->sm()->create();
+        $company = $this->makeCompany($franchise);
+        $repository = $this->makeRepository($company);
+        ['subProcess' => $subProcess] = $this->makeProcessTree($company, 'franquiciadora');
+
+        // Attach a ProcessDocument to the subprocess.
+        ProcessDocument::create([
+            'documentable_type' => 'sub_process',
+            'documentable_id' => $subProcess->id,
+            'code' => 'DOC-001',
+            'type' => 'manual',
+            'title_es' => 'Manual de prueba',
+            'title_en' => 'Test manual',
+            'version' => 1,
+            'is_current' => true,
+            'uploaded_by' => $superadmin->id,
+        ]);
+
+        $response = $this->actingAs($superadmin)
+            ->getJson("/api/v1/repositories/{$repository->id}/process-documents");
+
+        $response->assertStatus(200);
+
+        // Verify the document is nested inside the tree path:
+        // data → categories[0] → processes[0] → sub_processes[0] → documents[0]
+        $subProcesses = $response->json('data.categories.0.processes.0.sub_processes');
+        $this->assertNotEmpty($subProcesses);
+        $documents = $subProcesses[0]['documents'];
+        $this->assertCount(1, $documents);
+        $this->assertEquals('DOC-001', $documents[0]['code']);
     }
 }
