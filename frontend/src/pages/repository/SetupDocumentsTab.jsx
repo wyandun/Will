@@ -82,8 +82,8 @@ function DocumentRow({ doc, repositoryId, onDeleted }) {
   const [hovering, setHovering] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const uploaderName = doc.uploader?.name ?? doc.uploaded_by_type ?? '—';
-  const orgBadge = doc.uploaded_by_type === 'sm' ? 'Strategic Mates' : uploaderName;
+  const uploaderName = doc.uploader?.name ?? '—';
+  const orgBadge = doc.uploader_role === 'sm' ? 'Strategic Mates' : uploaderName;
   const formatLabel = formatMime(doc.file_type);
   const sizeLabel = formatFileSize(doc.file_size ?? 0);
   const date = doc.created_at
