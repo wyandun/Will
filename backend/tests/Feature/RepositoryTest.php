@@ -7,7 +7,6 @@ use App\Models\Company;
 use App\Models\Franchise;
 use App\Models\Process;
 use App\Models\ProcessCategory;
-use App\Models\ProcessDocument;
 use App\Models\ProcessMap;
 use App\Models\Repository;
 use App\Models\SubProcess;
@@ -516,10 +515,8 @@ class RepositoryTest extends TestCase
         $repository = $this->makeRepository($company);
         ['subProcess' => $subProcess] = $this->makeProcessTree($company, 'franquiciadora');
 
-        // Attach a ProcessDocument to the subprocess.
-        ProcessDocument::create([
-            'documentable_type' => 'sub_process',
-            'documentable_id' => $subProcess->id,
+        // Create via the morphMany relationship — documentable_type/id are set by Eloquent.
+        $subProcess->documents()->create([
             'code' => 'DOC-001',
             'type' => 'MN',
             'title_es' => 'Manual de prueba',

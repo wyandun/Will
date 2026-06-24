@@ -39,8 +39,8 @@ class ProcessDocument extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'documentable_type',
-        'documentable_id',
+        // documentable_type and documentable_id are intentionally excluded:
+        // they are set by Eloquent's morphMany relationship, not by direct mass-assignment.
         'code',
         'type',
         'title_es',

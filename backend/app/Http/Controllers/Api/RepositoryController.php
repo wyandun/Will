@@ -62,6 +62,8 @@ class RepositoryController extends Controller
     {
         $this->authorize('view', $repository);
 
+        // Prefer the 'franquiciadora' map; fall back to any map for companies
+        // created manually (without Close Deal), which only get a 'franquiciada' map.
         $map = ProcessMap::query()
             ->where('company_id', $repository->company_id)
             ->orderByRaw("CASE WHEN type = 'franquiciadora' THEN 0 ELSE 1 END")
