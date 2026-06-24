@@ -244,7 +244,7 @@ function CategorySection({ category, repositoryId, initialOpen }) {
           <div className="border-t border-slate-100 px-5 py-3 space-y-2">
             {loading && <p className="text-xs text-slate-400 py-4 text-center">{t('common.loading')}</p>}
             {!loading && docs.length === 0 && (
-              <p className="text-xs text-slate-400 py-4 text-center">{t('common.coming_soon')}</p>
+              <p className="text-xs text-slate-400 py-4 text-center">{t('repository.no_documents')}</p>
             )}
             {docs.map((doc) => (
               <DocumentRow
