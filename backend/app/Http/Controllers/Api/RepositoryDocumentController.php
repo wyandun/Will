@@ -21,11 +21,13 @@ class RepositoryDocumentController extends Controller
 
         $section = request()->query('section', 'setup');
         $category = request()->query('category');
+        $processCode = request()->query('process_code');
 
         $documents = $this->service->listBySection(
             $repository,
             (string) $section,
-            $category !== null ? (string) $category : null
+            $category !== null ? (string) $category : null,
+            $processCode !== null && $processCode !== '' ? (string) $processCode : null
         );
 
         return RepositoryDocumentResource::collection($documents);

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { repositoriesApi } from '../../api/repositories';
 import SetupDocumentsTab from './SetupDocumentsTab';
 import ProcessDocumentsTab from './ProcessDocumentsTab';
+import RecordsTab from './RecordsTab';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -26,20 +27,6 @@ function IconFolder() {
 // ─── Tab bar ──────────────────────────────────────────────────────────────────
 
 const TABS = ['tab_setup', 'tab_process_docs', 'tab_records'];
-
-function ComingSoonTab() {
-  const { t } = useTranslation('common');
-  return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-4">
-        <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-        </svg>
-      </div>
-      <p className="text-sm text-slate-400">{t('common.coming_soon')}</p>
-    </div>
-  );
-}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -166,7 +153,7 @@ export default function RepositoryDetailPage() {
       {/* Tab content */}
       {activeTab === 'tab_setup' && <SetupDocumentsTab repositoryId={repository.id} />}
       {activeTab === 'tab_process_docs' && <ProcessDocumentsTab repositoryId={repository.id} />}
-      {activeTab === 'tab_records' && <ComingSoonTab />}
+      {activeTab === 'tab_records' && <RecordsTab repositoryId={repository.id} />}
     </div>
   );
 }

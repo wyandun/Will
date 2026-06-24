@@ -21,6 +21,7 @@ class StoreRepositoryDocumentRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:2000'],
             'section' => ['required', 'string', 'in:setup,process,record'],
             'setup_category' => ['required_if:section,setup', 'nullable', 'string', 'in:legal,hr,certificates,marketing,sops'],
+            'process_code' => ['nullable', 'string', 'max:40'],
             'file' => ['required', 'file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,gif', 'max:20480'],
         ];
     }
