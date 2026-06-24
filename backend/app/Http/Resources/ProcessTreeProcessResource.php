@@ -19,7 +19,7 @@ class ProcessTreeProcessResource extends JsonResource
             'code' => $this->code,
             'name_es' => $this->name_es,
             'name_en' => $this->name_en,
-            'sub_processes' => ProcessTreeSubProcessResource::collection($this->subProcesses),
+            'sub_processes' => ProcessTreeSubProcessResource::collection($this->whenLoaded('subProcesses')),
         ];
     }
 }

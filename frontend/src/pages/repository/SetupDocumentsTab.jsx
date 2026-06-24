@@ -232,7 +232,7 @@ function CategorySection({ category, repositoryId, initialOpen }) {
               type="button"
               onClick={toggle}
               className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-50 transition-colors"
-              aria-label={open ? 'Collapse' : 'Expand'}
+              aria-label={open ? t('common.collapse') : t('common.expand')}
             >
               {open ? <IconChevronUp /> : <IconChevronDown />}
             </button>

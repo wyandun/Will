@@ -477,20 +477,20 @@ class RepositoryTest extends TestCase
         $this->assertCount(1, $response->json('data.categories'));
     }
 
-    public function test_franquiciada_map_is_ignored_and_returns_null_data(): void
+    public function test_falls_back_to_franquiciada_map_when_no_franquiciadora_exists(): void
     {
         $superadmin = $this->createSuperadmin();
         $franchise = Franchise::factory()->sm()->create();
         $company = $this->makeCompany($franchise);
         $repository = $this->makeRepository($company);
-        // Create only the franquiciada map — processDocuments looks for franquiciadora.
-        $this->makeProcessTree($company, 'franquiciada');
+        // Only a franquiciada map exists — endpoint falls back to it instead of returning null.
+        ['map' => $map] = $this->makeProcessTree($company, 'franquiciada');
 
         $response = $this->actingAs($superadmin)
             ->getJson("/api/v1/repositories/{$repository->id}/process-documents");
 
         $response->assertStatus(200)
-            ->assertExactJson(['data' => null]);
+            ->assertJsonPath('data.process_map_id', $map->id);
     }
 
     public function test_admin_sm_from_same_franchise_can_access_process_documents(): void
@@ -521,7 +521,7 @@ class RepositoryTest extends TestCase
             'documentable_type' => 'sub_process',
             'documentable_id' => $subProcess->id,
             'code' => 'DOC-001',
-            'type' => 'manual',
+            'type' => 'MN',
             'title_es' => 'Manual de prueba',
             'title_en' => 'Test manual',
             'version' => 1,

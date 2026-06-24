@@ -6,6 +6,12 @@ import { useAuthStore } from '../../store/authStore';
 
 const MAX_SIZE_BYTES = 20 * 1024 * 1024; // 20 MB
 
+function formatFileSize(bytes) {
+  if (!bytes) return '—';
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export default function AddRecordModal({ repositoryId, processes, onClose, onUploaded }) {
   const { t, i18n } = useTranslation('common');
   const userName = useAuthStore((s) => s.user?.name ?? '');
@@ -141,7 +147,7 @@ export default function AddRecordModal({ repositoryId, processes, onClose, onUpl
             {file ? (
               <div className="space-y-1">
                 <p className="text-sm font-medium text-slate-700">{file.name}</p>
-                <p className="text-xs text-slate-400">{(file.size / 1024).toFixed(1)} KB</p>
+                <p className="text-xs text-slate-400">{formatFileSize(file.size)}</p>
               </div>
             ) : (
               <div className="space-y-1">

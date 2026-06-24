@@ -25,7 +25,7 @@ class RepositoryDocumentController extends Controller
 
         $section = $request->enum('section', DocumentSection::class) ?? DocumentSection::SETUP;
         $category = $request->enum('category', SetupCategory::class);
-        $processCode = $request->input('process_code') ?: null;
+        $processCode = $request->input('process_code') ?? null;
 
         $documents = $this->service->listBySection(
             $repository,

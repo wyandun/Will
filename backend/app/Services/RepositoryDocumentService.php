@@ -44,8 +44,11 @@ class RepositoryDocumentService
      */
     public function store(Repository $repository, array $data, UploadedFile $file, User $uploader): RepositoryDocument
     {
+        $section = $data['section'] ?? 'setup';
         $category = $data['setup_category'] ?? null;
-        $storagePath = "repositories/{$repository->id}/setup/{$category}";
+        $storagePath = $section === 'setup'
+            ? "repositories/{$repository->id}/setup/{$category}"
+            : "repositories/{$repository->id}/{$section}";
 
         $path = $file->store($storagePath, 'public');
         $fileUrl = Storage::disk('public')->url((string) $path);
