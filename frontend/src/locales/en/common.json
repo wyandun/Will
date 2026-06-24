@@ -873,6 +873,37 @@
       "certificates": "Operating licenses municipal permits",
       "marketing": "Brand materials campaigns media",
       "sops": "Standard operating procedures other documents"
+    },
+    "no_process_map": "No process map associated with this company.",
+    "process_docs_load_error": "Failed to load process documents.",
+    "process_section_empty": "No documents in this section.",
+    "records_load_error": "Failed to load records.",
+    "add_record_btn": "Add record",
+    "add_record_modal_title": "Add record",
+    "process_subprocess_label": "PROCESS / SUBPROCESS",
+    "process_subprocess_placeholder": "Select a subprocess...",
+    "add_record_doc_name": "DOCUMENT NAME",
+    "add_record_drop_zone": "Click or drag your file here",
+    "add_record_drop_hint": "Any file — max 20 MB",
+    "add_record_auto_note": "Will be automatically recorded: {{name}}, upload date and time.",
+    "add_record_submit": "Add record",
+    "record_upload_error": "Failed to upload the record. Please try again.",
+    "record_delete_error": "Failed to delete the record. Please try again.",
+    "record_delete_confirm": "Delete \"{{name}}\"? This action cannot be undone.",
+    "process_sections": {
+      "strategic": "Strategic Processes",
+      "value_chain": "Value Chain",
+      "support": "Support Processes"
+    },
+    "doc_types": {
+      "MP": "Process Manual",
+      "FOR": "Form",
+      "MN": "Manual",
+      "IN": "Instruction",
+      "AN": "Annex",
+      "PO": "Policy",
+      "PR": "Procedure",
+      "CR": "Criterion"
     }
   },
   "catalog": {

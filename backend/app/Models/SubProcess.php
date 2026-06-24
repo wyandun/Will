@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\SubProcessFactory;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,13 +11,20 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
+ * @property int $id
+ * @property int $process_id
+ * @property string $code
+ * @property string $name_es
+ * @property string $name_en
  * @property string|null $description
+ * @property int $order_index
  * @property string|null $bpmn_xml_es
  * @property string|null $bpmn_xml_en
  * @property array<int, mixed>|null $walkthrough_es
  * @property array<int, mixed>|null $walkthrough_en
  * @property array<string, array{type: string, value: int|string}>|null $node_links
  * @property int|null $manual_document_id
+ * @property-read Collection<int, ProcessDocument> $documents
  */
 class SubProcess extends Model
 {
@@ -63,7 +71,7 @@ class SubProcess extends Model
     /**
      * @return MorphMany<Document, $this>
      */
-    public function documents(): MorphMany
+    public function bpmnDocuments(): MorphMany
     {
         return $this->morphMany(Document::class, 'documentable');
     }
@@ -74,5 +82,17 @@ class SubProcess extends Model
     public function manualDocument(): BelongsTo
     {
         return $this->belongsTo(Document::class, 'manual_document_id');
+    }
+
+    /**
+     * Current (non-deleted) process documents attached to this sub-process.
+     *
+     * @return MorphMany<ProcessDocument, $this>
+     */
+    public function documents(): MorphMany
+    {
+        return $this->morphMany(ProcessDocument::class, 'documentable')
+            ->where('is_current', true)
+            ->orderBy('code');
     }
 }

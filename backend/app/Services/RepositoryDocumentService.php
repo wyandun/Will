@@ -15,11 +15,11 @@ class RepositoryDocumentService
 {
     /**
      * List current-version documents for a repository section.
-     * Optionally scoped to a single setup_category.
+     * Optionally scoped to a single setup_category and/or process_code.
      *
      * @return Collection<int, RepositoryDocument>
      */
-    public function listBySection(Repository $repository, string $section = 'setup', ?string $category = null): Collection
+    public function listBySection(Repository $repository, string $section = 'setup', ?string $category = null, ?string $processCode = null): Collection
     {
         $query = RepositoryDocument::query()
             ->with('uploader')
@@ -30,6 +30,10 @@ class RepositoryDocumentService
 
         if ($category !== null) {
             $query->where('setup_category', $category);
+        }
+
+        if ($processCode !== null) {
+            $query->where('process_code', $processCode);
         }
 
         return $query->get();

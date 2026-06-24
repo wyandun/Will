@@ -29,6 +29,7 @@ class StoreRepositoryDocumentRequest extends FormRequest
                 'nullable',
                 Rule::enum(SetupCategory::class),
             ],
+            'process_code' => ['nullable', 'string', 'max:40'],
             'file' => ['required', 'file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,gif', 'max:20480'],
         ];
     }
