@@ -539,4 +539,32 @@ class RepositoryTest extends TestCase
         $this->assertCount(1, $documents);
         $this->assertEquals('DOC-001', $documents[0]['code']);
     }
+
+    public function test_soft_deleted_process_documents_are_excluded_from_tree(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = Franchise::factory()->sm()->create();
+        $company = $this->makeCompany($franchise);
+        $repository = $this->makeRepository($company);
+        ['subProcess' => $subProcess] = $this->makeProcessTree($company, 'franquiciadora');
+
+        $doc = $subProcess->documents()->create([
+            'code' => 'DOC-DEL',
+            'type' => 'MN',
+            'title_es' => 'Documento eliminado',
+            'title_en' => 'Deleted document',
+            'version' => 1,
+            'is_current' => true,
+            'uploaded_by' => $superadmin->id,
+        ]);
+        $doc->delete(); // soft-delete
+
+        $response = $this->actingAs($superadmin)
+            ->getJson("/api/v1/repositories/{$repository->id}/process-documents");
+
+        $response->assertStatus(200);
+        $subProcesses = $response->json('data.categories.0.processes.0.sub_processes');
+        $documents = $subProcesses[0]['documents'];
+        $this->assertEmpty($documents, 'Soft-deleted documents must not appear in the tree');
+    }
 }
