@@ -54,14 +54,16 @@ class ProcessDocument extends Model
     ];
 
     /**
-     * Attribute casts.
-     *
-     * @var array<string, string>
+     * @return array<string, string>
      */
-    protected $casts = [
-        'version' => 'integer',
-        'is_current' => 'boolean',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'version' => 'integer',
+            'is_current' => 'boolean',
+            'deleted_at' => 'datetime',
+        ];
+    }
 
     // ---------------------------------------------------------------------------
     // Relationships

@@ -15,10 +15,11 @@ class ProcessTreeCategoryResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
+            'id' => $this->id,
             'type' => $this->type,
             'name_es' => $this->name_es,
             'name_en' => $this->name_en,
-            'processes' => ProcessTreeProcessResource::collection($this->processes),
+            'processes' => ProcessTreeProcessResource::collection($this->whenLoaded('processes')),
         ];
     }
 }
