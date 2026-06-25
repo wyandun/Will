@@ -370,11 +370,34 @@ class ContractTest extends TestCase
 
     public function test_templates_endpoint_returns_docuseal_templates(): void
     {
-        $franchise = Franchise::factory()->create();
+        $franchise = Franchise::factory()->create(['name' => 'SM Florida']);
         $admin = $this->createAdminSm($franchise);
 
         $this->actingAs($admin)->getJson('/api/v1/docuseal/templates')
             ->assertOk()
             ->assertJsonPath('data.0.id', 1);
+    }
+
+    public function test_admin_sm_only_sees_own_franchise_templates(): void
+    {
+        $franchise = Franchise::factory()->create(['name' => 'SM Florida']);
+        $admin = $this->createAdminSm($franchise);
+
+        $response = $this->actingAs($admin)->getJson('/api/v1/docuseal/templates');
+
+        $response->assertOk();
+        $ids = array_column($response->json('data'), 'id');
+        $this->assertEquals([1], $ids);
+    }
+
+    public function test_superadmin_sees_all_templates(): void
+    {
+        $superadmin = $this->createSuperadmin();
+
+        $response = $this->actingAs($superadmin)->getJson('/api/v1/docuseal/templates');
+
+        $response->assertOk();
+        $ids = array_column($response->json('data'), 'id');
+        $this->assertEquals([1, 2], $ids);
     }
 }

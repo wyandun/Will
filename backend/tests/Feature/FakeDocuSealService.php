@@ -26,12 +26,21 @@ class FakeDocuSealService extends DocuSealService
     /**
      * @return array<int, array<string, mixed>>
      */
-    public function getTemplates(): array
+    public function getTemplates(?string $folder = null): array
     {
-        return [
-            ['id' => 1, 'name' => 'Franchise Agreement'],
-            ['id' => 2, 'name' => 'NDA'],
+        $templates = [
+            ['id' => 1, 'name' => 'Franchise Agreement', 'folder' => 'SM Florida'],
+            ['id' => 2, 'name' => 'NDA', 'folder' => 'SM Texas'],
         ];
+
+        if ($folder === null) {
+            return $templates;
+        }
+
+        return array_values(array_filter(
+            $templates,
+            fn (array $t): bool => ($t['folder'] ?? null) === $folder,
+        ));
     }
 
     /**
