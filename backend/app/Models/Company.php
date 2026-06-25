@@ -99,4 +99,16 @@ class Company extends Model
     {
         return $this->hasOne(BbAssignment::class, 'company_id');
     }
+
+    /**
+     * Document repositories for this company.
+     * Typically one company-level repo (sub_franchise_id IS NULL) plus
+     * optional sub-franchise repos.
+     *
+     * @return HasMany<Repository, $this>
+     */
+    public function repositories(): HasMany
+    {
+        return $this->hasMany(Repository::class, 'company_id');
+    }
 }

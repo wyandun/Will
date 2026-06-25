@@ -12,6 +12,7 @@ use App\Models\Franchise;
 use App\Models\Process;
 use App\Models\ProcessCategory;
 use App\Models\ProcessMap;
+use App\Models\Repository;
 use App\Models\SubProcess;
 use App\Models\SubSubProcess;
 use App\Models\User;
@@ -25,6 +26,7 @@ use App\Policies\FranchisePolicy;
 use App\Policies\ProcessCategoryPolicy;
 use App\Policies\ProcessMapPolicy;
 use App\Policies\ProcessPolicy;
+use App\Policies\RepositoryPolicy;
 use App\Policies\SubProcessPolicy;
 use App\Policies\SubSubProcessPolicy;
 use App\Policies\UserPolicy;
@@ -65,6 +67,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Process::class, ProcessPolicy::class);
         Gate::policy(SubProcess::class, SubProcessPolicy::class);
         Gate::policy(SubSubProcess::class, SubSubProcessPolicy::class);
+        Gate::policy(Repository::class, RepositoryPolicy::class);
 
         // Stable polymorphic aliases for process_documents.documentable_type,
         // matching the migration contract (process | sub_process | sub_sub_process).
