@@ -924,5 +924,81 @@
     "crop_title": "Adjust your photo",
     "crop_hint": "Drag to reposition. Use the slider to zoom.",
     "crop_save": "Crop & Save"
+  },
+  "catalog": {
+    "title": "Service Catalog",
+    "subtitle": "Manage deliverables, services and packages",
+    "loading": "Loading catalog…",
+    "load_error": "Failed to load the catalog. Please try again.",
+    "delete_error": "Failed to delete the item. Please try again.",
+    "new_deliverable": "New deliverable",
+    "new_service": "New service",
+    "new_package": "New package",
+    "monthly": "Monthly",
+    "selected": "selected",
+    "hours_total": "total hours",
+    "no_services": "No services available.",
+    "no_deliverables": "No deliverables available.",
+    "empty_deliverables": "No deliverables yet. Create one to get started.",
+    "empty_services": "No services yet. Create one to get started.",
+    "empty_packages": "No packages yet. Create one to get started.",
+    "tabs": {
+      "deliverables": "Deliverables",
+      "services": "Services",
+      "packages": "Packages"
+    },
+    "service_type": {
+      "individual": "Individual",
+      "package": "Package",
+      "retainer": "Retainer"
+    },
+    "form": {
+      "name": "Name",
+      "name_es": "Name ES",
+      "name_en": "Name EN",
+      "phase": "Phase",
+      "phase_placeholder": "Select a service",
+      "estimated_hours": "Estimated hours",
+      "description": "Description",
+      "is_monthly": "Monthly deliverable",
+      "is_monthly_hint": "Repeats every month while the service is active.",
+      "service_type": "Type",
+      "deliverables": "Deliverables",
+      "deliverables_hint": "On save, selected deliverables will be assigned to this service.",
+      "services": "Services"
+    },
+    "deliverable": {
+      "new_title": "New deliverable",
+      "edit_title": "Edit deliverable",
+      "delete_confirm": "Delete deliverable \"{{name}}\"? This action cannot be undone."
+    },
+    "service": {
+      "new_title": "New service",
+      "edit_title": "Edit service",
+      "delete_confirm": "Delete service \"{{name}}\"? This action cannot be undone."
+    },
+    "uncategorized": "Uncategorized",
+    "drag_handle": "Drag to move",
+    "move_error": "Failed to move the deliverable. Please try again.",
+    "delete_service_title": "Delete \"{{name}}\"?",
+    "delete_service_has_children": "This service has {{count}} deliverable(s). What do you want to do with them?",
+    "delete_service_no_children": "This service has no deliverables.",
+    "delete_service_orphan": "Leave uncategorized",
+    "delete_service_cascade": "Delete them too",
+    "delete_service_simple": "Delete",
+    "cancel": "Cancel",
+    "package": {
+      "new_title": "New package",
+      "edit_title": "Edit package",
+      "delete_confirm": "Delete package \"{{name}}\"? This action cannot be undone."
+    },
+    "errors": {
+      "name_required": "Name is required.",
+      "name_es_required": "Spanish name is required.",
+      "name_en_required": "English name is required.",
+      "service_required": "You must select a service.",
+      "hours_required": "Estimated hours are required and must be a valid number.",
+      "type_required": "Select a valid type."
+    }
   }
 }

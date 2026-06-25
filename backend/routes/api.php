@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BbAssignmentController;
+use App\Http\Controllers\Api\CatalogItemController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\ContractController;
 use App\Http\Controllers\Api\DashboardController;
@@ -122,6 +123,11 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::apiResource('contracts', ContractController::class)
             ->only(['index', 'store', 'show', 'update', 'destroy']);
     });
+
+    // Catalog (superadmin only). The /tree route MUST be registered BEFORE
+    // apiResource so the {catalogItem} wildcard does not capture "tree".
+    Route::get('catalog-items/tree', [CatalogItemController::class, 'tree']);
+    Route::apiResource('catalog-items', CatalogItemController::class);
 
     Route::apiResource('process-maps', ProcessMapController::class)->only(['index', 'store', 'destroy']);
     Route::get('process-maps/{processMap}', [ProcessMapController::class, 'show']);

@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Jobs\MarkInvitationEmailSent;
 use App\Models\BbAssignment;
+use App\Models\CatalogItem;
 use App\Models\Company;
 use App\Models\Contract;
 use App\Models\Event as EventModel;
@@ -16,6 +17,7 @@ use App\Models\SubSubProcess;
 use App\Models\User;
 use App\Notifications\UserInvitationNotification;
 use App\Policies\BbAssignmentPolicy;
+use App\Policies\CatalogItemPolicy;
 use App\Policies\CompanyPolicy;
 use App\Policies\ContractPolicy;
 use App\Policies\EventPolicy;
@@ -57,6 +59,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Contract::class, ContractPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(EventModel::class, EventPolicy::class);
+        Gate::policy(CatalogItem::class, CatalogItemPolicy::class);
         Gate::policy(ProcessMap::class, ProcessMapPolicy::class);
         Gate::policy(ProcessCategory::class, ProcessCategoryPolicy::class);
         Gate::policy(Process::class, ProcessPolicy::class);
