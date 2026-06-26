@@ -59,7 +59,9 @@
     "total": "total",
     "coming_soon": "This module is coming soon.",
     "unexpected_error": "An unexpected error occurred. Please try again.",
-    "back": "Back"
+    "back": "Back",
+    "collapse": "Collapse",
+    "expand": "Expand"
   },
   "roles": {
     "system_admin": "System Admin",
@@ -720,10 +722,10 @@
     "modal_franchise_label": "Franchise",
     "modal_franchise_select": "Select a franchise",
     "modal_franchise_required": "Franchise is required.",
-    "modal_client_label": "Client",
-    "modal_client_select": "Select a client",
-    "modal_client_pick_franchise": "Pick a franchise first",
-    "modal_client_required": "Client is required.",
+    "modal_client_label": "Company",
+    "modal_client_select": "Select a company",
+    "modal_client_pick_franchise": "Select a franchise first",
+    "modal_client_required": "Company is required.",
     "modal_name_label": "Map name",
     "modal_name_placeholder": "e.g. Onboarding flow",
     "modal_name_required": "Map name is required.",
@@ -972,6 +974,37 @@
       "certificates": "Operating licenses municipal permits",
       "marketing": "Brand materials campaigns media",
       "sops": "Standard operating procedures other documents"
+    },
+    "no_process_map": "No process map associated with this company.",
+    "process_docs_load_error": "Failed to load process documents.",
+    "process_section_empty": "No documents in this section.",
+    "records_load_error": "Failed to load records.",
+    "add_record_btn": "Add record",
+    "add_record_modal_title": "Add record",
+    "process_subprocess_label": "PROCESS / SUBPROCESS",
+    "process_subprocess_placeholder": "Select a subprocess...",
+    "add_record_doc_name": "DOCUMENT NAME",
+    "add_record_drop_zone": "Click or drag your file here",
+    "add_record_drop_hint": "Any file — max 20 MB",
+    "add_record_auto_note": "Will be automatically recorded: {{name}}, upload date and time.",
+    "add_record_submit": "Add record",
+    "record_upload_error": "Failed to upload the record. Please try again.",
+    "record_delete_error": "Failed to delete the record. Please try again.",
+    "record_delete_confirm": "Delete \"{{name}}\"? This action cannot be undone.",
+    "process_sections": {
+      "strategic": "Strategic Processes",
+      "value_chain": "Value Chain",
+      "support": "Support Processes"
+    },
+    "doc_types": {
+      "MP": "Process Manual",
+      "FOR": "Form",
+      "MN": "Manual",
+      "IN": "Instruction",
+      "AN": "Annex",
+      "PO": "Policy",
+      "PR": "Procedure",
+      "CR": "Criterion"
     }
   },
   "catalog": {

@@ -59,7 +59,9 @@
     "total": "total",
     "coming_soon": "Este módulo estará disponible próximamente.",
     "unexpected_error": "Ocurrió un error inesperado. Por favor intentá de nuevo.",
-    "back": "Volver"  
+    "back": "Volver",
+    "collapse": "Contraer",
+    "expand": "Expandir"
   },
   "roles": {
     "system_admin": "Admin de Sistema",
@@ -720,10 +722,10 @@
     "modal_franchise_label": "Franquicia",
     "modal_franchise_select": "Selecciona una franquicia",
     "modal_franchise_required": "La franquicia es obligatoria.",
-    "modal_client_label": "Cliente",
-    "modal_client_select": "Selecciona un cliente",
+    "modal_client_label": "Empresa",
+    "modal_client_select": "Selecciona una empresa",
     "modal_client_pick_franchise": "Selecciona primero una franquicia",
-    "modal_client_required": "El cliente es obligatorio.",
+    "modal_client_required": "La empresa es obligatoria.",
     "modal_name_label": "Nombre del mapa",
     "modal_name_placeholder": "ej. Flujo de incorporación",
     "modal_name_required": "El nombre del mapa es obligatorio.",
@@ -972,6 +974,37 @@
       "certificates": "Licencias operativas permisos municipales",
       "marketing": "Materiales de marca campañas medios",
       "sops": "Procedimientos operativos estándar otros documentos"
+    },
+    "no_process_map": "No hay mapa de procesos asociado a esta empresa.",
+    "process_docs_load_error": "Error al cargar los documentos de proceso.",
+    "process_section_empty": "Sin documentos en esta sección.",
+    "records_load_error": "Error al cargar los registros.",
+    "add_record_btn": "Agregar registro",
+    "add_record_modal_title": "Agregar registro",
+    "process_subprocess_label": "PROCESO / SUBPROCESO",
+    "process_subprocess_placeholder": "Selecciona un subproceso...",
+    "add_record_doc_name": "NOMBRE DEL DOCUMENTO",
+    "add_record_drop_zone": "Hacé clic o arrastrá tu archivo aquí",
+    "add_record_drop_hint": "Cualquier archivo — máx 20 MB",
+    "add_record_auto_note": "Se registrará automáticamente: {{name}}, fecha y hora de carga.",
+    "add_record_submit": "Agregar registro",
+    "record_upload_error": "Error al subir el registro. Por favor intentá de nuevo.",
+    "record_delete_error": "Error al eliminar el registro. Por favor intentá de nuevo.",
+    "record_delete_confirm": "¿Eliminar \"{{name}}\"? Esta acción no se puede deshacer.",
+    "process_sections": {
+      "strategic": "Procesos Estratégicos",
+      "value_chain": "Cadena de Valor",
+      "support": "Procesos de Soporte"
+    },
+    "doc_types": {
+      "MP": "Manual de Proceso",
+      "FOR": "Formato",
+      "MN": "Manual",
+      "IN": "Instructivo",
+      "AN": "Anexo",
+      "PO": "Política",
+      "PR": "Procedimiento",
+      "CR": "Criterio"
     }
   },
   "catalog": {

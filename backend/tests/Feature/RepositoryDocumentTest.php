@@ -409,4 +409,173 @@ class RepositoryDocumentTest extends TestCase
             ->deleteJson("/api/v1/repositories/{$repo2->id}/documents/{$doc->id}")
             ->assertStatus(403);
     }
+
+    // ===========================================================================
+    // GET /api/v1/repositories/{id}/documents?section=record  (index — records)
+    // ===========================================================================
+
+    public function test_superadmin_can_list_record_documents_without_process_code_filter(): void
+    {
+        $admin = $this->createSuperadmin();
+        $franchise = $this->makeFranchise();
+        $company = $this->makeCompany($franchise);
+        $repository = $this->makeRepository($company);
+        $this->makeDocument($repository, $admin, [
+            'section' => 'record',
+            'setup_category' => null,
+            'process_code' => 'GTH-P01',
+        ]);
+        $this->makeDocument($repository, $admin, [
+            'section' => 'record',
+            'setup_category' => null,
+            'process_code' => 'GTH-P02',
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->getJson("/api/v1/repositories/{$repository->id}/documents?section=record");
+
+        $response->assertStatus(200)
+            ->assertJsonCount(2, 'data');
+    }
+
+    public function test_superadmin_can_filter_record_documents_by_process_code(): void
+    {
+        $admin = $this->createSuperadmin();
+        $franchise = $this->makeFranchise();
+        $company = $this->makeCompany($franchise);
+        $repository = $this->makeRepository($company);
+        $this->makeDocument($repository, $admin, [
+            'section' => 'record',
+            'setup_category' => null,
+            'process_code' => 'GTH-P01',
+        ]);
+        $this->makeDocument($repository, $admin, [
+            'section' => 'record',
+            'setup_category' => null,
+            'process_code' => 'GTH-P02',
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->getJson("/api/v1/repositories/{$repository->id}/documents?section=record&process_code=GTH-P01");
+
+        $response->assertStatus(200)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.process_code', 'GTH-P01');
+    }
+
+    public function test_filtering_by_nonexistent_process_code_returns_empty_array(): void
+    {
+        $admin = $this->createSuperadmin();
+        $franchise = $this->makeFranchise();
+        $company = $this->makeCompany($franchise);
+        $repository = $this->makeRepository($company);
+        $this->makeDocument($repository, $admin, [
+            'section' => 'record',
+            'setup_category' => null,
+            'process_code' => 'GTH-P01',
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->getJson("/api/v1/repositories/{$repository->id}/documents?section=record&process_code=NONEXISTENT");
+
+        $response->assertStatus(200)
+            ->assertJsonCount(0, 'data');
+    }
+
+    public function test_admin_sm_from_different_franchise_gets_403_on_record_documents_index(): void
+    {
+        $franchise1 = $this->makeFranchise(['name' => 'Franchise 1']);
+        $franchise2 = $this->makeFranchise(['name' => 'Franchise 2']);
+        $admin = $this->createAdminSm($franchise1);
+        $company2 = $this->makeCompany($franchise2);
+        $repository2 = $this->makeRepository($company2);
+
+        $this->actingAs($admin)
+            ->getJson("/api/v1/repositories/{$repository2->id}/documents?section=record")
+            ->assertStatus(403);
+    }
+
+    // ===========================================================================
+    // POST /api/v1/repositories/{id}/documents  section='record'  (store)
+    // ===========================================================================
+
+    public function test_superadmin_can_upload_record_with_process_code(): void
+    {
+        Storage::fake('public');
+
+        $admin = $this->createSuperadmin();
+        $franchise = $this->makeFranchise();
+        $company = $this->makeCompany($franchise);
+        $repository = $this->makeRepository($company);
+
+        $file = UploadedFile::fake()->create('record.pdf', 50, 'application/pdf');
+
+        $response = $this->actingAs($admin)
+            ->postJson("/api/v1/repositories/{$repository->id}/documents", [
+                'title' => 'GTH Record January',
+                'section' => 'record',
+                'process_code' => 'GTH-P01',
+                'file' => $file,
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseHas('repository_documents', [
+            'repository_id' => $repository->id,
+            'section' => 'record',
+            'process_code' => 'GTH-P01',
+            'title' => 'GTH Record January',
+        ]);
+    }
+
+    public function test_superadmin_can_upload_record_without_process_code(): void
+    {
+        Storage::fake('public');
+
+        $admin = $this->createSuperadmin();
+        $franchise = $this->makeFranchise();
+        $company = $this->makeCompany($franchise);
+        $repository = $this->makeRepository($company);
+
+        $file = UploadedFile::fake()->create('record.pdf', 50, 'application/pdf');
+
+        $response = $this->actingAs($admin)
+            ->postJson("/api/v1/repositories/{$repository->id}/documents", [
+                'title' => 'Generic Record',
+                'section' => 'record',
+                'file' => $file,
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseHas('repository_documents', [
+            'repository_id' => $repository->id,
+            'section' => 'record',
+            'process_code' => null,
+            'title' => 'Generic Record',
+        ]);
+    }
+
+    public function test_upload_record_fails_when_process_code_exceeds_40_characters(): void
+    {
+        Storage::fake('public');
+
+        $admin = $this->createSuperadmin();
+        $franchise = $this->makeFranchise();
+        $company = $this->makeCompany($franchise);
+        $repository = $this->makeRepository($company);
+
+        $response = $this->actingAs($admin)
+            ->postJson("/api/v1/repositories/{$repository->id}/documents", [
+                'title' => 'Test Record',
+                'section' => 'record',
+                'process_code' => str_repeat('X', 41),
+                'file' => UploadedFile::fake()->create('record.pdf', 10, 'application/pdf'),
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['process_code']);
+    }
 }

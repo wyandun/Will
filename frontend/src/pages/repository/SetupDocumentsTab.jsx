@@ -82,8 +82,8 @@ function DocumentRow({ doc, repositoryId, onDeleted }) {
   const [hovering, setHovering] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const uploaderName = doc.uploader?.name ?? doc.uploaded_by_type ?? '—';
-  const orgBadge = doc.uploaded_by_type === 'sm' ? 'Strategic Mates' : uploaderName;
+  const uploaderName = doc.uploader?.name ?? '—';
+  const orgBadge = doc.uploader_role === 'sm' ? 'Strategic Mates' : uploaderName;
   const formatLabel = formatMime(doc.file_type);
   const sizeLabel = formatFileSize(doc.file_size ?? 0);
   const date = doc.created_at
@@ -232,7 +232,7 @@ function CategorySection({ category, repositoryId, initialOpen }) {
               type="button"
               onClick={toggle}
               className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-50 transition-colors"
-              aria-label={open ? 'Collapse' : 'Expand'}
+              aria-label={open ? t('common.collapse') : t('common.expand')}
             >
               {open ? <IconChevronUp /> : <IconChevronDown />}
             </button>
@@ -244,7 +244,7 @@ function CategorySection({ category, repositoryId, initialOpen }) {
           <div className="border-t border-slate-100 px-5 py-3 space-y-2">
             {loading && <p className="text-xs text-slate-400 py-4 text-center">{t('common.loading')}</p>}
             {!loading && docs.length === 0 && (
-              <p className="text-xs text-slate-400 py-4 text-center">{t('common.coming_soon')}</p>
+              <p className="text-xs text-slate-400 py-4 text-center">{t('repository.no_documents')}</p>
             )}
             {docs.map((doc) => (
               <DocumentRow

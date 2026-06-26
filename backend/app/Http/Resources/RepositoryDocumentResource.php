@@ -19,6 +19,7 @@ class RepositoryDocumentResource extends JsonResource
             'repository_id' => $this->repository_id,
             'section' => $this->section,
             'setup_category' => $this->setup_category,
+            'process_code' => $this->process_code,
             'title' => $this->title,
             'description' => $this->description,
             'file_url' => $this->file_url,
