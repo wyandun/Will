@@ -20,6 +20,8 @@ import ProcessMapDetailPage from './pages/processMaps/ProcessMapDetailPage';
 import RepositoriesPage from './pages/repository/RepositoriesPage';
 import RepositoryDetailPage from './pages/repository/RepositoryDetailPage';
 import ProcessDiagramPage from './pages/processMaps/ProcessDiagramPage';
+import ContractsPage from './pages/contracts/ContractsPage';
+import ContractDetailPage from './pages/contracts/ContractDetailPage';
 import { useAuthStore } from './store/authStore';
 
 /**
@@ -150,7 +152,8 @@ export default function App() {
             }
           />
           <Route path="/feed"       element={<ModuleRoute module="feed"><FeedPage /></ModuleRoute>} />
-          <Route path="/contracts"  element={<ModuleRoute module="contracts"><StubPage title={t('nav.contracts')} /></ModuleRoute>} />
+          <Route path="/contracts"     element={<ModuleRoute module="contracts"><ContractsPage /></ModuleRoute>} />
+          <Route path="/contracts/:id" element={<ModuleRoute module="contracts"><ContractDetailPage /></ModuleRoute>} />
           <Route path="/repository" element={<ModuleRoute module="repository"><RepositoriesPage /></ModuleRoute>} />
           <Route path="/repository/:id" element={<ModuleRoute module="repository"><RepositoryDetailPage /></ModuleRoute>} />
           <Route path="/processes"  element={<ModuleRoute module="processes"><ProcessMapsPage /></ModuleRoute>} />
