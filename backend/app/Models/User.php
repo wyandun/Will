@@ -145,6 +145,16 @@ class User extends Authenticatable
         return $this->belongsTo(Company::class);
     }
 
+    /**
+     * The SM franchise this user belongs to (via sm_franchise_id).
+     *
+     * @return BelongsTo<Franchise, $this>
+     */
+    public function franchise(): BelongsTo
+    {
+        return $this->belongsTo(Franchise::class, 'sm_franchise_id');
+    }
+
     // ─── Scopes ──────────────────────────────────────────────────────────────
 
     /**

@@ -43,15 +43,20 @@ class DocuSealService
     /**
      * List available templates. Returns [] when DocuSeal is not configured.
      *
+     * When $folder is given, templates are scoped to that DocuSeal folder so an
+     * admin_sm only sees their own franchise's templates.
+     *
      * @return array<int, array<string, mixed>>
      */
-    public function getTemplates(): array
+    public function getTemplates(?string $folder = null): array
     {
         if (! $this->isConfigured()) {
             return [];
         }
 
-        $response = $this->http()->get('/api/templates');
+        $query = $folder !== null && $folder !== '' ? ['folder' => $folder] : [];
+
+        $response = $this->http()->get('/api/templates', $query);
         $json = $response->json();
 
         if (! is_array($json)) {

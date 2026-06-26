@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\Role;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SendContractRequest;
 use App\Http\Requests\StoreContractRequest;
@@ -41,9 +42,11 @@ class ContractController extends Controller
         $client = User::findOrFail((int) $data['client_user_id']);
 
         // Policy::create needs the company id to apply admin_sm franchise-scope.
+        // company_id is derived server-side from this resolved client, never from
+        // the request payload (StoreContractRequest has no company_id) — no IDOR.
         $this->authorize('create', [Contract::class, $client->company_id]);
 
-        $contract = $this->service->create($data);
+        $contract = $this->service->create($data, $client);
 
         return response()->json([
             'success' => true,
@@ -116,13 +119,26 @@ class ContractController extends Controller
         ]);
     }
 
-    public function templates(): JsonResponse
+    public function templates(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Contract::class);
 
+        /** @var User $user */
+        $user = $request->user();
+
+        // Templates are per-franchise. Global admins see every template; an
+        // admin_sm is scoped to their own franchise's DocuSeal folder so they
+        // never see other franchises' templates.
+        $folder = null;
+
+        if (! $user->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY])
+            && $user->hasRole(Role::ADMIN_SM)) {
+            $folder = $user->franchise?->name;
+        }
+
         return response()->json([
             'success' => true,
-            'data' => $this->docuseal->getTemplates(),
+            'data' => $this->docuseal->getTemplates($folder),
         ]);
     }
 }

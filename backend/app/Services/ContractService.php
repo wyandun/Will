@@ -27,6 +27,9 @@ class ContractService
      */
     public function list(array $filters, User $user): LengthAwarePaginator
     {
+        // Eager-load is intentional: ContractResource renders company.franchise
+        // and client, so this keeps index() at a bounded number of queries
+        // regardless of row count (no N+1).
         $query = Contract::query()->with(['company.franchise', 'client']);
 
         $this->applyScope($query, $user);
@@ -81,12 +84,13 @@ class ContractService
     /**
      * Create a draft contract. company_id is derived from the client user.
      *
+     * The client is resolved (and authorized on its company) by the controller
+     * and passed in, so we don't re-query it here.
+     *
      * @param  array<string, mixed>  $data
      */
-    public function create(array $data): Contract
+    public function create(array $data, User $client): Contract
     {
-        $client = User::findOrFail((int) $data['client_user_id']);
-
         if ($client->company_id === null) {
             throw ValidationException::withMessages([
                 'client_user_id' => 'contracts.client_without_company',
@@ -95,6 +99,10 @@ class ContractService
 
         $contract = DB::transaction(function () use ($data, $client): Contract {
             return Contract::create([
+                // company_id is ALWAYS derived server-side from the resolved
+                // client_user_id, NEVER from the request payload
+                // (StoreContractRequest does not accept company_id) — no
+                // mass-assignment / IDOR surface.
                 'company_id' => $client->company_id,
                 'client_user_id' => $client->id,
                 'title' => $data['title'],
@@ -168,12 +176,6 @@ class ContractService
      */
     public function send(Contract $contract, array $data): Contract
     {
-        if ($contract->status !== Contract::STATUS_DRAFT) {
-            throw ValidationException::withMessages([
-                'status' => 'contracts.only_draft_sendable',
-            ]);
-        }
-
         $templateId = (int) $data['template_id'];
 
         /** @var array<int, array{name: string, email: string, role?: string|null}> $signerInput */
@@ -183,12 +185,6 @@ class ContractService
             'role' => isset($s['role']) ? (string) $s['role'] : null,
         ], $data['signers']);
 
-        $submission = $this->docuseal->createSubmission($templateId, $signerInput, [
-            'contract_id' => $contract->id,
-        ]);
-
-        $submissionId = $this->extractSubmissionId($submission);
-
         $storedSigners = array_map(fn (array $s): array => [
             'name' => $s['name'],
             'email' => $s['email'],
@@ -196,7 +192,28 @@ class ContractService
             'status' => 'pending',
         ], $signerInput);
 
-        DB::transaction(function () use ($contract, $templateId, $submissionId, $storedSigners): void {
+        // Lock the row + re-check status inside the transaction so two concurrent
+        // send() calls (double-click) can't both pass the draft guard and create
+        // two DocuSeal submissions. The status guard, combined with this lock,
+        // closes the concurrency window (CLAUDE.md security decision #3 pattern).
+        // The lock is intentionally held across the DocuSeal HTTP call: at this
+        // volume that is acceptable and it serializes double-clicks — the second
+        // request blocks, then re-reads status='sent' and 422s.
+        $contract = DB::transaction(function () use ($contract, $templateId, $signerInput, $storedSigners): Contract {
+            $contract = Contract::whereKey($contract->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($contract->status !== Contract::STATUS_DRAFT) {
+                throw ValidationException::withMessages([
+                    'status' => 'contracts.only_draft_sendable',
+                ]);
+            }
+
+            $submission = $this->docuseal->createSubmission($templateId, $signerInput, [
+                'contract_id' => $contract->id,
+            ]);
+
+            $submissionId = $this->extractSubmissionId($submission);
+
             $contract->update([
                 'docuseal_template_id' => (string) $templateId,
                 'docuseal_submission_id' => $submissionId,
@@ -204,11 +221,13 @@ class ContractService
                 'signers' => $storedSigners,
                 'sent_at' => now(),
             ]);
+
+            return $contract;
         });
 
         Log::info('Contract sent for signing', [
             'contract_id' => $contract->id,
-            'docuseal_submission_id' => $submissionId,
+            'docuseal_submission_id' => $contract->docuseal_submission_id,
         ]);
 
         return $contract->load(['company.franchise', 'client']);
@@ -219,6 +238,10 @@ class ContractService
      */
     public function sync(Contract $contract): Contract
     {
+        // The submission_id guard is intentional: only contracts that were
+        // actually sent (and therefore carry a DocuSeal submission) can be
+        // synced. Combined with the lockForUpdate in send(), this also keeps
+        // the send → sync lifecycle free of the double-send race.
         if (! is_string($contract->docuseal_submission_id) || $contract->docuseal_submission_id === '') {
             throw ValidationException::withMessages([
                 'docuseal_submission_id' => 'contracts.no_submission_to_sync',
