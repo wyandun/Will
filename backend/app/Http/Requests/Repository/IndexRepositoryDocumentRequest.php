@@ -25,6 +25,7 @@ class IndexRepositoryDocumentRequest extends FormRequest
             // first in the controller, before any section/category is read.
             'section' => ['nullable', Rule::enum(DocumentSection::class)],
             'category' => ['nullable', Rule::enum(SetupCategory::class)],
+            'process_code' => ['nullable', 'string', 'max:40'],
         ];
     }
 }

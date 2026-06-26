@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Enums\ProcessMapType;
 use Database\Factories\ProcessMapFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -52,6 +54,25 @@ class ProcessMap extends Model
         'is_active' => 'boolean',
         'node_styles' => 'array',
     ];
+
+    // ---------------------------------------------------------------------------
+    // Scopes
+    // ---------------------------------------------------------------------------
+
+    /**
+     * Order results so the 'franquiciadora' map always comes first.
+     * Falls back to any available map type for companies created manually
+     * (without Close Deal), which only receive a 'franquiciada' map.
+     *
+     * @param  Builder<ProcessMap>  $query
+     * @return Builder<ProcessMap>
+     */
+    public function scopePreferFranquiciadora(Builder $query): Builder
+    {
+        return $query->orderByRaw('CASE WHEN type = ? THEN 0 ELSE 1 END', [
+            ProcessMapType::Franquiciadora->value,
+        ]);
+    }
 
     // ---------------------------------------------------------------------------
     // Relationships

@@ -15,11 +15,11 @@ class RepositoryDocumentService
 {
     /**
      * List current-version documents for a repository section.
-     * Optionally scoped to a single setup_category.
+     * Optionally scoped to a single setup_category and/or process_code.
      *
      * @return Collection<int, RepositoryDocument>
      */
-    public function listBySection(Repository $repository, string $section = 'setup', ?string $category = null): Collection
+    public function listBySection(Repository $repository, string $section = 'setup', ?string $category = null, ?string $processCode = null): Collection
     {
         $query = RepositoryDocument::query()
             ->with('uploader')
@@ -32,6 +32,10 @@ class RepositoryDocumentService
             $query->where('setup_category', $category);
         }
 
+        if ($processCode !== null) {
+            $query->where('process_code', $processCode);
+        }
+
         return $query->get();
     }
 
@@ -40,8 +44,11 @@ class RepositoryDocumentService
      */
     public function store(Repository $repository, array $data, UploadedFile $file, User $uploader): RepositoryDocument
     {
+        $section = $data['section'] ?? 'setup';
         $category = $data['setup_category'] ?? null;
-        $storagePath = "repositories/{$repository->id}/setup/{$category}";
+        $storagePath = $section === 'setup'
+            ? "repositories/{$repository->id}/setup/{$category}"
+            : "repositories/{$repository->id}/{$section}";
 
         $path = $file->store($storagePath, 'public');
         $fileUrl = Storage::disk('public')->url((string) $path);
@@ -54,6 +61,7 @@ class RepositoryDocumentService
             'repository_id' => $repository->id,
             'section' => $data['section'],
             'setup_category' => $category,
+            'process_code' => $data['process_code'] ?? null,
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'file_path' => (string) $path,
