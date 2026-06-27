@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AssessmentContactController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BbAssignmentController;
 use App\Http\Controllers\Api\CatalogItemController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\Api\ProcessCategoryController;
 use App\Http\Controllers\Api\ProcessController;
 use App\Http\Controllers\Api\ProcessMapController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\RepositoryController;
 use App\Http\Controllers\Api\RepositoryDocumentController;
 use App\Http\Controllers\Api\SubProcessController;
@@ -202,6 +204,16 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::post('/articles/{newsArticle}/publish', [NewsController::class, 'publish']);
         Route::post('/articles/{newsArticle}/reject', [NewsController::class, 'reject']);
     });
+
+    // SB Applications / Assessment Contacts (WILT-55)
+    Route::get('assessment-contacts', [AssessmentContactController::class, 'index']);
+    Route::get('assessment-contacts/{assessmentContact}', [AssessmentContactController::class, 'show']);
+    Route::patch('assessment-contacts/{assessmentContact}/admin-note', [AssessmentContactController::class, 'updateAdminNote']);
+
+    // Tracking — Projects (WILT-57 foundation) + deliverable status (WILT-59) + upcoming (WILT-60)
+    Route::patch('projects/{project}/deliverables/{deliverable}', [ProjectController::class, 'updateDeliverableStatus']);
+    Route::get('projects/{project}/upcoming-deliverables', [ProjectController::class, 'upcomingDeliverables']);
+    Route::apiResource('projects', ProjectController::class)->only(['index', 'store', 'show']);
 
     // Dashboard
     Route::prefix('dashboard')->group(function () {

@@ -76,7 +76,13 @@ class CompanyController extends Controller
     {
         $this->authorize('viewAny', Company::class);
 
-        $companies = $this->companyService->list($request->user());
+        $request->validate([
+            'franchise_id' => ['nullable', 'integer', 'exists:franchises,id'],
+        ]);
+
+        $filters = $request->only(['franchise_id']);
+
+        $companies = $this->companyService->list($request->user(), $filters);
 
         return CompanyResource::collection($companies);
     }

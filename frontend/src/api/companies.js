@@ -3,12 +3,24 @@ import apiClient from './client';
 export const companiesApi = {
   /**
    * Retrieve all companies visible to the current user.
+   * @param {Object} [params] - Optional query params
+   * @param {number} [params.franchise_id] - Filter by franchise (superadmin only)
    */
-  getCompanies: () =>
-    apiClient.get('/companies').then((res) => ({
+  getCompanies: (params = {}) =>
+    apiClient.get('/companies', { params }).then((res) => ({
       data: res.data.data,
       meta: res.data.meta,
     })),
+
+  /**
+   * Retrieve companies for a specific franchise (for assignment modals).
+   * @param {number} franchiseId
+   * @returns {Promise<Array>}
+   */
+  getCompaniesByFranchise: (franchiseId) =>
+    apiClient
+      .get('/companies', { params: { franchise_id: franchiseId } })
+      .then((res) => (Array.isArray(res.data.data) ? res.data.data : [])),
 
   /**
    * Create a new company via the Close Deal flow.

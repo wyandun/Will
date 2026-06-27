@@ -1082,5 +1082,73 @@
       "hours_required": "Las horas estimadas son obligatorias y deben ser un número válido.",
       "type_required": "Selecciona un tipo válido."
     }
+  },
+  "tracking": {
+    "page_title": "Seguimiento de Proyectos",
+    "page_subtitle": "Monitoreá el progreso de todas las cuentas.",
+    "assign_service_button": "+ Asignar servicio",
+    "project_counter": "{{shown}} de {{total}} proyecto",
+    "project_counter_plural": "{{shown}} de {{total}} proyectos",
+    "search_placeholder": "Buscar por nombre, empresa...",
+    "all_statuses": "Todos los estados",
+    "status_active": "Activo",
+    "status_completed": "Completado",
+    "status_paused": "Pausado",
+    "status_cancelled": "Cancelado",
+    "deliverables_count": "{{completed}} de {{total}} entregables completados",
+    "no_projects": "No hay proyectos aún.",
+    "no_projects_filtered": "Ningún proyecto coincide con los filtros.",
+    "assign_first_service": "+ Asignar primer servicio",
+    "load_error": "Error al cargar proyectos. Por favor intentá de nuevo.",
+    "badge_type_bundle": "Paquete",
+    "badge_type_service": "Servicio",
+    "badge_type_deliverable": "Entregable",
+    "card_client": "Cliente",
+    "card_franchise": "Franquicia",
+    "card_start_date": "Inicio",
+    "errors": {
+      "franchise_required": "La franquicia es obligatoria.",
+      "company_required": "La empresa es obligatoria.",
+      "catalog_item_required": "El ítem es obligatorio.",
+      "start_date_required": "La fecha de inicio es obligatoria."
+    },
+    "assign_modal": {
+      "title": "Asignar servicio",
+      "franchise": "Franquicia",
+      "select_franchise": "Seleccioná una franquicia",
+      "client": "Empresa",
+      "select_client": "Seleccioná una empresa",
+      "select_franchise_first": "Seleccioná una franquicia primero",
+      "type": "Tipo",
+      "catalog_item": "Ítem del catálogo",
+      "catalog_item_label": {
+        "bundle": "Paquete",
+        "service": "Servicio",
+        "deliverable": "Entregable"
+      },
+      "select_item": "Seleccioná un ítem",
+      "no_items_in_catalog": "No hay ítems disponibles en el catálogo.",
+      "start_date": "Fecha de inicio",
+      "notes": "Notas",
+      "notes_placeholder": "Notas opcionales sobre este proyecto…",
+      "submit": "Asignar servicio"
+    },
+    "catalog_type": {
+      "bundle": "Paquete",
+      "service": "Servicio",
+      "deliverable": "Entregable"
+    },
+    "deliverable_status_pending": "Pendiente",
+    "deliverable_status_in_progress": "En progreso",
+    "deliverable_status_completed": "Completado",
+    "deliverable_status_blocked": "Bloqueado",
+    "overdue": "{{days}} días de atraso",
+    "duration_days_one": "{{count}} día",
+    "duration_days_other": "{{count}} días",
+    "status_pending": "Pendiente",
+    "status_in_progress": "En progreso",
+    "upcoming_title": "Próximos entregables",
+    "upcoming_due": "Vence {{date}}",
+    "upcoming_empty": "Sin entregables próximos"
   }
 }

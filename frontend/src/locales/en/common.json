@@ -1082,5 +1082,73 @@
       "hours_required": "Estimated hours are required and must be a valid number.",
       "type_required": "Select a valid type."
     }
+  },
+  "tracking": {
+    "page_title": "Project Tracking",
+    "page_subtitle": "Monitor the progress of all client accounts.",
+    "assign_service_button": "+ Assign service",
+    "project_counter": "{{shown}} of {{total}} project",
+    "project_counter_plural": "{{shown}} of {{total}} projects",
+    "search_placeholder": "Search by name, company...",
+    "all_statuses": "All statuses",
+    "status_active": "Active",
+    "status_completed": "Completed",
+    "status_paused": "Paused",
+    "status_cancelled": "Cancelled",
+    "deliverables_count": "{{completed}} of {{total}} deliverables completed",
+    "no_projects": "No projects found.",
+    "no_projects_filtered": "No projects match your filters.",
+    "assign_first_service": "+ Assign first service",
+    "load_error": "Failed to load projects. Please try again.",
+    "badge_type_bundle": "Package",
+    "badge_type_service": "Service",
+    "badge_type_deliverable": "Deliverable",
+    "card_client": "Client",
+    "card_franchise": "Franchise",
+    "card_start_date": "Start",
+    "errors": {
+      "franchise_required": "Franchise is required.",
+      "company_required": "Company is required.",
+      "catalog_item_required": "Item is required.",
+      "start_date_required": "Start date is required."
+    },
+    "assign_modal": {
+      "title": "Assign service",
+      "franchise": "Franchise",
+      "select_franchise": "Select a franchise",
+      "client": "Company",
+      "select_client": "Select a company",
+      "select_franchise_first": "Select a franchise first",
+      "type": "Type",
+      "catalog_item": "Catalog item",
+      "catalog_item_label": {
+        "bundle": "Package",
+        "service": "Service",
+        "deliverable": "Deliverable"
+      },
+      "select_item": "Select an item",
+      "no_items_in_catalog": "No items available in catalog.",
+      "start_date": "Start date",
+      "notes": "Notes",
+      "notes_placeholder": "Optional notes about this project…",
+      "submit": "Assign service"
+    },
+    "catalog_type": {
+      "bundle": "Package",
+      "service": "Service",
+      "deliverable": "Deliverable"
+    },
+    "deliverable_status_pending": "Pending",
+    "deliverable_status_in_progress": "In progress",
+    "deliverable_status_completed": "Completed",
+    "deliverable_status_blocked": "Blocked",
+    "overdue": "{{days}} days overdue",
+    "duration_days_one": "{{count}} day",
+    "duration_days_other": "{{count}} days",
+    "status_pending": "Pending",
+    "status_in_progress": "In progress",
+    "upcoming_title": "Next deliverables",
+    "upcoming_due": "Due {{date}}",
+    "upcoming_empty": "No upcoming deliverables"
   }
 }

@@ -22,6 +22,10 @@ import RepositoryDetailPage from './pages/repository/RepositoryDetailPage';
 import ProcessDiagramPage from './pages/processMaps/ProcessDiagramPage';
 import ContractsPage from './pages/contracts/ContractsPage';
 import ContractDetailPage from './pages/contracts/ContractDetailPage';
+import AssessmentsPage from './pages/assessments/AssessmentsPage';
+import AssessmentDetailPage from './pages/assessments/AssessmentDetailPage';
+import TrackingPage from './pages/tracking/TrackingPage';
+import ProjectDetailPage from './pages/tracking/ProjectDetailPage';
 import { useAuthStore } from './store/authStore';
 
 /**
@@ -162,7 +166,8 @@ export default function App() {
           <Route path="/processes/:mapId/subsub/:subSubId" element={<ModuleRoute module="processes"><ProcessDiagramPage /></ModuleRoute>} />
           <Route path="/accounting" element={<ModuleRoute module="accounting"><StubPage title={t('nav.accounting')} /></ModuleRoute>} />
           <Route path="/inventory"  element={<ModuleRoute module="inventory"><StubPage title={t('nav.inventory')} /></ModuleRoute>} />
-          <Route path="/tracking"   element={<ModuleRoute module="tracking"><StubPage title={t('nav.tracking')} /></ModuleRoute>} />
+          <Route path="/tracking"   element={<ModuleRoute module="tracking"><TrackingPage /></ModuleRoute>} />
+          <Route path="/tracking/:id" element={<ModuleRoute module="tracking"><ProjectDetailPage /></ModuleRoute>} />
           <Route
             path="/catalog"
             element={
@@ -175,7 +180,15 @@ export default function App() {
             path="/sb-applications"
             element={
               <RoleRoute roles={ADMIN_ROLES}>
-                <StubPage title={t('nav.sb_applications')} />
+                <AssessmentsPage />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/sb-applications/:id"
+            element={
+              <RoleRoute roles={ADMIN_ROLES}>
+                <AssessmentDetailPage />
               </RoleRoute>
             }
           />
