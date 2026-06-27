@@ -2,17 +2,28 @@ import apiClient from './client';
 
 /**
  * API client for the Tracking / Projects module.
- * Endpoints under /api/v1/projects (WILT-57 foundation).
+ * Endpoints under /api/v1/projects.
  */
 export const projectsApi = {
   /**
    * List projects visible to the current user.
    * superadmin sees all; admin_sm sees only their franchise.
    *
+   * Supports optional filters:
+   *   - search: string — filters by company name or catalog item name (ILIKE)
+   *   - status: 'active'|'completed'|'paused'|'cancelled'
+   *
+   * @param {Object} [params]
+   * @param {string} [params.search]
+   * @param {string} [params.status]
    * @returns {Promise<Array>}
    */
-  getProjects: () =>
-    apiClient.get('/projects').then((res) => res.data.data ?? []),
+  getProjects: (params = {}) => {
+    const query = {};
+    if (params.search) query.search = params.search;
+    if (params.status) query.status = params.status;
+    return apiClient.get('/projects', { params: query }).then((res) => res.data.data ?? []);
+  },
 
   /**
    * Get a single project by ID, including all generated deliverables.

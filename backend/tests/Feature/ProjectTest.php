@@ -510,6 +510,146 @@ class ProjectTest extends TestCase
     }
 
     // ===========================================================================
+    // GET /api/v1/projects — search & status filters (WILT-56)
+    // ===========================================================================
+
+    public function test_index_search_filter_matches_company_name(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = $this->makeFranchise();
+        $service = $this->makeService();
+        $this->makeDeliverable($service, ['estimated_hours' => 8.0]);
+
+        $companyMatch = $this->makeCompany($franchise, ['name' => 'Taco Express LLC']);
+        $companyOther = $this->makeCompany($franchise, ['name' => 'Burger Palace Inc']);
+
+        $this->actingAs($superadmin)->postJson('/api/v1/projects', [
+            'company_id' => $companyMatch->id,
+            'franchise_id' => $franchise->id,
+            'catalog_item_id' => $service->id,
+            'type' => 'service',
+            'start_date' => '2026-07-01',
+        ]);
+
+        $this->actingAs($superadmin)->postJson('/api/v1/projects', [
+            'company_id' => $companyOther->id,
+            'franchise_id' => $franchise->id,
+            'catalog_item_id' => $service->id,
+            'type' => 'service',
+            'start_date' => '2026-07-01',
+        ]);
+
+        $response = $this->actingAs($superadmin)->getJson('/api/v1/projects?search=Taco');
+
+        $response->assertStatus(200);
+        $this->assertCount(1, $response->json('data'));
+        $this->assertEquals('Taco Express LLC', $response->json('data.0.company_name'));
+    }
+
+    public function test_index_search_filter_is_case_insensitive(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = $this->makeFranchise();
+        $service = $this->makeService();
+        $this->makeDeliverable($service, ['estimated_hours' => 8.0]);
+
+        $company = $this->makeCompany($franchise, ['name' => 'Taco Express LLC']);
+
+        $this->actingAs($superadmin)->postJson('/api/v1/projects', [
+            'company_id' => $company->id,
+            'franchise_id' => $franchise->id,
+            'catalog_item_id' => $service->id,
+            'type' => 'service',
+            'start_date' => '2026-07-01',
+        ]);
+
+        $response = $this->actingAs($superadmin)->getJson('/api/v1/projects?search=taco');
+
+        $response->assertStatus(200);
+        $this->assertCount(1, $response->json('data'));
+    }
+
+    public function test_index_search_filter_returns_empty_when_no_match(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = $this->makeFranchise();
+        $service = $this->makeService();
+        $this->makeDeliverable($service, ['estimated_hours' => 8.0]);
+
+        $company = $this->makeCompany($franchise, ['name' => 'Taco Express LLC']);
+
+        $this->actingAs($superadmin)->postJson('/api/v1/projects', [
+            'company_id' => $company->id,
+            'franchise_id' => $franchise->id,
+            'catalog_item_id' => $service->id,
+            'type' => 'service',
+            'start_date' => '2026-07-01',
+        ]);
+
+        $response = $this->actingAs($superadmin)->getJson('/api/v1/projects?search=nonexistent');
+
+        $response->assertStatus(200);
+        $this->assertCount(0, $response->json('data'));
+    }
+
+    public function test_index_status_filter_returns_only_matching_projects(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = $this->makeFranchise();
+        $company = $this->makeCompany($franchise);
+        $service = $this->makeService();
+        $this->makeDeliverable($service, ['estimated_hours' => 8.0]);
+
+        // Create one active project via the API
+        $this->actingAs($superadmin)->postJson('/api/v1/projects', [
+            'company_id' => $company->id,
+            'franchise_id' => $franchise->id,
+            'catalog_item_id' => $service->id,
+            'type' => 'service',
+            'start_date' => '2026-07-01',
+        ]);
+
+        // Create a paused project directly in the DB
+        Project::create([
+            'company_id' => $company->id,
+            'franchise_id' => $franchise->id,
+            'catalog_item_id' => $service->id,
+            'type' => 'service',
+            'start_date' => '2026-07-01',
+            'status' => 'paused',
+        ]);
+
+        $response = $this->actingAs($superadmin)->getJson('/api/v1/projects?status=active');
+
+        $response->assertStatus(200);
+        $this->assertCount(1, $response->json('data'));
+        $this->assertEquals('active', $response->json('data.0.status'));
+    }
+
+    public function test_index_invalid_status_filter_returns_all_projects(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = $this->makeFranchise();
+        $company = $this->makeCompany($franchise);
+        $service = $this->makeService();
+        $this->makeDeliverable($service, ['estimated_hours' => 8.0]);
+
+        $this->actingAs($superadmin)->postJson('/api/v1/projects', [
+            'company_id' => $company->id,
+            'franchise_id' => $franchise->id,
+            'catalog_item_id' => $service->id,
+            'type' => 'service',
+            'start_date' => '2026-07-01',
+        ]);
+
+        // Unknown status values are silently ignored — all projects are returned.
+        $response = $this->actingAs($superadmin)->getJson('/api/v1/projects?status=bogus');
+
+        $response->assertStatus(200);
+        $this->assertCount(1, $response->json('data'));
+    }
+
+    // ===========================================================================
     // GET /api/v1/projects/{project} — WILT-58 KPI fields
     // ===========================================================================
 
