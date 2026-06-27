@@ -9,6 +9,7 @@ use App\Models\CatalogItem;
 use App\Models\Company;
 use App\Models\Franchise;
 use App\Models\Project;
+use App\Models\ProjectDeliverable;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role as SpatieRole;
@@ -774,5 +775,151 @@ class ProjectTest extends TestCase
         $this->assertCount(3, $deliverables);
         $phases = $deliverables->pluck('phase')->unique()->filter()->values();
         $this->assertGreaterThanOrEqual(1, $phases->count());
+    }
+
+    // ===========================================================================
+    // PATCH /api/v1/projects/{project}/deliverables/{deliverable} — WILT-59
+    // ===========================================================================
+
+    /**
+     * Helper: create a project with one deliverable and return both.
+     *
+     * @return array{project: Project, deliverable: ProjectDeliverable}
+     */
+    private function makeProjectWithDeliverable(User $user): array
+    {
+        $franchise = $this->makeFranchise();
+        $company = $this->makeCompany($franchise);
+        $service = $this->makeService();
+        $this->makeDeliverable($service, ['estimated_hours' => 8.0, 'order_index' => 0]);
+        $this->makeDeliverable($service, ['estimated_hours' => 8.0, 'order_index' => 1]);
+
+        // Assign admin_sm to this franchise if needed.
+        if ($user->hasRole(Role::ADMIN_SM)) {
+            $user->update(['sm_franchise_id' => $franchise->id]);
+        }
+
+        $response = $this->actingAs($user)->postJson('/api/v1/projects', [
+            'company_id' => $company->id,
+            'franchise_id' => $franchise->id,
+            'catalog_item_id' => $service->id,
+            'type' => 'service',
+            'start_date' => '2026-07-01',
+        ]);
+
+        $projectId = $response->json('data.id');
+        $project = Project::find($projectId);
+        $deliverable = $project->deliverables()->first();
+
+        return ['project' => $project, 'deliverable' => $deliverable];
+    }
+
+    public function test_admin_sm_can_update_deliverable_status(): void
+    {
+        SpatieRole::firstOrCreate(['name' => Role::ADMIN_SM, 'guard_name' => 'web']);
+        $franchise = $this->makeFranchise();
+        $adminSm = $this->createAdminSm($franchise);
+
+        ['project' => $project, 'deliverable' => $deliverable] = $this->makeProjectWithDeliverable($adminSm);
+
+        $response = $this->actingAs($adminSm)->patchJson(
+            "/api/v1/projects/{$project->id}/deliverables/{$deliverable->id}",
+            ['status' => 'in_progress']
+        );
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('success', true);
+        $response->assertJsonPath('data.deliverable.status', 'in_progress');
+
+        $this->assertDatabaseHas('project_deliverables', [
+            'id' => $deliverable->id,
+            'status' => 'in_progress',
+        ]);
+    }
+
+    public function test_deliverable_status_update_recalculates_project_progress(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = $this->makeFranchise();
+        $company = $this->makeCompany($franchise);
+        $service = $this->makeService();
+        $this->makeDeliverable($service, ['estimated_hours' => 8.0, 'order_index' => 0]);
+        $this->makeDeliverable($service, ['estimated_hours' => 8.0, 'order_index' => 1]);
+        $this->makeDeliverable($service, ['estimated_hours' => 8.0, 'order_index' => 2]);
+        $this->makeDeliverable($service, ['estimated_hours' => 8.0, 'order_index' => 3]);
+
+        $createResponse = $this->actingAs($superadmin)->postJson('/api/v1/projects', [
+            'company_id' => $company->id,
+            'franchise_id' => $franchise->id,
+            'catalog_item_id' => $service->id,
+            'type' => 'service',
+            'start_date' => '2026-07-01',
+        ]);
+
+        $projectId = $createResponse->json('data.id');
+        $project = Project::find($projectId);
+        $deliverable = $project->deliverables()->first();
+
+        // Mark one of 4 deliverables as completed — expect 25%.
+        $response = $this->actingAs($superadmin)->patchJson(
+            "/api/v1/projects/{$projectId}/deliverables/{$deliverable->id}",
+            ['status' => 'completed']
+        );
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.progress_percentage', 25);
+        $response->assertJsonPath('data.deliverables_completed', 1);
+        $response->assertJsonPath('data.deliverables_total', 4);
+    }
+
+    public function test_sb_owner_cannot_update_deliverable_status(): void
+    {
+        SpatieRole::firstOrCreate(['name' => Role::SB_OWNER, 'guard_name' => 'web']);
+        $superadmin = $this->createSuperadmin();
+
+        ['project' => $project, 'deliverable' => $deliverable] = $this->makeProjectWithDeliverable($superadmin);
+
+        $sbOwner = User::factory()->create();
+        $sbOwner->assignRole(Role::SB_OWNER);
+
+        $response = $this->actingAs($sbOwner)->patchJson(
+            "/api/v1/projects/{$project->id}/deliverables/{$deliverable->id}",
+            ['status' => 'completed']
+        );
+
+        $response->assertStatus(403);
+    }
+
+    public function test_update_deliverable_status_returns_422_for_invalid_status(): void
+    {
+        $superadmin = $this->createSuperadmin();
+
+        ['project' => $project, 'deliverable' => $deliverable] = $this->makeProjectWithDeliverable($superadmin);
+
+        $response = $this->actingAs($superadmin)->patchJson(
+            "/api/v1/projects/{$project->id}/deliverables/{$deliverable->id}",
+            ['status' => 'not_a_real_status']
+        );
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['status']);
+    }
+
+    public function test_update_deliverable_returns_404_when_deliverable_belongs_to_different_project(): void
+    {
+        $superadmin = $this->createSuperadmin();
+
+        ['project' => $project] = $this->makeProjectWithDeliverable($superadmin);
+
+        // Create a second project and grab its first deliverable.
+        ['project' => $otherProject, 'deliverable' => $otherDeliverable] = $this->makeProjectWithDeliverable($superadmin);
+
+        // Pass the other project's deliverable to $project's URL — must 404.
+        $response = $this->actingAs($superadmin)->patchJson(
+            "/api/v1/projects/{$project->id}/deliverables/{$otherDeliverable->id}",
+            ['status' => 'completed']
+        );
+
+        $response->assertStatus(404);
     }
 }

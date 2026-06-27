@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { projectsApi } from '../../api/projects';
@@ -194,6 +194,218 @@ function GanttTab({ project }) {
 
 GanttTab.propTypes = { project: PropTypes.object.isRequired };
 
+// ─── Deliverables tab ─────────────────────────────────────────────────────────
+
+const DELIVERABLE_STATUSES = ['pending', 'in_progress', 'completed', 'blocked'];
+
+const STATUS_I18N_KEY = {
+  pending:     'tracking.deliverable_status_pending',
+  in_progress: 'tracking.deliverable_status_in_progress',
+  completed:   'tracking.deliverable_status_completed',
+  blocked:     'tracking.deliverable_status_blocked',
+};
+
+function durationDays(startStr, endStr) {
+  if (!startStr || !endStr) return 0;
+  const start = new Date(startStr);
+  const end = new Date(endStr);
+  return Math.max(1, Math.round((end - start) / 86_400_000) + 1);
+}
+
+function overdueDays(endStr) {
+  if (!endStr) return 0;
+  const end = new Date(endStr);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const diff = Math.floor((today - end) / 86_400_000);
+  return Math.max(0, diff);
+}
+
+function DeliverableRow({ deliverable, projectId, onStatusChange }) {
+  const { t } = useTranslation('common');
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const duration = durationDays(
+    deliverable.estimated_start_date,
+    deliverable.estimated_end_date,
+  );
+  const overdue = deliverable.status !== 'completed'
+    ? overdueDays(deliverable.estimated_end_date)
+    : 0;
+
+  const handleStatusChange = useCallback(async (e) => {
+    const newStatus = e.target.value;
+    setIsUpdating(true);
+    try {
+      const result = await projectsApi.updateDeliverableStatus(
+        projectId,
+        deliverable.id,
+        newStatus,
+      );
+      onStatusChange(deliverable.id, newStatus, result);
+    } finally {
+      setIsUpdating(false);
+    }
+  }, [projectId, deliverable.id, onStatusChange]);
+
+  return (
+    <div className="grid grid-cols-[2fr_1fr_auto_auto] gap-3 items-center px-4 py-3 border-b border-black/5 last:border-0 hover:bg-slate-50/60 transition-colors">
+      {/* Name + overdue badge */}
+      <div className="flex items-center gap-2 min-w-0">
+        <span className="text-sm text-slate-700 truncate">{deliverable.name}</span>
+        {overdue > 0 && (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700 shrink-0">
+            {t('tracking.overdue', { days: overdue })}
+          </span>
+        )}
+        {deliverable.status === 'completed' && (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 shrink-0">
+            {t('tracking.deliverable_status_completed')}
+          </span>
+        )}
+      </div>
+
+      {/* Dates + duration */}
+      <div className="text-xs text-slate-500 space-y-0.5">
+        <div>{formatDate(deliverable.estimated_start_date)} → {formatDate(deliverable.estimated_end_date)}</div>
+        <div className="text-slate-400">
+          {t('tracking.duration_days', { count: duration })}
+        </div>
+      </div>
+
+      {/* Status badge (current) */}
+      <div>
+        <DeliverableStatusBadge status={deliverable.status} />
+      </div>
+
+      {/* Status selector */}
+      <div className="relative">
+        <select
+          value={deliverable.status}
+          onChange={handleStatusChange}
+          disabled={isUpdating}
+          className={[
+            'text-xs border rounded-lg px-2 py-1.5 pr-6 appearance-none bg-white text-slate-700 cursor-pointer',
+            'border-slate-200 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30',
+            'disabled:opacity-50 disabled:cursor-not-allowed',
+          ].join(' ')}
+          aria-label={`Change status of ${deliverable.name}`}
+        >
+          {DELIVERABLE_STATUSES.map((s) => (
+            <option key={s} value={s}>
+              {t(STATUS_I18N_KEY[s])}
+            </option>
+          ))}
+        </select>
+        {isUpdating && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-lg">
+            <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+DeliverableRow.propTypes = {
+  deliverable: PropTypes.object.isRequired,
+  projectId: PropTypes.number.isRequired,
+  onStatusChange: PropTypes.func.isRequired,
+};
+
+function DeliverablePhaseGroup({ phase, deliverables, projectId, onStatusChange }) {
+  const [expanded, setExpanded] = useState(true);
+  const completed = deliverables.filter((d) => d.status === 'completed').length;
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full flex items-center gap-2 px-4 py-2.5 bg-slate-50 border-b border-black/5 text-left hover:bg-slate-100 transition"
+      >
+        <svg
+          className={`w-4 h-4 text-slate-400 transition-transform ${expanded ? 'rotate-90' : ''}`}
+          fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+        <span className="text-sm font-semibold text-slate-700 flex-1">{phase ?? 'General'}</span>
+        <span className="text-xs text-slate-500">
+          {completed}/{deliverables.length} completed
+        </span>
+      </button>
+
+      {expanded && deliverables.map((d) => (
+        <DeliverableRow
+          key={d.id}
+          deliverable={d}
+          projectId={projectId}
+          onStatusChange={onStatusChange}
+        />
+      ))}
+    </div>
+  );
+}
+
+DeliverablePhaseGroup.propTypes = {
+  phase: PropTypes.string,
+  deliverables: PropTypes.array.isRequired,
+  projectId: PropTypes.number.isRequired,
+  onStatusChange: PropTypes.func.isRequired,
+};
+
+function DeliverablesTab({ project, onKpiUpdate }) {
+  const grouped = useMemo(() => {
+    const map = new Map();
+    for (const d of project.deliverables ?? []) {
+      const key = d.phase ?? '';
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(d);
+    }
+    return map;
+  }, [project.deliverables]);
+
+  const handleStatusChange = useCallback((deliverableId, newStatus, kpiResult) => {
+    onKpiUpdate(deliverableId, newStatus, kpiResult);
+  }, [onKpiUpdate]);
+
+  if (!project.deliverables || project.deliverables.length === 0) {
+    return (
+      <div className="bg-white rounded-xl border border-black/8 shadow-sm flex items-center justify-center py-20">
+        <p className="text-slate-400 text-sm">No deliverables found for this project.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-black/8 shadow-sm overflow-hidden">
+      {/* Column headers */}
+      <div className="grid grid-cols-[2fr_1fr_auto_auto] gap-3 px-4 py-2.5 bg-slate-50 border-b border-black/8">
+        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Deliverable</span>
+        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Dates / Duration</span>
+        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Status</span>
+        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Change</span>
+      </div>
+
+      {[...grouped.entries()].map(([phase, deliverables]) => (
+        <DeliverablePhaseGroup
+          key={phase}
+          phase={phase || null}
+          deliverables={deliverables}
+          projectId={project.id}
+          onStatusChange={handleStatusChange}
+        />
+      ))}
+    </div>
+  );
+}
+
+DeliverablesTab.propTypes = {
+  project: PropTypes.object.isRequired,
+  onKpiUpdate: PropTypes.func.isRequired,
+};
+
 // ─── Stub tabs ────────────────────────────────────────────────────────────────
 
 function StubTab({ title }) {
@@ -251,6 +463,11 @@ export default function ProjectDetailPage() {
   const [fetchError, setFetchError] = useState('');
   const [activeTab, setActiveTab] = useState('gantt');
 
+  // KPI state lifted from the project so it can be updated without a full reload.
+  const [progressPercentage, setProgressPercentage] = useState(0);
+  const [deliverablesCompleted, setDeliverablesCompleted] = useState(0);
+  const [deliverablesTotal, setDeliverablesTotal] = useState(0);
+
   useEffect(() => {
     let cancelled = false;
     setIsLoading(true);
@@ -259,7 +476,12 @@ export default function ProjectDetailPage() {
     projectsApi
       .getProject(id)
       .then((data) => {
-        if (!cancelled) setProject(data);
+        if (!cancelled) {
+          setProject(data);
+          setProgressPercentage(data.progress_percentage ?? 0);
+          setDeliverablesCompleted(data.deliverables_completed ?? 0);
+          setDeliverablesTotal(data.deliverables_total ?? 0);
+        }
       })
       .catch(() => {
         if (!cancelled) setFetchError(t('common.load_error'));
@@ -296,10 +518,25 @@ export default function ProjectDetailPage() {
     );
   }
 
-  const progressPercentage = project.progress_percentage ?? 0;
   const companyName = project.company?.name ?? project.company_name ?? '—';
   const franchiseName = project.franchise?.name ?? project.franchise_name ?? '—';
   const catalogItemTitle = project.catalog_item_name ?? `Project #${project.id}`;
+
+  // Update deliverable status in local project state and refresh KPI counters.
+  const handleKpiUpdate = useCallback((deliverableId, newStatus, kpiResult) => {
+    setProject((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        deliverables: prev.deliverables.map((d) =>
+          d.id === deliverableId ? { ...d, status: newStatus } : d,
+        ),
+      };
+    });
+    setProgressPercentage(kpiResult.progress_percentage);
+    setDeliverablesCompleted(kpiResult.deliverables_completed);
+    setDeliverablesTotal(kpiResult.deliverables_total);
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#F4F6F9]">
@@ -330,12 +567,12 @@ export default function ProjectDetailPage() {
       </div>
 
       <div className="p-4 md:p-6 space-y-5">
-        {/* KPI cards */}
+        {/* KPI cards — driven by lifted state so they update on deliverable changes */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <KpiCard label="Progress" value={`${progressPercentage}%`} />
           <KpiCard
             label="Completed"
-            value={`${project.deliverables_completed ?? 0}/${project.deliverables_total ?? 0}`}
+            value={`${deliverablesCompleted}/${deliverablesTotal}`}
             valueClassName="text-green-600"
           />
           <KpiCard label="Start" value={formatDate(project.start_date)} />
@@ -372,7 +609,9 @@ export default function ProjectDetailPage() {
 
         {/* Tab content */}
         {activeTab === 'gantt' && <GanttTab project={project} />}
-        {activeTab === 'deliverables' && <StubTab title="Deliverables" />}
+        {activeTab === 'deliverables' && (
+          <DeliverablesTab project={project} onKpiUpdate={handleKpiUpdate} />
+        )}
         {activeTab === 'upcoming' && <StubTab title="Upcoming" />}
       </div>
     </div>

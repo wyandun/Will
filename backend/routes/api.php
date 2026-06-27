@@ -204,7 +204,8 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::post('/articles/{newsArticle}/reject', [NewsController::class, 'reject']);
     });
 
-    // Tracking — Projects (WILT-57 foundation)
+    // Tracking — Projects (WILT-57 foundation) + deliverable status (WILT-59)
+    Route::patch('projects/{project}/deliverables/{deliverable}', [ProjectController::class, 'updateDeliverableStatus']);
     Route::apiResource('projects', ProjectController::class)->only(['index', 'store', 'show']);
 
     // Dashboard

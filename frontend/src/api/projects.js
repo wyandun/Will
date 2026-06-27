@@ -48,4 +48,18 @@ export const projectsApi = {
    */
   createProject: (data) =>
     apiClient.post('/projects', data).then((res) => res.data.data),
+
+  /**
+   * Update the status of a single project deliverable.
+   * Returns the updated deliverable plus recalculated project KPIs.
+   *
+   * @param {number} projectId
+   * @param {number} deliverableId
+   * @param {'pending'|'in_progress'|'completed'|'blocked'} status
+   * @returns {Promise<{ deliverable: Object, progress_percentage: number, deliverables_completed: number, deliverables_total: number }>}
+   */
+  updateDeliverableStatus: (projectId, deliverableId, status) =>
+    apiClient
+      .patch(`/projects/${projectId}/deliverables/${deliverableId}`, { status })
+      .then((res) => res.data.data),
 };

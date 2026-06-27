@@ -6,8 +6,11 @@ use App\Enums\ProjectStatus;
 use App\Enums\Role;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Project\StoreProjectRequest;
+use App\Http\Requests\Project\UpdateDeliverableStatusRequest;
+use App\Http\Resources\ProjectDeliverableResource;
 use App\Http\Resources\ProjectResource;
 use App\Models\Project;
+use App\Models\ProjectDeliverable;
 use App\Services\ProjectService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -149,6 +152,64 @@ class ProjectController extends Controller
         return response()->json([
             'success' => true,
             'data' => new ProjectResource($project),
+        ]);
+    }
+
+    #[OA\Patch(
+        path: '/projects/{project}/deliverables/{deliverable}',
+        tags: ['Projects'],
+        summary: 'Actualizar el estado de un entregable',
+        description: 'Cambia el estado de un project_deliverable y retorna el entregable actualizado junto con el progress_percentage recalculado del proyecto.',
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(name: 'project', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
+            new OA\Parameter(name: 'deliverable', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['status'],
+                properties: [
+                    new OA\Property(property: 'status', type: 'string', enum: ['pending', 'in_progress', 'completed', 'blocked']),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: 'Entregable actualizado con progress_percentage del proyecto'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
+            new OA\Response(response: 404, ref: '#/components/responses/NotFound'),
+            new OA\Response(response: 422, description: 'Validación', content: new OA\JsonContent(ref: '#/components/schemas/ValidationError')),
+        ]
+    )]
+    public function updateDeliverableStatus(
+        UpdateDeliverableStatusRequest $request,
+        Project $project,
+        ProjectDeliverable $deliverable
+    ): JsonResponse {
+        // Ensure the deliverable belongs to this project.
+        if ($deliverable->project_id !== $project->id) {
+            abort(404);
+        }
+
+        $this->authorize('update', $project);
+
+        $deliverable->update(['status' => $request->validated('status')]);
+
+        // Recalculate progress after the update.
+        $project->load('deliverables');
+        $total = $project->deliverables->count();
+        $completed = $project->deliverables->filter(fn ($d) => $d->status->value === 'completed')->count();
+        $progressPercentage = $total > 0 ? (int) round(($completed / $total) * 100) : 0;
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'deliverable' => new ProjectDeliverableResource($deliverable->fresh()),
+                'progress_percentage' => $progressPercentage,
+                'deliverables_completed' => $completed,
+                'deliverables_total' => $total,
+            ],
         ]);
     }
 }

@@ -1137,6 +1137,13 @@
       "bundle": "Package",
       "service": "Service",
       "deliverable": "Deliverable"
-    }
+    },
+    "deliverable_status_pending": "Pending",
+    "deliverable_status_in_progress": "In progress",
+    "deliverable_status_completed": "Completed",
+    "deliverable_status_blocked": "Blocked",
+    "overdue": "{{days}} days overdue",
+    "duration_days_one": "{{count}} day",
+    "duration_days_other": "{{count}} days"
   }
 }
