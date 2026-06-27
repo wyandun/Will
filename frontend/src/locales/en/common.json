@@ -1144,6 +1144,11 @@
     "deliverable_status_blocked": "Blocked",
     "overdue": "{{days}} days overdue",
     "duration_days_one": "{{count}} day",
-    "duration_days_other": "{{count}} days"
+    "duration_days_other": "{{count}} days",
+    "status_pending": "Pending",
+    "status_in_progress": "In progress",
+    "upcoming_title": "Next deliverables",
+    "upcoming_due": "Due {{date}}",
+    "upcoming_empty": "No upcoming deliverables"
   }
 }

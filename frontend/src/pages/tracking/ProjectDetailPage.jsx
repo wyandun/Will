@@ -4,6 +4,14 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { projectsApi } from '../../api/projects';
 
+function IconCalendar() {
+  return (
+    <svg className="w-5 h-5 text-slate-400 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+    </svg>
+  );
+}
+
 // ─── Status badge ─────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG = {
@@ -406,20 +414,77 @@ DeliverablesTab.propTypes = {
   onKpiUpdate: PropTypes.func.isRequired,
 };
 
-// ─── Stub tabs ────────────────────────────────────────────────────────────────
+// ─── Upcoming tab ─────────────────────────────────────────────────────────────
 
-function StubTab({ title }) {
+function UpcomingTab({ deliverables }) {
+  const { t } = useTranslation('common');
+
+  const upcoming = useMemo(
+    () =>
+      deliverables
+        .filter((d) => d.status === 'pending' || d.status === 'in_progress')
+        .slice()
+        .sort((a, b) => {
+          if (!a.estimated_end_date) return 1;
+          if (!b.estimated_end_date) return -1;
+          return new Date(a.estimated_end_date) - new Date(b.estimated_end_date);
+        }),
+    [deliverables],
+  );
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return null;
+    const date = new Date(dateStr + 'T00:00:00');
+    return date.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
+  };
+
+  const statusLabel = (status) =>
+    status === 'in_progress' ? t('tracking.status_in_progress') : t('tracking.status_pending');
+
+  const STATUS_BADGE = {
+    pending:     'bg-slate-100 text-slate-600',
+    in_progress: 'bg-blue-100 text-blue-700',
+  };
+
   return (
-    <div className="bg-white rounded-xl border border-black/8 shadow-sm flex items-center justify-center py-20">
-      <div className="text-center">
-        <p className="text-slate-400 text-sm font-medium">{title}</p>
-        <p className="text-slate-300 text-xs mt-1">Coming soon</p>
-      </div>
+    <div className="space-y-4">
+      <h2 className="text-base font-semibold text-slate-800">{t('tracking.upcoming_title')}</h2>
+      {upcoming.length === 0 ? (
+        <p className="py-10 text-center text-sm text-slate-400">{t('tracking.upcoming_empty')}</p>
+      ) : (
+        <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white overflow-hidden">
+          {upcoming.map((d) => (
+            <li key={d.id} className="flex items-center gap-4 px-5 py-4">
+              <IconCalendar />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-slate-800 truncate">{d.name}</p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {d.phase ? `${d.phase} · ` : ''}
+                  {formatDate(d.estimated_end_date)
+                    ? t('tracking.upcoming_due', { date: formatDate(d.estimated_end_date) })
+                    : ''}
+                </p>
+              </div>
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${STATUS_BADGE[d.status] ?? STATUS_BADGE.pending}`}>
+                {statusLabel(d.status)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
 
-StubTab.propTypes = { title: PropTypes.string.isRequired };
+UpcomingTab.propTypes = {
+  deliverables: PropTypes.arrayOf(PropTypes.shape({
+    id: PropTypes.number.isRequired,
+    name: PropTypes.string.isRequired,
+    phase: PropTypes.string,
+    estimated_end_date: PropTypes.string,
+    status: PropTypes.string.isRequired,
+  })).isRequired,
+};
 
 // ─── Tab bar ──────────────────────────────────────────────────────────────────
 
@@ -612,7 +677,9 @@ export default function ProjectDetailPage() {
         {activeTab === 'deliverables' && (
           <DeliverablesTab project={project} onKpiUpdate={handleKpiUpdate} />
         )}
-        {activeTab === 'upcoming' && <StubTab title="Upcoming" />}
+        {activeTab === 'upcoming' && (
+          <UpcomingTab deliverables={project.deliverables ?? []} />
+        )}
       </div>
     </div>
   );

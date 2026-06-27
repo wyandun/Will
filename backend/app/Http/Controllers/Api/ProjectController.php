@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\ProjectDeliverableStatus;
 use App\Enums\ProjectStatus;
 use App\Enums\Role;
 use App\Http\Controllers\Controller;
@@ -182,6 +183,48 @@ class ProjectController extends Controller
             new OA\Response(response: 422, description: 'Validación', content: new OA\JsonContent(ref: '#/components/schemas/ValidationError')),
         ]
     )]
+    #[OA\Get(
+        path: '/projects/{project}/upcoming-deliverables',
+        tags: ['Projects'],
+        summary: 'Obtener los entregables próximos de un proyecto',
+        description: 'Retorna los entregables con estado pending o in_progress, ordenados por fecha de fin estimada.',
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(name: 'project', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Lista de entregables próximos'),
+            new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
+            new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
+            new OA\Response(response: 404, ref: '#/components/responses/NotFound'),
+        ]
+    )]
+    public function upcomingDeliverables(Project $project): JsonResponse
+    {
+        $this->authorize('view', $project);
+
+        $upcomingStatuses = array_map(
+            fn (ProjectDeliverableStatus $s) => $s->value,
+            ProjectDeliverableStatus::upcoming()
+        );
+
+        $deliverables = $project->deliverables()
+            ->whereIn('status', $upcomingStatuses)
+            ->orderBy('estimated_end_date')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $deliverables->map(fn ($d) => [
+                'id' => $d->id,
+                'name' => $d->name,
+                'phase' => $d->phase,
+                'estimated_end_date' => $d->estimated_end_date?->toDateString(),
+                'status' => $d->status->value,
+            ]),
+        ]);
+    }
+
     public function updateDeliverableStatus(
         UpdateDeliverableStatusRequest $request,
         Project $project,

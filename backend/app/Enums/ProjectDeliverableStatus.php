@@ -11,4 +11,10 @@ enum ProjectDeliverableStatus: string
     case Completed = 'completed';
 
     case Blocked = 'blocked';
+
+    /** Statuses considered "upcoming" for the dashboard tab. */
+    public static function upcoming(): array
+    {
+        return [self::Pending, self::InProgress];
+    }
 }

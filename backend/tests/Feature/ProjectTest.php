@@ -922,4 +922,160 @@ class ProjectTest extends TestCase
 
         $response->assertStatus(404);
     }
+
+    // ===========================================================================
+    // GET /api/v1/projects/{project}/upcoming-deliverables — WILT-60
+    // ===========================================================================
+
+    private function makeProjectDirect(array $attributes = []): Project
+    {
+        $franchise = $this->makeFranchise();
+        $company = $this->makeCompany($franchise);
+        $service = $this->makeService();
+
+        return Project::create(array_merge([
+            'company_id' => $company->id,
+            'franchise_id' => $franchise->id,
+            'catalog_item_id' => $service->id,
+            'name' => 'Upcoming Test Project',
+            'type' => 'service',
+            'status' => 'active',
+            'start_date' => '2026-07-01',
+        ], $attributes));
+    }
+
+    private function makeProjectDeliverable(Project $project, array $attributes = []): ProjectDeliverable
+    {
+        return ProjectDeliverable::create(array_merge([
+            'project_id' => $project->id,
+            'catalog_item_id' => $project->catalog_item_id,
+            'name' => 'Test Deliverable',
+            'phase' => 'Setup',
+            'status' => ProjectDeliverableStatus::Pending->value,
+            'order' => 0,
+        ], $attributes));
+    }
+
+    public function test_upcoming_deliverables_returns_only_pending_and_in_progress(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $project = $this->makeProjectDirect();
+
+        $this->makeProjectDeliverable($project, [
+            'name' => 'Pending One',
+            'status' => ProjectDeliverableStatus::Pending->value,
+            'estimated_end_date' => '2026-08-01',
+        ]);
+        $this->makeProjectDeliverable($project, [
+            'name' => 'In Progress',
+            'status' => ProjectDeliverableStatus::InProgress->value,
+            'estimated_end_date' => '2026-08-10',
+        ]);
+        $this->makeProjectDeliverable($project, [
+            'name' => 'Completed',
+            'status' => ProjectDeliverableStatus::Completed->value,
+            'estimated_end_date' => '2026-07-01',
+        ]);
+        $this->makeProjectDeliverable($project, [
+            'name' => 'Blocked',
+            'status' => ProjectDeliverableStatus::Blocked->value,
+            'estimated_end_date' => '2026-07-15',
+        ]);
+
+        $response = $this->actingAs($superadmin)
+            ->getJson("/api/v1/projects/{$project->id}/upcoming-deliverables");
+
+        $response->assertStatus(200);
+        $data = $response->json('data');
+
+        $this->assertCount(2, $data);
+        $names = array_column($data, 'name');
+        $this->assertContains('Pending One', $names);
+        $this->assertContains('In Progress', $names);
+        $this->assertNotContains('Completed', $names);
+        $this->assertNotContains('Blocked', $names);
+    }
+
+    public function test_upcoming_deliverables_are_ordered_by_estimated_end_date(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $project = $this->makeProjectDirect();
+
+        $this->makeProjectDeliverable($project, [
+            'name' => 'Later',
+            'status' => ProjectDeliverableStatus::Pending->value,
+            'estimated_end_date' => '2026-09-01',
+        ]);
+        $this->makeProjectDeliverable($project, [
+            'name' => 'Earlier',
+            'status' => ProjectDeliverableStatus::InProgress->value,
+            'estimated_end_date' => '2026-08-01',
+        ]);
+        $this->makeProjectDeliverable($project, [
+            'name' => 'Middle',
+            'status' => ProjectDeliverableStatus::Pending->value,
+            'estimated_end_date' => '2026-08-15',
+        ]);
+
+        $response = $this->actingAs($superadmin)
+            ->getJson("/api/v1/projects/{$project->id}/upcoming-deliverables");
+
+        $response->assertStatus(200);
+        $data = $response->json('data');
+
+        $this->assertCount(3, $data);
+        $this->assertEquals('Earlier', $data[0]['name']);
+        $this->assertEquals('Middle', $data[1]['name']);
+        $this->assertEquals('Later', $data[2]['name']);
+    }
+
+    public function test_upcoming_deliverables_returns_empty_when_all_completed(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $project = $this->makeProjectDirect();
+
+        $this->makeProjectDeliverable($project, [
+            'status' => ProjectDeliverableStatus::Completed->value,
+            'estimated_end_date' => '2026-07-01',
+        ]);
+
+        $this->actingAs($superadmin)
+            ->getJson("/api/v1/projects/{$project->id}/upcoming-deliverables")
+            ->assertStatus(200)
+            ->assertJsonCount(0, 'data');
+    }
+
+    public function test_upcoming_deliverables_returns_401_for_unauthenticated(): void
+    {
+        $project = $this->makeProjectDirect();
+
+        $this->getJson("/api/v1/projects/{$project->id}/upcoming-deliverables")
+            ->assertStatus(401);
+    }
+
+    public function test_upcoming_deliverables_returns_403_for_unauthorized_company(): void
+    {
+        $franchise = $this->makeFranchise();
+        $ownCompany = $this->makeCompany($franchise, ['name' => 'Own Company']);
+        $otherCompany = $this->makeCompany($franchise, ['name' => 'Other Company']);
+
+        SpatieRole::firstOrCreate(['name' => Role::SB_OWNER, 'guard_name' => 'web']);
+        $sbOwner = User::factory()->create(['company_id' => $ownCompany->id]);
+        $sbOwner->assignRole(Role::SB_OWNER);
+
+        $service = $this->makeService();
+        $otherProject = Project::create([
+            'company_id' => $otherCompany->id,
+            'franchise_id' => $franchise->id,
+            'catalog_item_id' => $service->id,
+            'name' => 'Other Project',
+            'type' => 'service',
+            'status' => 'active',
+            'start_date' => '2026-07-01',
+        ]);
+
+        $this->actingAs($sbOwner)
+            ->getJson("/api/v1/projects/{$otherProject->id}/upcoming-deliverables")
+            ->assertStatus(403);
+    }
 }
