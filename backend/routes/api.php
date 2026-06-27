@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AssessmentContactController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BbAssignmentController;
 use App\Http\Controllers\Api\CatalogItemController;
@@ -164,6 +165,11 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::delete('sub-sub-processes/{subSubProcess}', [SubSubProcessController::class, 'destroy']);
     Route::post('process-documents/{document}', [DocumentController::class, 'update']);
     Route::delete('process-documents/{document}', [DocumentController::class, 'destroy']);
+
+    // Assessment contacts — admin review and internal audit notes
+    Route::get('assessment-contacts', [AssessmentContactController::class, 'index']);
+    Route::get('assessment-contacts/{assessmentContact}', [AssessmentContactController::class, 'show']);
+    Route::patch('assessment-contacts/{assessmentContact}/admin-note', [AssessmentContactController::class, 'updateAdminNote']);
 
     // Lightweight user search for "Add Guests" in calendar events.
     Route::get('users/search', UserSearchController::class);

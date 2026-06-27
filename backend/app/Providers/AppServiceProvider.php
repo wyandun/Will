@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Jobs\MarkInvitationEmailSent;
+use App\Models\AssessmentContact;
 use App\Models\BbAssignment;
 use App\Models\CatalogItem;
 use App\Models\Company;
@@ -17,6 +18,7 @@ use App\Models\SubProcess;
 use App\Models\SubSubProcess;
 use App\Models\User;
 use App\Notifications\UserInvitationNotification;
+use App\Policies\AssessmentContactPolicy;
 use App\Policies\BbAssignmentPolicy;
 use App\Policies\CatalogItemPolicy;
 use App\Policies\CompanyPolicy;
@@ -55,6 +57,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::policy(AssessmentContact::class, AssessmentContactPolicy::class);
         Gate::policy(BbAssignment::class, BbAssignmentPolicy::class);
         Gate::policy(Franchise::class, FranchisePolicy::class);
         Gate::policy(Company::class, CompanyPolicy::class);

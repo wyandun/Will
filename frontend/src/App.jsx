@@ -22,6 +22,8 @@ import RepositoryDetailPage from './pages/repository/RepositoryDetailPage';
 import ProcessDiagramPage from './pages/processMaps/ProcessDiagramPage';
 import ContractsPage from './pages/contracts/ContractsPage';
 import ContractDetailPage from './pages/contracts/ContractDetailPage';
+import AssessmentsPage from './pages/assessments/AssessmentsPage';
+import AssessmentDetailPage from './pages/assessments/AssessmentDetailPage';
 import { useAuthStore } from './store/authStore';
 
 /**
@@ -175,7 +177,15 @@ export default function App() {
             path="/sb-applications"
             element={
               <RoleRoute roles={ADMIN_ROLES}>
-                <StubPage title={t('nav.sb_applications')} />
+                <AssessmentsPage />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/sb-applications/:id"
+            element={
+              <RoleRoute roles={ADMIN_ROLES}>
+                <AssessmentDetailPage />
               </RoleRoute>
             }
           />
