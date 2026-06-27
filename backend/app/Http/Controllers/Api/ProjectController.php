@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\ProjectStatus;
 use App\Enums\Role;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Project\StoreProjectRequest;
@@ -9,6 +10,7 @@ use App\Http\Resources\ProjectResource;
 use App\Models\Project;
 use App\Services\ProjectService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
 
 class ProjectController extends Controller
@@ -19,24 +21,60 @@ class ProjectController extends Controller
         path: '/projects',
         tags: ['Projects'],
         summary: 'Listar proyectos visibles para el usuario',
-        description: 'Superadmin ve todos. admin_sm ve los de su franquicia.',
+        description: 'Superadmin ve todos. admin_sm ve los de su franquicia. Soporta filtros: ?search= y ?status=',
         security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(
+                name: 'search',
+                in: 'query',
+                required: false,
+                description: 'Filtra por nombre del proyecto o nombre de la empresa (ILIKE)',
+                schema: new OA\Schema(type: 'string')
+            ),
+            new OA\Parameter(
+                name: 'status',
+                in: 'query',
+                required: false,
+                description: 'Filtra por estado',
+                schema: new OA\Schema(type: 'string', enum: ['active', 'completed', 'paused', 'cancelled'])
+            ),
+        ],
         responses: [
             new OA\Response(response: 200, description: 'Lista de proyectos'),
             new OA\Response(response: 401, ref: '#/components/responses/Unauthenticated'),
             new OA\Response(response: 403, ref: '#/components/responses/Forbidden'),
         ]
     )]
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Project::class);
 
-        $user = request()->user();
+        $user = $request->user();
 
         $query = Project::with(['company', 'franchise', 'catalogItem', 'deliverables']);
 
+        // Scope to franchise for admin_sm.
         if ($user->hasRole(Role::ADMIN_SM)) {
             $query->where('franchise_id', $user->sm_franchise_id);
+        }
+
+        // Filter by search term — matches company name or catalog item name (case-insensitive).
+        if ($search = $request->query('search')) {
+            $pattern = '%'.mb_strtolower($search).'%';
+
+            $query->where(function ($q) use ($pattern) {
+                $q->whereHas('company', fn ($q2) => $q2->whereRaw('LOWER(name) LIKE ?', [$pattern]))
+                    ->orWhereHas('catalogItem', fn ($q2) => $q2->whereRaw('LOWER(name_es) LIKE ?', [$pattern]));
+            });
+        }
+
+        // Filter by status.
+        if ($status = $request->query('status')) {
+            $statusEnum = ProjectStatus::tryFrom($status);
+
+            if ($statusEnum !== null) {
+                $query->where('status', $statusEnum->value);
+            }
         }
 
         $projects = $query->orderByDesc('created_at')->get();

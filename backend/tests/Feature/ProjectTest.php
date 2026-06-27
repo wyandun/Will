@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\CatalogLevel;
+use App\Enums\ProjectDeliverableStatus;
 use App\Enums\Role;
 use App\Models\CatalogItem;
 use App\Models\Company;
@@ -506,5 +507,132 @@ class ProjectTest extends TestCase
         $response = $this->actingAs($superadmin)->getJson('/api/v1/projects/999999');
 
         $response->assertStatus(404);
+    }
+
+    // ===========================================================================
+    // GET /api/v1/projects/{project} — WILT-58 KPI fields
+    // ===========================================================================
+
+    public function test_show_returns_correct_progress_percentage(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = $this->makeFranchise();
+        $company = $this->makeCompany($franchise);
+        $service = $this->makeService();
+        $this->makeDeliverable($service, ['name_es' => 'D1', 'estimated_hours' => 8.0, 'order_index' => 0]);
+        $this->makeDeliverable($service, ['name_es' => 'D2', 'estimated_hours' => 8.0, 'order_index' => 1]);
+        $this->makeDeliverable($service, ['name_es' => 'D3', 'estimated_hours' => 8.0, 'order_index' => 2]);
+        $this->makeDeliverable($service, ['name_es' => 'D4', 'estimated_hours' => 8.0, 'order_index' => 3]);
+
+        $createResponse = $this->actingAs($superadmin)->postJson('/api/v1/projects', [
+            'company_id' => $company->id,
+            'franchise_id' => $franchise->id,
+            'catalog_item_id' => $service->id,
+            'type' => 'service',
+            'start_date' => '2026-07-01',
+        ]);
+
+        $projectId = $createResponse->json('data.id');
+
+        // Mark 2 of 4 deliverables as completed.
+        $project = Project::find($projectId);
+        $deliverables = $project->deliverables()->orderBy('order')->take(2)->get();
+        foreach ($deliverables as $deliverable) {
+            $deliverable->update(['status' => ProjectDeliverableStatus::Completed]);
+        }
+
+        $response = $this->actingAs($superadmin)->getJson("/api/v1/projects/{$projectId}");
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.progress_percentage', 50);
+        $response->assertJsonPath('data.deliverables_completed', 2);
+        $response->assertJsonPath('data.deliverables_total', 4);
+    }
+
+    public function test_show_returns_estimated_end_date_as_max_deliverable_end_date(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = $this->makeFranchise();
+        $company = $this->makeCompany($franchise);
+        $service = $this->makeService();
+        // Three deliverables with 8h each — sequential scheduling from 2026-07-01 (Wed)
+        $this->makeDeliverable($service, ['name_es' => 'D1', 'estimated_hours' => 8.0, 'order_index' => 0]);
+        $this->makeDeliverable($service, ['name_es' => 'D2', 'estimated_hours' => 8.0, 'order_index' => 1]);
+        $this->makeDeliverable($service, ['name_es' => 'D3', 'estimated_hours' => 8.0, 'order_index' => 2]);
+
+        $createResponse = $this->actingAs($superadmin)->postJson('/api/v1/projects', [
+            'company_id' => $company->id,
+            'franchise_id' => $franchise->id,
+            'catalog_item_id' => $service->id,
+            'type' => 'service',
+            'start_date' => '2026-07-01',
+        ]);
+
+        $projectId = $createResponse->json('data.id');
+
+        $response = $this->actingAs($superadmin)->getJson("/api/v1/projects/{$projectId}");
+
+        $response->assertStatus(200);
+
+        // The estimated_end_date must match the last deliverable's estimated_end_date.
+        $project = Project::find($projectId);
+        $expectedEndDate = $project->deliverables()->max('estimated_end_date');
+
+        $this->assertEquals($expectedEndDate, $response->json('data.estimated_end_date'));
+    }
+
+    public function test_show_deliverables_are_groupable_by_phase(): void
+    {
+        $superadmin = $this->createSuperadmin();
+        $franchise = $this->makeFranchise();
+        $company = $this->makeCompany($franchise);
+        $service = $this->makeService(['name_es' => 'Bundle Phase Test']);
+
+        $servicePhaseA = $this->makeService(['name_es' => 'Phase A', 'parent_id' => null]);
+        $servicePhaseB = $this->makeService(['name_es' => 'Phase B', 'parent_id' => null]);
+
+        $bundle = CatalogItem::create([
+            'level' => CatalogLevel::Bundle->value,
+            'name_es' => 'Multi-phase Bundle',
+            'name_en' => 'Multi-phase Bundle',
+            'order_index' => 0,
+            'is_monthly' => false,
+        ]);
+
+        // Re-parent services to the bundle.
+        $servicePhaseA->update(['parent_id' => $bundle->id]);
+        $servicePhaseB->update(['parent_id' => $bundle->id]);
+
+        // 2 deliverables in Phase A, 1 in Phase B.
+        $this->makeDeliverable($servicePhaseA, [
+            'name_es' => 'A-D1', 'estimated_hours' => 8.0, 'order_index' => 0,
+        ]);
+        $this->makeDeliverable($servicePhaseA, [
+            'name_es' => 'A-D2', 'estimated_hours' => 8.0, 'order_index' => 1,
+        ]);
+        $this->makeDeliverable($servicePhaseB, [
+            'name_es' => 'B-D1', 'estimated_hours' => 8.0, 'order_index' => 0,
+        ]);
+
+        $createResponse = $this->actingAs($superadmin)->postJson('/api/v1/projects', [
+            'company_id' => $company->id,
+            'franchise_id' => $franchise->id,
+            'catalog_item_id' => $bundle->id,
+            'type' => 'bundle',
+            'start_date' => '2026-07-01',
+        ]);
+
+        $projectId = $createResponse->json('data.id');
+
+        $response = $this->actingAs($superadmin)->getJson("/api/v1/projects/{$projectId}");
+
+        $response->assertStatus(200);
+
+        $deliverables = collect($response->json('data.deliverables'));
+
+        // All three deliverables must have a non-null phase for Gantt grouping.
+        $this->assertCount(3, $deliverables);
+        $phases = $deliverables->pluck('phase')->unique()->filter()->values();
+        $this->assertGreaterThanOrEqual(1, $phases->count());
     }
 }

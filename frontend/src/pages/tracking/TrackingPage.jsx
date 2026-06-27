@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { catalogApi } from '../../api/catalog';
 import { franchisesApi } from '../../api/franchises';
 import { projectsApi } from '../../api/projects';
@@ -97,9 +98,10 @@ export default function TrackingPage() {
       {!loading && !error && projects.length > 0 && (
         <div className="space-y-3">
           {projects.map((project) => (
-            <div
+            <Link
               key={project.id}
-              className="bg-white rounded-xl border border-slate-200 px-5 py-4 flex items-center justify-between"
+              to={`/tracking/${project.id}`}
+              className="block bg-white rounded-xl border border-slate-200 px-5 py-4 flex items-center justify-between hover:border-blue-300 hover:shadow-sm transition"
             >
               <div>
                 <p className="text-sm font-semibold text-slate-800">
@@ -116,7 +118,7 @@ export default function TrackingPage() {
               <span className="text-xs font-medium text-slate-500 shrink-0">
                 {(project.deliverables ?? []).length} {t('tracking.deliverables_count')}
               </span>
-            </div>
+            </Link>
           ))}
         </div>
       )}
