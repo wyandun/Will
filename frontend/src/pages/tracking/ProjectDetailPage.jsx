@@ -533,6 +533,23 @@ export default function ProjectDetailPage() {
   const [deliverablesCompleted, setDeliverablesCompleted] = useState(0);
   const [deliverablesTotal, setDeliverablesTotal] = useState(0);
 
+  // Must be declared before early returns — Rules of Hooks require all hooks
+  // to run unconditionally on every render.
+  const handleKpiUpdate = useCallback((deliverableId, newStatus, kpiResult) => {
+    setProject((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        deliverables: prev.deliverables.map((d) =>
+          d.id === deliverableId ? { ...d, status: newStatus } : d,
+        ),
+      };
+    });
+    setProgressPercentage(kpiResult.progress_percentage);
+    setDeliverablesCompleted(kpiResult.deliverables_completed);
+    setDeliverablesTotal(kpiResult.deliverables_total);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     setIsLoading(true);
@@ -548,8 +565,9 @@ export default function ProjectDetailPage() {
           setDeliverablesTotal(data.deliverables_total ?? 0);
         }
       })
-      .catch(() => {
-        if (!cancelled) setFetchError(t('common.load_error'));
+      .catch((err) => {
+        console.error('[ProjectDetailPage] fetch error:', err);
+        if (!cancelled) setFetchError(t('tracking.load_error'));
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false);
@@ -571,7 +589,7 @@ export default function ProjectDetailPage() {
   if (fetchError || !project) {
     return (
       <div className="py-20 text-center space-y-4">
-        <p className="text-sm text-red-600">{fetchError || t('common.load_error')}</p>
+        <p className="text-sm text-red-600">{fetchError || t('tracking.load_error')}</p>
         <button
           type="button"
           onClick={() => navigate('/tracking')}
@@ -586,22 +604,6 @@ export default function ProjectDetailPage() {
   const companyName = project.company?.name ?? project.company_name ?? '—';
   const franchiseName = project.franchise?.name ?? project.franchise_name ?? '—';
   const catalogItemTitle = project.catalog_item_name ?? `Project #${project.id}`;
-
-  // Update deliverable status in local project state and refresh KPI counters.
-  const handleKpiUpdate = useCallback((deliverableId, newStatus, kpiResult) => {
-    setProject((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        deliverables: prev.deliverables.map((d) =>
-          d.id === deliverableId ? { ...d, status: newStatus } : d,
-        ),
-      };
-    });
-    setProgressPercentage(kpiResult.progress_percentage);
-    setDeliverablesCompleted(kpiResult.deliverables_completed);
-    setDeliverablesTotal(kpiResult.deliverables_total);
-  }, []);
 
   return (
     <div className="min-h-screen bg-[#F4F6F9]">
