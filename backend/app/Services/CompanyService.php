@@ -15,10 +15,13 @@ class CompanyService
     /**
      * Return companies scoped to the authenticated user's role, paginated.
      *
-     * - superadmin → all companies, franchise name eager-loaded
+     * - superadmin → all companies, franchise name eager-loaded; can be
+     *                further filtered by ?franchise_id= to scope to one franchise
      * - admin_sm   → only companies belonging to their SM franchise
+     *
+     * @param  array<string, mixed>  $filters  Optional filters: franchise_id
      */
-    public function list(User $authUser): LengthAwarePaginator
+    public function list(User $authUser, array $filters = []): LengthAwarePaginator
     {
         // Only select the columns that CompanyResource serializes on listings.
         // QBO token fields (qbo_access_token, qbo_refresh_token) are large
@@ -31,9 +34,13 @@ class CompanyService
         ];
 
         if ($authUser->hasAnyRole([Role::SUPERADMIN, Role::SYSTEM_ADMIN, Role::SYSTEM_ADMIN_READONLY])) {
-            return Company::select($columns)
-                ->with('franchise:id,name')
-                ->paginate(25);
+            $query = Company::select($columns)->with('franchise:id,name');
+
+            if (! empty($filters['franchise_id'])) {
+                $query->where('sm_franchise_id', $filters['franchise_id']);
+            }
+
+            return $query->paginate(25);
         }
 
         // admin_sm sees only companies managed by their franchise.

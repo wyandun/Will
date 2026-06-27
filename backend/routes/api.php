@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\Api\AssessmentContactController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BbAssignmentController;
 use App\Http\Controllers\Api\CatalogItemController;
@@ -20,6 +19,7 @@ use App\Http\Controllers\Api\ProcessCategoryController;
 use App\Http\Controllers\Api\ProcessController;
 use App\Http\Controllers\Api\ProcessMapController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\RepositoryController;
 use App\Http\Controllers\Api\RepositoryDocumentController;
 use App\Http\Controllers\Api\SubProcessController;
@@ -166,11 +166,6 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::post('process-documents/{document}', [DocumentController::class, 'update']);
     Route::delete('process-documents/{document}', [DocumentController::class, 'destroy']);
 
-    // Assessment contacts — admin review and internal audit notes
-    Route::get('assessment-contacts', [AssessmentContactController::class, 'index']);
-    Route::get('assessment-contacts/{assessmentContact}', [AssessmentContactController::class, 'show']);
-    Route::patch('assessment-contacts/{assessmentContact}/admin-note', [AssessmentContactController::class, 'updateAdminNote']);
-
     // Lightweight user search for "Add Guests" in calendar events.
     Route::get('users/search', UserSearchController::class);
 
@@ -208,6 +203,9 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::post('/articles/{newsArticle}/publish', [NewsController::class, 'publish']);
         Route::post('/articles/{newsArticle}/reject', [NewsController::class, 'reject']);
     });
+
+    // Tracking — Projects (WILT-57 foundation)
+    Route::apiResource('projects', ProjectController::class)->only(['index', 'store', 'show']);
 
     // Dashboard
     Route::prefix('dashboard')->group(function () {

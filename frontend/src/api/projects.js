@@ -1,0 +1,40 @@
+import apiClient from './client';
+
+/**
+ * API client for the Tracking / Projects module.
+ * Endpoints under /api/v1/projects (WILT-57 foundation).
+ */
+export const projectsApi = {
+  /**
+   * List projects visible to the current user.
+   * superadmin sees all; admin_sm sees only their franchise.
+   *
+   * @returns {Promise<Array>}
+   */
+  getProjects: () =>
+    apiClient.get('/projects').then((res) => res.data.data ?? []),
+
+  /**
+   * Get a single project by ID, including all generated deliverables.
+   *
+   * @param {number} id
+   * @returns {Promise<Object>}
+   */
+  getProject: (id) =>
+    apiClient.get(`/projects/${id}`).then((res) => res.data.data),
+
+  /**
+   * Create a project and auto-generate its deliverables schedule.
+   *
+   * @param {Object} data
+   * @param {number} data.company_id
+   * @param {number} data.franchise_id
+   * @param {number} data.catalog_item_id
+   * @param {'bundle'|'service'|'deliverable'} data.type
+   * @param {string} data.start_date  ISO date string (YYYY-MM-DD)
+   * @param {string} [data.notes]
+   * @returns {Promise<Object>}
+   */
+  createProject: (data) =>
+    apiClient.post('/projects', data).then((res) => res.data.data),
+};

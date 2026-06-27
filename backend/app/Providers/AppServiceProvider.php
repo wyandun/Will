@@ -3,7 +3,6 @@
 namespace App\Providers;
 
 use App\Jobs\MarkInvitationEmailSent;
-use App\Models\AssessmentContact;
 use App\Models\BbAssignment;
 use App\Models\CatalogItem;
 use App\Models\Company;
@@ -13,12 +12,12 @@ use App\Models\Franchise;
 use App\Models\Process;
 use App\Models\ProcessCategory;
 use App\Models\ProcessMap;
+use App\Models\Project;
 use App\Models\Repository;
 use App\Models\SubProcess;
 use App\Models\SubSubProcess;
 use App\Models\User;
 use App\Notifications\UserInvitationNotification;
-use App\Policies\AssessmentContactPolicy;
 use App\Policies\BbAssignmentPolicy;
 use App\Policies\CatalogItemPolicy;
 use App\Policies\CompanyPolicy;
@@ -28,6 +27,7 @@ use App\Policies\FranchisePolicy;
 use App\Policies\ProcessCategoryPolicy;
 use App\Policies\ProcessMapPolicy;
 use App\Policies\ProcessPolicy;
+use App\Policies\ProjectPolicy;
 use App\Policies\RepositoryPolicy;
 use App\Policies\SubProcessPolicy;
 use App\Policies\SubSubProcessPolicy;
@@ -57,7 +57,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Gate::policy(AssessmentContact::class, AssessmentContactPolicy::class);
         Gate::policy(BbAssignment::class, BbAssignmentPolicy::class);
         Gate::policy(Franchise::class, FranchisePolicy::class);
         Gate::policy(Company::class, CompanyPolicy::class);
@@ -71,6 +70,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(SubProcess::class, SubProcessPolicy::class);
         Gate::policy(SubSubProcess::class, SubSubProcessPolicy::class);
         Gate::policy(Repository::class, RepositoryPolicy::class);
+        Gate::policy(Project::class, ProjectPolicy::class);
 
         // Stable polymorphic aliases for process_documents.documentable_type,
         // matching the migration contract (process | sub_process | sub_sub_process).
